@@ -137,35 +137,44 @@ class TrackPoint:
         d['temperature']   =self.temperature
         return d
 
-    def as_geojson_point(self):
+    def geojson_feature_collection(self):
         o = {
              "type": "geojson",
              "data": { 
                 "type": "FeatureCollection",
-                "features": [
-                    {
-                    "type": "Feature",
-                    "geometry": {
-                        "type": "Point",
-                            "coordinates": [self.position_long, 
-                                            self.position_lat, 
-                                            self.altitude]
-                        },
-                        "properties": {
-                            "timestamp": self.timestamp,
-                            "speed": self.speed,
-                            "power": self.power,
-                            "grade": self.grade,
-                            "heart_rate": self.heart_rate,
-                            "cadence": self.cadence,
-                            "temperature": self.temperature,
-                        }
-                    }
-                ]
+                "features": [ ]
              }
         }
         return o
     
+    def as_geojson_point(self):
+        o = self.geojson_feature_collection()
+        # add it to the geojson
+        o["data"]["features"].append(self.as_geojson_point_feature())
+        return o
+    
+
+    def as_geojson_point_feature(self):
+        o = {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                    "coordinates": [self.position_long, 
+                                    self.position_lat, 
+                                    self.altitude]
+                },
+                "properties": {
+                    "timestamp": self.timestamp,
+                    "speed": self.speed,
+                    "power": self.power,
+                    "grade": self.grade,
+                    "heart_rate": self.heart_rate,
+                    "cadence": self.cadence,
+                    "temperature": self.temperature,
+                }
+        }
+        return o
+
     def pos(self):
         return (self.position_long, self.position_lat, self.altitude)
 
@@ -362,6 +371,12 @@ class Track:
                 p.altitude]
             )
         return o
+    
+    def as_geojson_points(self, points):
+        col = TrackPoint().geojson_feature_collection()
+        for p in points:
+            col["data"]["features"].append(p.as_geojson_point_feature())
+        return col
 
     def process(self):
         "filter the track, calculate the pandas dataframe"
@@ -389,7 +404,7 @@ class Track:
 
 
 
-    def bounds(self):
+    def bounds(self, lonlat=False):
         
         min_lat = self.data['position_lat'].min()
         min_lon = self.data['position_long'].min()
@@ -397,8 +412,11 @@ class Track:
         max_lat = self.data['position_lat'].max()
         max_lon = self.data['position_long'].max()
 
-        return [[min_lat, min_lon], [max_lat, max_lon]]
+        if not lonlat:
+            return [[min_lat, min_lon], [max_lat, max_lon]]
     
+        return [[min_lon, min_lat], [max_lon, max_lat]]
+
     def stats(self):
         # calculate some things about gpx info using gpxpy module.
         s = Stats(self.points, self.data)

@@ -298,7 +298,8 @@ class FileManager:
                         bearing=0, 
                         exaggeration=1.5,
                         controls={},
-                        style="3d-hybrid")
+                        style="3d-hybrid",
+                        )
 
         m.add_basemap("Esri.WorldImagery", visible=False)
         m.add_3d_buildings(min_zoom=10)
@@ -308,40 +309,80 @@ class FileManager:
         m.add_control("navigation", position="top-left")
         #m.add_layer_control(bg_layers=True)
 
-        track_line = self.track.as_geojson_line()
-        layer = {
-            "id": "track",
-            "type": "line",
-            "source": "route",
-            "layout": {"line-join": "round", "line-cap": "round"},
-            "paint": {"line-color": "#4040A0", "line-width": 4},
-        }
-        m.add_source("route", track_line)
-        m.add_layer(layer)
-              
-        # start point
-        #       
-        image_start = "https://upload.wikimedia.org/wikipedia/commons/9/9b/Map_marker_icon_%E2%80%93_Nicolas_Mollet_%E2%80%93_Start_Race_%E2%80%93_Sports_%E2%80%93_Default.png"
-        image_stop = "https://upload.wikimedia.org/wikipedia/commons/9/9b/Map_marker_icon_%E2%80%93_Nicolas_Mollet_%E2%80%93_Start_Race_%E2%80%93_Sports_%E2%80%93_Default.png"
-        m.add_image("cat", image_start)
-        start_point_source = self.track.start_point().as_geojson_point()
-        m.add_geojson(start_point_source["data"], name="start_point_gjson")
-        start_point_layer = {
-            "id": "start_point_layer",
-            "type": "symbol",
-            "source": "start_point_src",
-            "layout": {
-                "icon-image": "cat",
-                "icon-size": 1
-            },
-        }
-        m.add_source("start_point_src", start_point_source)
-        m.add_layer(start_point_layer)       
+        def add_line(m, track, line_color = "#4040A0", line_width = 4):
+            track_line = track.as_geojson_line()
+            layer = {
+                "id": "track",
+                "type": "line",
+                "source": "route",
+                "layout": {"line-join": "round", "line-cap": "round"},
+                "paint": {"line-color": line_color, "line-width": line_width},
+            }
+            m.add_source("route", track_line)
+            m.add_layer(layer)
+            
+        def add_point(m, point, id, imageres="marker", imgsize=1):
+            
+            # watch out the names, because it breaks
+            # if you doit wrong.
+
+            if imageres != "marker":
+                m.add_image("%s_img" % id, imageres)
+            
+            point_src = point.as_geojson_point()
+            m.add_geojson(point_src["data"], name="point_src_%s_gjson" % id)
+
+            point_layer = {
+                
+                "id": "%s_point_layer" % id,
+                "type": "symbol",
+                "source": "point_src_%s" % id,
+                "layout": {
+                    "icon-image": imageres if imageres == "marker" else "%s_img" % id,
+                    "icon-size": imgsize
+                },
+            }
+            m.add_source("point_src_%s" % id, point_src)
+            m.add_layer(point_layer)       
+
+        # def add_points(m, points_src, id, imageres="marker", imgsize=1.0):
+            
+        #     # watch out the names, because it breaks
+        #     # if you doit wrong.
+        #     if imageres != "marker":
+        #         m.add_image("%s_img" % id, imageres)
+        #     m.add_geojson(points_src["data"], name="points_src_%s_gjson" % id)
+
+        #     points_layer = {
+                
+        #         "id": "%s_points_layer" % id,
+        #         "type": "symbol",
+        #         "source": "points_src_%s" % id,
+        #         "layout": {
+        #             "icon-image": imageres if imageres == "marker" else "%s_img" % id,
+        #             "icon-size": imgsize
+        #         },
+        #     }
+        #     m.add_source("points_src_%s" % id, points_src)
+        #     m.add_layer(points_layer)      
 
 
-
-        # pos_lon, pos_lat, pos_altitude = self.track.start_point().pos()
-        # print(pos_lat, pos_lon)
-        # m.add_marker(lng_lat=[pos_lon, pos_lat], options={"draggable": False})
+        # this only shows the latest layer drawn. I don't know why (overlapping things)
+        add_line(m, self.track, line_color="#ffff33")
+        #add_point(m, self.track.start_point(), "start", "res/marker-start.png", 1.0)
+        #add_point(m, self.track.end_point(), "end", "res/marker-end.png", 1.0)
+        m.add_marker(lng_lat = self.track.start_point().pos(), popup={},  options= { "color": "#00AA00"} )
+        m.add_marker(lng_lat = self.track.end_point().pos(), popup={}, options= { "color": "#FF0000"})
+        #testing this.
+        #add_points(m, 
+        #           self.track.as_geojson_points([self.track.start_point(), self.track.end_point()]), 
+        #           "col", "res/marker-start.png", 
+        #           1.0)
+      
+    
+        pos_lon, pos_lat, pos_altitude = self.track.middle_point().pos()
+        # to avoid panning
+        m.set_center(pos_lon, pos_lat)
+        m.fit_bounds(self.track.bounds(lonlat=True))
         return m
         
