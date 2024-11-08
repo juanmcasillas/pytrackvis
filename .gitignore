@@ -1,3 +1,10 @@
+# Don't upload products, neither sample data.
+
+data/fit/*
+data/gpx/*
+data/tokens.ini
+dev/*.html
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
