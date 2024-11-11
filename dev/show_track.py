@@ -17,7 +17,7 @@ from filemanager import *
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--verbose", help="Show data about file and processing", action="count", default=0)
-    parser.add_argument("input_file", help="file to read. Can be .fit or .gpxfile")
+    parser.add_argument("input_file", help="file to read. Can be .fit or .gpxfile", nargs='+')
     args = parser.parse_args()
 
     fm = FileManager(args.input_file, args.verbose)

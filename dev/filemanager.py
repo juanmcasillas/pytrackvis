@@ -26,6 +26,7 @@ import pydeck
 import leafmap.maplibregl as leafmap
 from maplibre.plugins import MapboxDrawControls, MapboxDrawOptions
 import configparser
+import random
 
 from track import Track, TrackPointFit, TrackPointGPX
 
@@ -37,15 +38,18 @@ class FileManager:
     GPX_FILE = ".gpx"
     FILE_EXT = [ FIT_FILE, GPX_FILE ]
 
-    def __init__(self, fname, verbose=0):
-        self.file_name = fname
+    def __init__(self, fnames, verbose=0):
+        self.file_names = fnames
         self.verbose = verbose
         self.FILE_LOADER =  { 
             self.FIT_FILE: self._fit_loader,
             self.GPX_FILE: self._gpx_loader
         }
-        self.file_type = self.guess_file_type(self.file_name)
-
+        self.file_types= {}
+        self.tracks = {}
+        for f in self.file_names:
+            self.file_types[f] = self.guess_file_type(f)
+        
     def guess_file_type(self, fname=None):
         fname = fname if fname else self.file_name
         file_name, file_extension = os.path.splitext(fname)
@@ -63,10 +67,10 @@ class FileManager:
             sys.exit(0)
         os.environ["MAPTILER_KEY"] = config["TOKENS"]["MAPTILER_KEY"]
 
-    def _fit_loader(self):
+    def _fit_loader(self, fname):
 
         if self.verbose:
-            print("running fit_loader()")
+            print("running fit_loader(%s)" % fname)
 
         extract_fields = [ 
             'timestamp', 'position_lat', 'position_long', 'altitude',
@@ -81,9 +85,9 @@ class FileManager:
             'temperature'
         ]
 
-        track_points = Track(name=self.file_name)
+        track_points = Track(name=fname)
 
-        with fitdecode.FitReader(self.file_name) as fit:
+        with fitdecode.FitReader(fname) as fit:
             for frame in fit:
                 # The yielded frame object is of one of the following types:
                 # * fitdecode.FitHeader (FIT_FRAME_HEADER)
@@ -108,9 +112,9 @@ class FileManager:
         return track_points
 
 
-    def _gpx_loader(self):
+    def _gpx_loader(self, fname):
         if self.verbose:
-            print("running gpx_loader()")
+            print("running gpx_loader(%s)" % fname)
        
         extract_fields = [ 
             'timestamp', 'position_lat', 'position_long', 'altitude',
@@ -125,8 +129,8 @@ class FileManager:
             'temperature'
         ]
         
-        track_points = Track(name=self.file_name)
-        with open(self.file_name, 'r') as gpx_file:
+        track_points = Track(name=fname)
+        with open(fname, 'r') as gpx_file:
             gpx = gpxpy.parse(gpx_file)
             for track in gpx.tracks:
                 for segment in track.segments:
@@ -153,15 +157,16 @@ class FileManager:
         return track_points
 
     def load(self):
-        if not self.file_type:
-            raise ValueError("file %s has not valid type" % self.file_name)
-        loader = self.FILE_LOADER[self.file_type]
-        self.track = loader()
-        self.track.process()
-        return self.track
+        for i in self.file_names:
+            if not self.file_types[i]:
+                raise ValueError("file %s has not valid type" % i)
+            loader = self.FILE_LOADER[self.file_types[i]]
+            self.tracks[i] = loader(i)
+            self.tracks[i].process()
+        return self.tracks
 
-    def stats(self):
-        return self.track.stats()
+    def stats(self,f):
+        return self.tracks[f].stats()
 
 
     def create_map(self):
@@ -290,9 +295,10 @@ class FileManager:
         # Load the MAPTILER first Token!
         #stats = self.track.stats()
         #data = self.track.dataframe()
-        pos_lon, pos_lat, pos_altitude = self.track.middle_point().pos()
+
+        #pos_lon, pos_lat, pos_altitude = self.track.middle_point().pos()
         #lat, long
-        m = leafmap.Map(center=[pos_lon, pos_lat], 
+        m = leafmap.Map(#center=[pos_lon, pos_lat], 
                         zoom=14, 
                         pitch=45, 
                         bearing=0, 
@@ -301,49 +307,48 @@ class FileManager:
                         style="3d-hybrid",
                         )
 
-        m.add_basemap("Esri.WorldImagery", visible=False)
+        m.add_basemap("Esri.WorldImagery", visible=True)
         m.add_3d_buildings(min_zoom=10)
-
         m.add_control("geolocate", position="top-left")
         m.add_control("fullscreen", position="top-right")
         m.add_control("navigation", position="top-left")
-        #m.add_layer_control(bg_layers=True)
+        m.add_control("scale", position="top-left")
 
-        def add_line(m, track, line_color = "#4040A0", line_width = 4):
+
+        def add_line(m, track, line_color = "#4040A0", line_width = 4, id="track"):
             track_line = track.as_geojson_line()
             layer = {
-                "id": "track",
+                "id": id,
                 "type": "line",
-                "source": "route",
+                "source": "route_%s" % id,
                 "layout": {"line-join": "round", "line-cap": "round"},
                 "paint": {"line-color": line_color, "line-width": line_width},
             }
-            m.add_source("route", track_line)
+            m.add_source("route_%s" % id, track_line)
             m.add_layer(layer)
             
-        def add_point(m, point, id, imageres="marker", imgsize=1):
+        # def add_point(m, point, id, imageres="marker", imgsize=1):
             
-            # watch out the names, because it breaks
-            # if you doit wrong.
+        #     # watch out the names, because it breaks
+        #     # if you doit wrong.
 
-            if imageres != "marker":
-                m.add_image("%s_img" % id, imageres)
+        #     if imageres != "marker":
+        #         m.add_image("%s_img" % id, imageres)
             
-            point_src = point.as_geojson_point()
-            m.add_geojson(point_src["data"], name="point_src_%s_gjson" % id)
+        #     point_src = point.as_geojson_point()
+        #     m.add_geojson(point_src["data"], name="point_src_%s_gjson" % id, visible=False)
 
-            point_layer = {
-                
-                "id": "%s_point_layer" % id,
-                "type": "symbol",
-                "source": "point_src_%s" % id,
-                "layout": {
-                    "icon-image": imageres if imageres == "marker" else "%s_img" % id,
-                    "icon-size": imgsize
-                },
-            }
-            m.add_source("point_src_%s" % id, point_src)
-            m.add_layer(point_layer)       
+        #     point_layer = {
+        #         "id": "%s_point_layer" % id,
+        #         "type": "symbol",
+        #         "source": "point_src_%s" % id,
+        #         "layout": {
+        #             "icon-image": imageres if imageres == "marker" else "%s_img" % id,
+        #             "icon-size": imgsize
+        #         },
+        #     }
+        #     m.add_source("point_src_%s" % id, point_src)
+        #     m.add_layer(point_layer)       
 
         # def add_points(m, points_src, id, imageres="marker", imgsize=1.0):
             
@@ -351,7 +356,7 @@ class FileManager:
         #     # if you doit wrong.
         #     if imageres != "marker":
         #         m.add_image("%s_img" % id, imageres)
-        #     m.add_geojson(points_src["data"], name="points_src_%s_gjson" % id)
+        #     m.add_geojson(points_src["data"], name="points_src_%s_gjson" % id,  visible=False)
 
         #     points_layer = {
                 
@@ -359,30 +364,56 @@ class FileManager:
         #         "type": "symbol",
         #         "source": "points_src_%s" % id,
         #         "layout": {
-        #             "icon-image": imageres if imageres == "marker" else "%s_img" % id,
-        #             "icon-size": imgsize
+        #              "icon-image": imageres if imageres == "marker" else "%s_img" % id,
+        #              "icon-size": imgsize
         #         },
         #     }
         #     m.add_source("points_src_%s" % id, points_src)
-        #     m.add_layer(points_layer)      
+        #     m.add_layer(points_layer,before_id='track')
 
 
         # this only shows the latest layer drawn. I don't know why (overlapping things)
-        add_line(m, self.track, line_color="#ffff33")
+      
         #add_point(m, self.track.start_point(), "start", "res/marker-start.png", 1.0)
         #add_point(m, self.track.end_point(), "end", "res/marker-end.png", 1.0)
-        m.add_marker(lng_lat = self.track.start_point().pos(), popup={},  options= { "color": "#00AA00"} )
-        m.add_marker(lng_lat = self.track.end_point().pos(), popup={}, options= { "color": "#FF0000"})
         #testing this.
         #add_points(m, 
         #           self.track.as_geojson_points([self.track.start_point(), self.track.end_point()]), 
         #           "col", "res/marker-start.png", 
         #           1.0)
-      
-    
-        pos_lon, pos_lat, pos_altitude = self.track.middle_point().pos()
+
+        min_lat = min_long = 99999.0
+        max_lat = max_long = -99999.0
+
+        COLORS = ["#ffff33", "#33ffff", "#ff33ff", "#DDDD44" ,"#44DDDD", "#DD44DD" ]
+
+        for fname in self.file_names:
+            
+            track = self.tracks[fname]
+            random_color = random.choice(COLORS)
+            add_line(m, track, line_color=random_color, id=fname)
+            m.add_marker(lng_lat = track.start_point().pos(), popup={},  options= { "color": "#00AA00"} )
+            m.add_marker(lng_lat = track.end_point().pos(), popup={}, options= { "color": "#FF0000"})
+        
+            pos_lon, pos_lat, pos_altitude = track.middle_point().pos()
+            tmin, tmax = track.bounds(lonlat=True)
+            tmin_long, tmin_lat = tmin 
+            tmax_long, tmax_lat = tmax
+            
+            if tmin_lat < min_lat:
+                min_lat = tmin_lat
+            if tmin_long < min_long:
+                min_long = tmin_long
+
+            if tmax_lat > max_lat:
+                max_lat = tmax_lat
+            if tmax_long > max_long:
+                max_long = tmax_long
+
         # to avoid panning
+        m.add_layer_control(bg_layers=False)
         m.set_center(pos_lon, pos_lat)
-        m.fit_bounds(self.track.bounds(lonlat=True))
+        print("bounds:", min_long, min_lat, max_long, max_lat)
+        m.fit_bounds([[min_long, min_lat], [max_long, max_lat]]) # this must be the max.
         return m
         
