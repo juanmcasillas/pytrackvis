@@ -18,6 +18,12 @@ import gpxpy.gpx
 import datetime
 import numpy as np
 import os
+import uuid
+
+class C:
+    def __init__(self, **kargs):
+        for i in kargs:
+            self.__setattr__(i, kargs[i])
 
 class UnitConverter:
     def __init__(self):
@@ -307,10 +313,11 @@ class TrackPointGPX(TrackPoint):
 
 
 class Track:
-    def __init__(self, name="Track"):
+    def __init__(self, name="Track", id=None):
         self.name = name
         self.points = []
         self.data = None
+        self.id = id if id is not None else str(uuid.uuid4())
 
     def clear(self): 
         self.points = []
@@ -390,7 +397,8 @@ class Track:
     def track_center(self):
         lat = self.data['position_lat'].mean()
         lon = self.data['position_long'].mean()
-        return(lat, lon)
+        alt = self.data['altitude'].mean()
+        return(lat, lon, alt)
     
     def start_point(self):
         return(self.points[0])

@@ -33,16 +33,59 @@ def error():
     msg = request.args.get("msg","Unknown error")
     return render_template('error.html',msg=msg)
 
+# page handlers
 
-@impl.route('/tracks/get_gjson', methods=['GET', 'POST'])
-def tracks_get_gjson():
+@impl.route('/tracks/list')
+def tracks_list():
+    tracks = current_app.file_manager.get_tracks_info()
+    return render_template('list.html', tracks=tracks)
+
+@impl.route('/tracks/show', methods=['GET', 'POST'])
+def tracks_show():
     id = request.args.get("id",None)
     if not id:
         return redirect(url_for('impl.error', msg="Invalid id"))
-    
-    # mockup
-    trk_name =  current_app.file_manager.file_names[0]
-    trk = current_app.file_manager.tracks[trk_name]
+    track = current_app.file_manager.tracks[id]
+    return render_template('show.html',track=track)
+
+# json handlers
+
+@impl.route('/tracks/as_geojson', methods=['GET', 'POST'])
+def tracks_as_geojson():
+    id = request.args.get("id",None)
+    if not id:
+        return redirect(url_for('impl.error', msg="Invalid id"))
+    trk = current_app.file_manager.tracks[id]
     return jsonify(trk.as_geojson_line()["data"]) 
     # default stuff to test things here.
-    
+
+@impl.route('/tracks/get_track_info', methods=['GET', 'POST'])
+def tracks_get_track_info():
+    id = request.args.get("id",None)
+    if not id:
+        return redirect(url_for('impl.error', msg="Invalid id"))
+
+    trk = current_app.file_manager.tracks[id]
+    center_lat, center_lon, center_alt = trk.track_center()
+    obj = { 
+        'id': id,
+        'start': { 
+            'long': trk.start_point().position_long, 
+            'lat': trk.start_point().position_lat,
+            'altitude': trk.start_point().altitude 
+        },
+        'end': { 
+            'long': trk.end_point().position_long, 
+            'lat': trk.end_point().position_lat,
+            'altitude': trk.end_point().altitude 
+        },
+        'center': { 
+            'long': center_lon, 
+            'lat': center_lat,
+            'altitude': center_alt 
+        },
+        'bounds':  trk.bounds(lonlat=True)
+    }
+
+    return jsonify(obj) 
+    # default stuff to test things here.
