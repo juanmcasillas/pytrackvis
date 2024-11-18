@@ -21,3 +21,11 @@ A simple Python GPX and FIT track file format visualization app on 2D / 3D Map u
 
 * `timestamp`. Timestamps in FIT messages are almost always given as the number of seconds since the Garmin Epoch `1989–12–31T00:00:00Z`
      
+
+## Lets use Maplibre-gl-JS
+
+https://documentation.maptiler.com/hc/en-us/articles/5224821308177-How-to-build-a-3D-map-with-MapLibre-v2-GL-JS
+
+## run the webapp
+
+ C:\Python312\Scripts\flask.exe  --app webapp run --host=0.0.0.0 --debug

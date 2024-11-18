@@ -1,0 +1,16 @@
+{
+    "verbose": true,
+    "api_key_file": "conf/tokens.ini",
+    "logs": {
+        "error": "logs/error.log",
+        "app": "logs/app.log"
+    },
+    "files": [
+        "data/fit/garmin-edge-1000-bigone.fit",
+        "data/fit/garmin-edge-1000-bike.fit",
+        "data/fit/garmin-fenix-3-run.fit",
+        "data/gpx/navas-colmenar-fresnedillas-zarzalejo-robledo-navas.gpx",
+        "data/gpx/picadas-pelayos-san-martin-y-vuelta.gpx"
+    ]
+
+}

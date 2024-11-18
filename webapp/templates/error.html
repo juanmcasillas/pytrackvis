@@ -1,0 +1,33 @@
+{% from "bootstrap5/utils.html" import render_messages %}
+
+{%- extends "base.html" %}
+
+
+{% block content %}
+<div class="container-fuid">
+    <div class="row">
+        <div class="col-md-12">
+            {{ render_messages() }}
+        </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <div class="bg-light mt-2 p-2">
+            <h1 class="display-2">PyTrack Visualizer</h1>
+        </div>
+      </div>
+
+      <div class="col-md-12 auto m-2 p-2">
+        {{ msg }}
+        <br/>
+        <br/>
+        <h1 class="display-6"><a href="javascript:history.back()">Go Back</a></h1>
+      </div>
+   </div>
+</div>
+{%- endblock %}
+
+
+{% block scripts %}
+  {{super()}}
+{% endblock %}

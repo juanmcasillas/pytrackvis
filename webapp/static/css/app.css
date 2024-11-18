@@ -1,0 +1,12 @@
+.jumbotron {
+  margin-top: 1em;  // add a little space
+}
+
+body { 
+    margin: 0; 
+    padding: 0; 
+}
+
+html, body, #map { 
+    height: 100%; 
+}

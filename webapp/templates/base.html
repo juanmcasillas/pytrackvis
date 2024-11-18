@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        {% block head %}
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta property="og:description" content="3D test for MapLibre" />
+
+        {% block styles %}
+            <!-- Bootstrap CSS -->
+          
+            {{ bootstrap.load_css() }}
+
+            <!--
+            <link rel="stylesheet" type="text/css" 
+            href="{{ url_for('static', filename='css/maplibre-gl.css') }}">
+            -->
+
+            <link rel='stylesheet' href='https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css' />
+       
+            <link rel="stylesheet" type="text/css" 
+                href="{{ url_for('static', filename='css/datatables.min.css') }}">
+    
+            <link rel="stylesheet"  type="text/css" 
+                href="{{url_for('static', filename='css/fontawesome.min.css')}}">
+
+            <link rel="stylesheet"  type="text/css" 
+                href="{{url_for('static', filename='css/brands.min.css')}}">
+                
+            <link rel="stylesheet"  type="text/css" 
+                href="{{url_for('static', filename='css/solid.min.css')}}">
+
+            <link rel="stylesheet"  type="text/css" 
+                href="{{url_for('static', filename='css/sweetalert2.min.css')}}">
+
+                <link rel="stylesheet" type="text/css"
+                href="{{url_for('static', filename='css/app.css')}}">
+
+        {% endblock %}
+
+        {{ bootstrap.load_js() }}
+        <!-- Optional JavaScript -->
+
+        <!--
+        <script type="text/javascript" charset="utf8" 
+            src="{{ url_for('static', filename='js/maplibre-gl.js') }}"></script>
+
+        <script type="text/javascript" charset="utf8" 
+            src="{{ url_for('static', filename='js/maplibre-gl-measures.js') }}"></script>
+        -->
+            
+        <script src='https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js'></script>
+        <script src="https://unpkg.com/maplibre-gl-measures@latest/dist/maplibre-gl-measures.js"></script>
+        
+        <script type="text/javascript" charset="utf8" 
+            src="{{ url_for('static', filename='js/jquery-3.7.1.min.js') }}"></script>
+
+        <script type="text/javascript" charset="utf8" 
+            src="{{ url_for('static', filename='js/datatables.min.js') }}"></script>
+
+        <script type="text/javascript" charset="utf8" 
+            src="{{ url_for('static', filename='js/socket.io.min.js') }}"></script>
+
+        <script type="text/javascript" charset="utf8" 
+            src="{{ url_for('static', filename='js/sweetalert2.all.min.js') }}"></script>
+
+        <title>{% block title %}{% endblock %}</title>
+
+        {% endblock %}
+    </head>
+    <body>
+        <!-- Your page content -->
+        <nav>
+            {% include 'nav.html' %}
+        </nav>
+        
+        {% block content %}{% endblock %}
+
+        {% block scripts %}
+        {% endblock %}
+    </body>
+</html>

@@ -29,7 +29,7 @@ import configparser
 import random
 
 from track import Track, TrackPointFit, TrackPointGPX
-
+from appenv import AppEnv
 
 
 
@@ -38,9 +38,11 @@ class FileManager:
     GPX_FILE = ".gpx"
     FILE_EXT = [ FIT_FILE, GPX_FILE ]
 
-    def __init__(self, fnames, verbose=0):
+    def __init__(self, fnames):
         self.file_names = fnames
-        self.verbose = verbose
+        self.verbose = AppEnv.config().verbose
+        self.logger = None
+        
         self.FILE_LOADER =  { 
             self.FIT_FILE: self._fit_loader,
             self.GPX_FILE: self._gpx_loader
@@ -59,13 +61,14 @@ class FileManager:
         return False
 
     def load_tokens(self):
-        config = configparser.ConfigParser()
-        config.read('../data/tokens.ini')
-
-        if not 'MAPTILER_KEY' in config["TOKENS"]:
+        
+        tokens = configparser.ConfigParser()
+        tokens.read(AppEnv.config().api_key_file)
+        print(dir(tokens), AppEnv.config().api_key_file)
+        if not 'TOKENS' in tokens.keys() or not 'MAPTILER_KEY' in tokens["TOKENS"]:
             print("can't get maptiler token")
             sys.exit(0)
-        os.environ["MAPTILER_KEY"] = config["TOKENS"]["MAPTILER_KEY"]
+        os.environ["MAPTILER_KEY"] = tokens["TOKENS"]["MAPTILER_KEY"]
 
     def _fit_loader(self, fname):
 

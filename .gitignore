@@ -4,6 +4,7 @@ data/fit/*
 data/gpx/*
 data/tokens.ini
 dev/*.html
+conf/tokens.ini
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -1,0 +1,26 @@
+{% from 'bootstrap5/nav.html' import render_nav_item %}
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/"><i class="fa-solid fa-house"></i> Home</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        
+        <ul class="navbar-nav">
+            
+            <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fa-solid fa-rectangle-list"></i> Tracks
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+              <li><a class="dropdown-item" href="/inventory?mode=dhcp"><i class="fa-solid fa-network-wired"></i>Load</a></li>
+              <!--<li><hr class="dropdown-divider"></li>-->
+              <!--<li><a target="_blank" class="dropdown-item" href="/xx"><i class="fa-solid fa-file-waveform"></i> xxx</a></li>-->
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
