@@ -12,8 +12,9 @@
 # //
 # /////////////////////////////////////////////////////////////////////////////
 
-from filemanager import *
-from appenv import *
+from pytrackvis.filemanager_map import *
+from pytrackvis.appenv import *
+import argparse
 import os.path 
 import json 
 
@@ -28,7 +29,8 @@ if __name__ == "__main__":
     AppEnv.config(args.config_file)
     AppEnv.config_set("verbose",args.verbose)
 
-    fm = FileManager(args.files)
+
+    fm = FileManagerWithMaps(args.files)
     fm.load()
     # print(stats.dataframe().transpose().to_html(
     #     justify='center', header=False, index=True, index_names=False, 
@@ -52,6 +54,12 @@ if __name__ == "__main__":
     
     fm.load_tokens()
     m3dml = fm.create_map_3d_maplibre()
+    
+    track_id = list(fm.tracks.keys())[0]
+    track = fm.tracks[track_id]
+    track.stats().PrintStats()
+    sys.exit(0)
+    
     m3dml.to_html("index3DML.html", 
                   overwrite=True, 
                   title="Test MapLibre",

@@ -1,5 +1,0 @@
-{
-  "dependencies": {
-    "@watergis/mapbox-gl-elevation": "^1.0.5"
-  }
-}

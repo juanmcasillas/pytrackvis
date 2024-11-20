@@ -14,17 +14,22 @@
 # /////////////////////////////////////////////////////////////////////////////
 
 
-from filemanager import FileManager
+
 
 import folium
 import folium.plugins
 import pydeck
 import leafmap.maplibregl as leafmap
 from maplibre.plugins import MapboxDrawControls, MapboxDrawOptions
+import configparser
+import os
+import sys
+import configparser
+import random
 
-
-from track import Track, TrackPointFit, TrackPointGPX
-from appenv import AppEnv
+from .filemanager import FileManager
+from .track import Track, TrackPointFit, TrackPointGPX
+from .appenv import AppEnv
 
 
 
@@ -34,12 +39,11 @@ class FileManagerWithMaps(FileManager):
     FILE_EXT = [ FIT_FILE, GPX_FILE ]
 
     def __init__(self, fnames):
-        super(FileManager, self).__init__(fnames)
+        super().__init__(fnames)
 
     def load_tokens(self):
         tokens = configparser.ConfigParser()
         tokens.read(AppEnv.config().api_key_file)
-        print(dir(tokens), AppEnv.config().api_key_file)
         if not 'TOKENS' in tokens.keys() or not 'MAPTILER_KEY' in tokens["TOKENS"]:
             print("can't get maptiler token")
             sys.exit(0)
@@ -263,11 +267,11 @@ class FileManagerWithMaps(FileManager):
 
         COLORS = ["#ffff33", "#33ffff", "#ff33ff", "#DDDD44" ,"#44DDDD", "#DD44DD" ]
 
-        for fname in self.file_names:
+        for track_id in self.tracks.keys():
             
-            track = self.tracks[fname]
+            track = self.tracks[track_id]
             random_color = random.choice(COLORS)
-            add_line(m, track, line_color=random_color, id=fname)
+            add_line(m, track, line_color=random_color, id=track_id)
             m.add_marker(lng_lat = track.start_point().pos(), popup={},  options= { "color": "#00AA00"} )
             m.add_marker(lng_lat = track.end_point().pos(), popup={}, options= { "color": "#FF0000"})
         

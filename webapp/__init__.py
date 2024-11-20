@@ -12,8 +12,8 @@ from .frontend import register_frontend
 
 import sys
 sys.path.append('..')
-from appenv import AppEnv
-from filemanager import FileManager
+from pytrackvis.appenv import AppEnv
+from pytrackvis.filemanager import FileManager
 
 def create_app(configfile=None):
     # We are using the "Application Factory"-pattern here, which is described

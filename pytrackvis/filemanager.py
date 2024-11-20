@@ -31,8 +31,9 @@ import uuid
 #import leafmap.maplibregl as leafmap
 #from maplibre.plugins import MapboxDrawControls, MapboxDrawOptions
 
-from track import Track, TrackPointFit, TrackPointGPX, C
-from appenv import AppEnv
+from .helpers import C
+from .track import Track, TrackPointFit, TrackPointGPX
+from .appenv import AppEnv
 
 
 class FileManager:
