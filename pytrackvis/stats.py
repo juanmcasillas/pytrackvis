@@ -23,6 +23,7 @@ from .helpers import C, guess_clockwise, distancePoints
 from .helpers import distancePoints3D, next_odd_floor
 from .helpers import savitzky_golay, gradeslope, time_str
 from .helpers import is_nan, get_fval
+from .optimizer import GPXOptimizer
 import numpy as np 
 
 class Stats:
@@ -276,9 +277,17 @@ class Stats:
                         data,
                         distance=100.0, 
                         limits={ 'low': -0.5, 'high': 0.5 }, 
-                        hint=None):
+                        hint=None,
+                        optimize_points=True,
+                        filter_points=True):
+
 
         gpx_points = gpx.tracks[0].segments[0].points
+
+        if optimize_points:
+            optmizer = GPXOptimizer()  
+            gpx_points = optmizer.Optimize(gpx_points)
+            optmizer.Print_stats()
 
         self.distance_gap = distance
         self.number_of_points = 0.0
@@ -429,8 +438,7 @@ class Stats:
             
             i += 1
 
-        FILTER=False
-        if FILTER:
+        if filter_points:
             if len(ys) < 135:
                 sg_index = next_odd_floor(len(ys))
                 print("[W] Using %d as savitzky_golay index" % sg_index)

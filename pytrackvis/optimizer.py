@@ -1,5 +1,8 @@
-from .gpxtoolbox import *
+
 import sys
+import gpxpy
+import math 
+from .helpers import bearing
 
 
 class GPXOptimizer:
@@ -65,7 +68,7 @@ class GPXOptimizer:
                 q = points[i-1]
                 
                 p.time_d      = p.time - q.time
-                p.distance_d  = geo.length_2d([p, q]) #distance_2d #gpxpy.geo.distancePoints3D
+                p.distance_d  = gpxpy.geo.length_2d([p, q]) #distance_2d #gpxpy.geo.distancePoints3D
                 p.elevation_d = p.elevation - q.elevation
                 p.speed       = 0.0
                 if p.distance_d > 0.0 and p.time_d.total_seconds() > 0:
@@ -105,13 +108,13 @@ class GPXOptimizer:
 
             while j < len(points)-1:
 
-                distance = geo.length_2d([ p0, p1] )
-                distance2 = geo.length_2d([ p1, p2] )
+                distance = gpxpy.geo.length_2d([ p0, p1] )
+                distance2 = gpxpy.geo.length_2d([ p1, p2] )
 
 
 
-                alpha = geo.bearing(p0, p1)
-                beta = geo.bearing(p0, p2)
+                alpha = bearing(p0, p1)
+                beta = bearing(p0, p2)
 
                 delta = math.fabs(beta-alpha)
 
@@ -161,9 +164,9 @@ class GPXOptimizer:
             p1 = points[i+1]    #next
             p2 = points[i+2]    #far next
 
-            a =  geo.length_2d([ p1, p0] )
-            b =  geo.length_2d([ p2, p1] )
-            c =  geo.length_2d([ p2, p0] )
+            a =  gpxpy.geo.length_2d([ p1, p0] )
+            b =  gpxpy.geo.length_2d([ p2, p1] )
+            c =  gpxpy.geo.length_2d([ p2, p0] )
 
             s = (a + b + c) / 2.0
 
@@ -176,8 +179,8 @@ class GPXOptimizer:
             if s*sa*sb*sc >= 0.0 and c != 0.0:
                 distance = (2.0 / c) * math.sqrt(s*sa*sb*sc)
 
-            alpha = geo.bearing(p0, p1)
-            beta = geo.bearing(p0, p2)
+            alpha = bearing(p0, p1)
+            beta = bearing(p0, p2)
             delta = math.fabs(beta-alpha)
 
 
