@@ -158,7 +158,6 @@ class FileManager:
                         point = TrackPointGPX(**args)
                         track_points.add_point(point)
 
-        
         return track_points
 
     def load(self):
@@ -167,8 +166,8 @@ class FileManager:
                 raise ValueError("file %s has not valid type" % i)
             loader = self.FILE_LOADER[self.file_types[i]]
             track =  loader(i)
+            track.set_internal_data()
             self.tracks[track.id] = track
-            self.tracks[track.id].process()
         return self.tracks
 
     def stats(self,f):

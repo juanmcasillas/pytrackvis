@@ -22,7 +22,7 @@ from .slopes import SlopeManager
 from .helpers import C, guess_clockwise, distancePoints
 from .helpers import distancePoints3D, next_odd_floor
 from .helpers import savitzky_golay, gradeslope, time_str
-from .helpers import is_nan, get_fval
+from .helpers import is_nan, get_fval, max_min_avg_from_list
 from .optimizer import GPXOptimizer
 import numpy as np 
 
@@ -30,145 +30,9 @@ class Stats:
     def __init__(self, track):
         
         self.track = track
-        
-        gpx = gpxpy.gpx.GPX()
-        gpx.name = "stats"
-        gpx.description = "stats gpx file"
-        gpx_track = gpxpy.gpx.GPXTrack()
-        gpx_segment = gpxpy.gpx.GPXTrackSegment()
-        gpx_track.segments.append(gpx_segment)
-        gpx.tracks.append(gpx_track)
-         
-        # Create points:
-        for p in self.track.points:
-
-            p_gpx = gpxpy.gpx.GPXTrackPoint(
-                        latitude=p.position_lat,
-                        longitude=p.position_long,
-                        elevation=p.altitude,
-                        time=datetime.datetime.fromisoformat(p.timestamp))
-            
-            #p_gpx.extensions.append(('heart_rate', p.heart_rate))
-            #p_gpx.extensions.append(('power', p.power))
-            #p_gpx.extensions.append(('cadence', p.cadence))
-            #p_gpx.extensions.append(('temperature', p.temperature))
-            gpx_segment.points.append(p_gpx)
-
-        # vainilla stats
-        self._calculate_stats(gpx, self.track.data)
+          
+        self.calculate_stats()
         self.pprint()
-        print("------------------")
-        self.calculate_stats(gpx, self.track.data)
-        self.pprint()
-
-    def _calculate_stats(self, gpx, data):
-        # stats
-        self.start_time, self.end_time = gpx.get_time_bounds()
-        #b = gpx.get_bounds() use the dataFrame method if needed
-        self.number_of_points = gpx.get_track_points_no()
-        
-        self.moving_time, self.stopped_time, self.moving_distance, \
-            self.stopped_distance, self.max_speed_ms = gpx.get_moving_data()
-        self.max_speed_kmh = self.max_speed_ms * 60. ** 2 / 1000.
-
-        
-
-        self.length_2d = gpx.length_2d()
-        self.length_3d = gpx.length_3d()
-        self.duration = gpx.get_duration()
-        self.uphill_climb, self.downhill_climb =gpx.get_uphill_downhill()
-        self.minimum_elevation, self.maximum_elevation =gpx.get_elevation_extremes()
-        ##gpx.smooth()
-        self.avg_speed_ms = self.length_3d / self.duration
-        self.avg_speed_kmh = self.avg_speed_ms * 60. ** 2 / 1000.
-
-        def is_nan(x):
-            return (x != x)
-        
-        def get_fval(x, v=0.0):
-            return x if not is_nan(x) else v
-
-        # what about extensions ?
-        self.max_heart_rate    = get_fval(data['heart_rate'].max())
-        self.min_heart_rate    = get_fval(data['heart_rate'].min())
-        self.avg_heart_rate    = get_fval(data['heart_rate'].mean())
-        
-        self.max_power    =  get_fval(data['power'].max())
-        self.min_power    =  get_fval(data['power'].min())
-        self.avg_power    =  get_fval(data['power'].mean())
-        
-        self.max_cadence    = get_fval(data['cadence'].max())
-        self.min_cadence    = get_fval(data['cadence'].min())
-        self.avg_cadence    = get_fval(data['cadence'].mean())
-        
-        self.max_temperature    = get_fval(data['temperature'].max())
-        self.min_temperature    = get_fval(data['temperature'].min())
-        self.avg_temperature    = get_fval(data['temperature'].mean())        
-
-    def dataframe(self):
-        #columns=["A", "B"], data=[[5,np.nan]]),
-        columns = [ 
-            "number_of_points",
-            "start_time",
-            "end_time",
-            "duration",
-            "moving_time",
-            "stopped_time",
-            "max_speed",
-            "avg_speed",
-            "length_2d",
-            "length_3d",
-            "moving_distance",
-            "stopped_distance",
-            "uphill_climb",
-            "downhill_climb",
-            "minimum_elevation",
-            "maximum_elevation",
-            "max heart_rate",
-            "min heart_rate",
-            "avg heart_rate",
-            "max power",
-            "min power",
-            "avg power",
-            "max cadence",
-            "min cadence",
-            "avg cadence",
-            "max temperature",
-            "min temperature",
-            "avg temperature",
-        ]
-        data = [[
-            self.number_of_points,
-            self.start_time,
-            self.end_time,
-            self.duration,
-            self.moving_time,
-            self.stopped_time,
-            self.max_speed_kmh,
-            self.avg_speed_kmh,
-            self.length_2d,
-            self.length_3d,
-            self.moving_distance,
-            self.stopped_distance,
-            self.uphill_climb,
-            self.downhill_climb,
-            self.minimum_elevation,
-            self.maximum_elevation,
-            self.max_heart_rate,
-            self.min_heart_rate,
-            self.avg_heart_rate,
-            self.max_power,
-            self.min_power,
-            self.avg_power,
-            self.max_cadence,
-            self.min_cadence,
-            self.avg_cadence,
-            self.max_temperature,
-            self.min_temperature,
-            self.avg_temperature
-        ]]
-        df = pd.DataFrame(columns = columns, data = data )
-        return df 
     
     def pprint(self):
         print("Points:\t{:>38}".format(self.number_of_points))
@@ -273,16 +137,15 @@ class Stats:
     
     # "new" function to calculate a ton of new stats
     def calculate_stats(self, 
-                        gpx, 
-                        data,
                         distance=100.0, 
                         limits={ 'low': -0.5, 'high': 0.5 }, 
                         hint=None,
                         optimize_points=True,
                         filter_points=True):
 
-
-        gpx_points = gpx.tracks[0].segments[0].points
+        gpx_points = self.track._gpx.tracks[0].segments[0].points
+       
+        # min_latitude, max_latitude, min_longitude, max_longitude
 
         if optimize_points:
             optmizer = GPXOptimizer()  
@@ -359,10 +222,10 @@ class Stats:
         self.errors = None
 
 
-        if gpx.get_points_no() == 0:
+        if self.track._gpx.get_points_no() == 0:
             raise ValueError("[W] No gpx_points to work with (len=0). Returning empty stats")
 
-        center = gpx.tracks[0].get_center()
+        center = self.track._gpx.tracks[0].get_center()
         self.middle_point = C(
                         lat=center.latitude,
                         long=center.longitude,
@@ -381,6 +244,8 @@ class Stats:
                         elev=gpx_points[-1].elevation
                     )
         
+
+
         self.is_clockwise = guess_clockwise(gpx_points, center)
         self.number_of_points = len(gpx_points)
 
@@ -541,8 +406,8 @@ class Stats:
             self.duration += time_delta
             self.length_2d += distance_delta
             
-            if values[i] > self.maximum_elevation:  self.maximum_elevation = values[i]
-            if values[i] < self.minimum_elevation:  self.minimum_elevation = values[i]
+            #if values[i] > self.maximum_elevation:  self.maximum_elevation = values[i]
+            #if values[i] < self.minimum_elevation:  self.minimum_elevation = values[i]
             
         self.level_slope.elevation = math.fabs(self.level_slope.elevation)
         self.down_slope.elevation = math.fabs(self.down_slope.elevation)
@@ -669,32 +534,39 @@ class Stats:
 
         ## geo stats
 
-        self.start_time, self.end_time = gpx.get_time_bounds()
+        self.start_time, self.end_time = self.track._gpx.get_time_bounds()
         
         self.moving_time, self.stopped_time, self.moving_distance, \
-            self.stopped_distance, self.max_speed_ms = gpx.get_moving_data()
+            self.stopped_distance, self.max_speed_ms = self.track._gpx.get_moving_data()
         self.max_speed_kmh = self.max_speed_ms * 60. ** 2 / 1000.
 
-        self.length_3d = gpx.length_3d()
+        self.length_3d = self.track._gpx.length_3d()
         self.avg_speed_ms = self.length_3d / self.duration
         self.avg_speed_kmh = self.avg_speed_ms * 60. ** 2 / 1000.        
 
         # what about extensions ?
-        self.max_heart_rate    = get_fval(data['heart_rate'].max())
-        self.min_heart_rate    = get_fval(data['heart_rate'].min())
-        self.avg_heart_rate    = get_fval(data['heart_rate'].mean())
-        
-        self.max_power    =  get_fval(data['power'].max())
-        self.min_power    =  get_fval(data['power'].min())
-        self.avg_power    =  get_fval(data['power'].mean())
-        
-        self.max_cadence    = get_fval(data['cadence'].max())
-        self.min_cadence    = get_fval(data['cadence'].min())
-        self.avg_cadence    = get_fval(data['cadence'].mean())
-        
-        self.max_temperature    = get_fval(data['temperature'].max())
-        self.min_temperature    = get_fval(data['temperature'].min())
-        self.avg_temperature    = get_fval(data['temperature'].mean())    
+        # use the self._gpx_extensions arrays to manage the max, min and so.
+
+        self.max_heart_rate,self.min_heart_rate, self.avg_heart_rate  = \
+            max_min_avg_from_list(self.track._gpx_extensions['heart_rate'])
+      
+        self.max_power,self.min_power, self.avg_power  = \
+            max_min_avg_from_list(self.track._gpx_extensions['power'])
+                                  
+        self.max_cadence,self.min_cadence, self.avg_cadence  = \
+            max_min_avg_from_list(self.track._gpx_extensions['cadence'])
+                                          
+        self.max_temperature,self.min_temperature, self.avg_temperature  = \
+            max_min_avg_from_list(self.track._gpx_extensions['temperature'])
+
+        min_lat, max_lat, min_lon, max_lon = self.track._gpx.tracks[0].segments[0].get_bounds()
+    
+        self.bounds= C(min_latitude=min_lat,
+                    max_latitude=max_lat,
+                    min_longitude=min_lon,
+                    max_longitude=max_lon
+                    )
+
 
 
     def PrintStats(self):

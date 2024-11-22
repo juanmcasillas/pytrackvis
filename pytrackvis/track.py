@@ -12,13 +12,12 @@
 # /////////////////////////////////////////////////////////////////////////////
 
 import re
-import pandas as pd
 import gpxpy
 import uuid
-import math
+import datetime 
 
 from .helpers import bearing, distancePoints
-from .stats import Stats 
+from .stats import Stats, get_fval
 
 
 
@@ -313,8 +312,8 @@ class Track:
     def __init__(self, name="Track", id=None):
         self.name = name
         self.points = []
-        self.data = None
         self.id = id if id is not None else str(uuid.uuid4())
+        self._gpx = None
 
     def clear(self): 
         self.points = []
@@ -322,7 +321,7 @@ class Track:
     def add_point(self, point):
         self.points.append(point)
 
-    def filter(self):
+    def clear_empty_points(self):
         "remove invalid points (no lat, lon or time)"
         l = []
         c = 0
@@ -335,6 +334,43 @@ class Track:
                 c += 1
         self.points = l
         return c     
+
+    def set_internal_data(self):
+        #prepare a gpxpy object to build all the required things, bounds, means, etc
+        self._gpx = gpxpy.gpx.GPX()
+        self._gpx.name = "internal gpx data"
+        self._gpx.description = "internal  gpx file"
+        gpx_track = gpxpy.gpx.GPXTrack()
+        gpx_segment = gpxpy.gpx.GPXTrackSegment()
+        gpx_track.segments.append(gpx_segment)
+        self._gpx.tracks.append(gpx_track)
+         
+        self._gpx_extensions = {
+            "heart_rate":  [],
+            "power":       [],
+            "cadence":     [],
+            "temperature": []
+        }
+
+        # Create points:
+        for p in self.points:
+
+            if p.position_lat is not None and \
+               p.position_long is not None and \
+               p.timestamp is not None:
+
+                p_gpx = gpxpy.gpx.GPXTrackPoint(
+                            latitude=p.position_lat,
+                            longitude=p.position_long,
+                            elevation=p.altitude,
+                            time=datetime.datetime.fromisoformat(p.timestamp))
+
+                self._gpx_extensions['heart_rate'].append(get_fval(p.heart_rate))
+                self._gpx_extensions['power'].append(get_fval(p.power))
+                self._gpx_extensions['cadence'].append(get_fval(p.cadence))
+                self._gpx_extensions['temperature'].append(get_fval(p.temperature))
+
+                gpx_segment.points.append(p_gpx)
 
     def pprint(self):
         print("Number of points: %d" % len(self.points))
@@ -382,16 +418,8 @@ class Track:
             col["data"]["features"].append(p.as_geojson_point_feature())
         return col
 
-    def process(self):
-        "filter the track, calculate the pandas dataframe"
-        self.filter()
-        self.dataframe()
-
-    def dataframe(self):
-        self.data = pd.DataFrame(self.as_dict())
-        return (self.data)
-
     def track_center(self):
+        ## FIX_ME WITH GPXPY.
         lat = self.data['position_lat'].mean()
         lon = self.data['position_long'].mean()
         alt = self.data['altitude'].mean()
@@ -406,17 +434,8 @@ class Track:
     def middle_point(self):
         return(self.points[int(len(self.points)/2)])
 
-
-
-
     def bounds(self, lonlat=False):
-        
-        min_lat = self.data['position_lat'].min()
-        min_lon = self.data['position_long'].min()
-
-        max_lat = self.data['position_lat'].max()
-        max_lon = self.data['position_long'].max()
-
+        min_lat, max_lat, min_lon, max_lon = self._gpx.tracks[0].segments[0].get_bounds()
         if not lonlat:
             return [[min_lat, min_lon], [max_lat, max_lon]]
     
@@ -424,7 +443,6 @@ class Track:
 
     def stats(self):
         # calculate some things about gpx info using gpxpy module.
-        
         s = Stats(self)
         return s
 

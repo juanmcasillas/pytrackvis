@@ -20,11 +20,17 @@ class C:
             self.__setattr__(i, kargs[i])
 
 
+def max_min_avg_from_list(l):
+    max_value = max(l)
+    min_value = min(l)
+    avg_value = 0 if len(l) == 0 else float(sum(l))/len(l)
+    return (max_value, min_value, avg_value)
+
 def is_nan(x):
-    return (x != x)
+    return (x != x) or x is None
 
 def get_fval(x, v=0.0):
-    return x if not is_nan(x) else v
+    return  x if not is_nan(x) else v
 
 def time_str(seconds):
         m, s = divmod(seconds, 60)
