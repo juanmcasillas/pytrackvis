@@ -23,7 +23,6 @@ from .helpers import C, guess_clockwise, distancePoints
 from .helpers import distancePoints3D, next_odd_floor
 from .helpers import savitzky_golay, gradeslope, time_str
 from .helpers import is_nan, get_fval, max_min_avg_from_list
-from .optimizer import GPXOptimizer
 import numpy as np 
 
 class Stats:
@@ -140,17 +139,12 @@ class Stats:
                         distance=100.0, 
                         limits={ 'low': -0.5, 'high': 0.5 }, 
                         hint=None,
-                        optimize_points=True,
                         filter_points=True):
 
         gpx_points = self.track._gpx.tracks[0].segments[0].points
        
         # min_latitude, max_latitude, min_longitude, max_longitude
 
-        if optimize_points:
-            optmizer = GPXOptimizer()  
-            gpx_points = optmizer.Optimize(gpx_points)
-            optmizer.Print_stats()
 
         self.distance_gap = distance
         self.number_of_points = 0.0
@@ -303,18 +297,23 @@ class Stats:
             
             i += 1
 
-        if filter_points:
-            if len(ys) < 135:
-                sg_index = next_odd_floor(len(ys))
-                print("[W] Using %d as savitzky_golay index" % sg_index)
-                ys = savitzky_golay(np.array(ys), sg_index, 5)    
-            else:    
-                ys = savitzky_golay(np.array(ys), 135, 5)    
-        
+        try:
+            if filter_points:
+                if len(ys) < 135:
+                    sg_index = next_odd_floor(len(ys))
+                    print("[W] Using %d as savitzky_golay index" % sg_index)
+                    ys = savitzky_golay(np.array(ys), sg_index, 5)    
+                else:    
+                    ys = savitzky_golay(np.array(ys), 135, 5)    
+        except TypeError as e:
+            #raise TypeError("window_size is too small for the polynomials order")
+            pass
+
         values = range(0, int(math.ceil(d)), int(distance))
         ret = np.interp( values, xs, ys)
         tret = np.interp( values, xs, ts)
-
+        
+        
         slope = 0.0
         distance_delta = 0.0
         elevation_delta = 0.0
@@ -465,6 +464,7 @@ class Stats:
                                                     
             self.duration_str = time_str(self.duration)
         
+        # m/s average of each part
         self.speed_avg =    (self.up_slope.speed * self.up_slope.p_distance/100.0)  +\
                             (self.level_slope.speed * self.level_slope.p_distance/100.0) +\
                             (self.down_slope.speed * self.down_slope.p_distance/100.0) 

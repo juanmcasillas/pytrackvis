@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
 
     fm = FileManagerWithMaps(args.files)
-    fm.load()
+    fm.load(optimize_points=True)
     # print(stats.dataframe().transpose().to_html(
     #     justify='center', header=False, index=True, index_names=False, 
     #     col_space=300, classes='table-condensed table-responsive table-success'
@@ -41,8 +41,9 @@ if __name__ == "__main__":
     #m.save("index.html")
     #m3d.to_html("index3D.html")
     if args.geojson:
-        for fname in fm.file_names:
-            track = fm.tracks[fname]
+        for id in fm.tracks.keys():
+            track = fm.tracks[id]
+            fname = track.fname
             gs = track.as_geojson_line()
             f,ex = os.path.splitext(os.path.basename(fname))
             tgt = "www/%s.gjson" % f

@@ -160,13 +160,13 @@ class FileManager:
 
         return track_points
 
-    def load(self):
+    def load(self, optimize_points=True):
         for i in self.file_names:
             if not self.file_types[i]:
                 raise ValueError("file %s has not valid type" % i)
             loader = self.FILE_LOADER[self.file_types[i]]
             track =  loader(i)
-            track.set_internal_data()
+            track.set_internal_data(i, optimize_points=optimize_points)
             self.tracks[track.id] = track
         return self.tracks
 

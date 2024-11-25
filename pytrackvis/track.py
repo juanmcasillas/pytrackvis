@@ -18,7 +18,7 @@ import datetime
 
 from .helpers import bearing, distancePoints
 from .stats import Stats, get_fval
-
+from .optimizer import GPXOptimizer
 
 
 class UnitConverter:
@@ -310,6 +310,7 @@ class TrackPointGPX(TrackPoint):
 
 class Track:
     def __init__(self, name="Track", id=None):
+        self.fname = "-"
         self.name = name
         self.points = []
         self.id = id if id is not None else str(uuid.uuid4())
@@ -335,8 +336,11 @@ class Track:
         self.points = l
         return c     
 
-    def set_internal_data(self):
+    def set_internal_data(self, fname, optimize_points=False):
         #prepare a gpxpy object to build all the required things, bounds, means, etc
+        self.fname = fname
+
+   
         self._gpx = gpxpy.gpx.GPX()
         self._gpx.name = "internal gpx data"
         self._gpx.description = "internal  gpx file"
@@ -371,6 +375,13 @@ class Track:
                 self._gpx_extensions['temperature'].append(get_fval(p.temperature))
 
                 gpx_segment.points.append(p_gpx)
+
+        if optimize_points:
+            optmizer = GPXOptimizer()  
+            gpx_points = optmizer.Optimize(self._gpx.tracks[0].segments[0].points)
+            self._gpx.tracks[0].segments[0].points = gpx_points
+            optmizer.Print_stats()
+    
 
     def pprint(self):
         print("Number of points: %d" % len(self.points))
@@ -420,10 +431,9 @@ class Track:
 
     def track_center(self):
         ## FIX_ME WITH GPXPY.
-        lat = self.data['position_lat'].mean()
-        lon = self.data['position_long'].mean()
-        alt = self.data['altitude'].mean()
-        return(lat, lon, alt)
+        l = self._gpx.tracks[0].get_center()
+        print(dir(l))
+        return(l.latitude, l.longitude, l.elevation)
     
     def start_point(self):
         return(self.points[0])
