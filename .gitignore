@@ -5,7 +5,8 @@ data/gpx/*
 data/tokens.ini
 dev/*.html
 conf/tokens.ini
-
+OSM_CACHE
+OSM_CACHE/**
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

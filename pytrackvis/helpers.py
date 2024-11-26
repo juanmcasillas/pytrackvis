@@ -13,11 +13,18 @@
 
 import gpxpy
 import math
-
+import os
 class C:
     def __init__(self, **kargs):
         for i in kargs:
             self.__setattr__(i, kargs[i])
+
+def set_proxy(proxy_url):
+    "proxy = 'http://<user>:<pass>@<proxy>:<port>'"
+    os.environ['http_proxy']  = proxy_url 
+    os.environ['HTTP_PROXY']  = proxy_url
+    os.environ['https_proxy'] = proxy_url
+    os.environ['HTTPS_PROXY'] = proxy_url    
 
 
 def max_min_avg_from_list(l):
