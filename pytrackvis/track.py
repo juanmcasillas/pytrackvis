@@ -322,7 +322,8 @@ class Track:
         self._gpx = None
         self._gpx_points = None
         self._stats = None
-        
+        self._optimizer = None
+
     def clear(self): 
         self.points = []
 
@@ -343,7 +344,7 @@ class Track:
         self.points = l
         return c     
 
-    def set_internal_data(self, fname, optimize_points=False):
+    def set_internal_data(self, fname, optimize_points=False, filter_points=False):
         #prepare a gpxpy object to build all the required things, bounds, means, etc
         #calculate the stats,
         #optimize the track,
@@ -389,18 +390,18 @@ class Track:
                 gpx_segment.points.append(p_gpx)
                 hash_array.append(module(p.as_vector()))
 
-        self.hash = hash(tuple(hash_array)))
+        self.hash = hash(tuple(hash_array))
         
         
         if optimize_points:
-            optmizer = GPXOptimizer()  
-            gpx_points = optmizer.Optimize(self._gpx.tracks[0].segments[0].points)
+            self._optimizer = GPXOptimizer()  
+            gpx_points = self._optimizer.Optimize(self._gpx.tracks[0].segments[0].points)
             self._gpx.tracks[0].segments[0].points = gpx_points
-            optmizer.Print_stats()
+             
     
         self._gpx_points = gpx_segment.points
         # precalc stats
-        self.stats()
+        self.stats(filter_points=filter_points)
     
     def pprint(self):
         print("Number of points: %d" % len(self.points))
@@ -471,11 +472,11 @@ class Track:
     
         return [[min_lon, min_lat], [max_lon, max_lat]]
 
-    def stats(self):
+    def stats(self, filter_points=False):
         # calculate some things about gpx info using gpxpy module.
         # cache the stats, due they are expensive.
         if self._stats is None:
-            self._stats = Stats(self)
+            self._stats = Stats(self, filter_points=filter_points)
 
         return self._stats
 

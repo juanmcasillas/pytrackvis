@@ -26,114 +26,14 @@ from .helpers import is_nan, get_fval, max_min_avg_from_list
 import numpy as np 
 
 class Stats:
-    def __init__(self, track):
+    def __init__(self, track, filter_points=False):
         
         self.track = track
-          
+        self.filter_points=filter_points
         self.calculate_stats()
-        self.pprint()
     
-    def pprint(self):
-        print("Points:\t{:>38}".format(self.number_of_points))
-        print("start_time:\t{:>30}".format(str(self.start_time)))
-        print("end_time:\t{:>30}".format(str(self.end_time)))
-        print("duration:\t{:>30}".format(str(datetime.timedelta(seconds=self.duration))))
-        print("moving_time:\t{:>30}".format(str(datetime.timedelta(seconds=self.moving_time))))
-        print("stopped_time:\t{:>30}".format(str(datetime.timedelta(seconds=self.stopped_time))))
-        
-        print("Max Speed:\t{:30.3f} km/h".format(self.max_speed_kmh))
-        print("Avg Speed:\t{:30.3f} km/h".format(self.avg_speed_kmh))
-        
-        print("length_2d:\t{:30.3f} m".format(self.length_2d))
-        print("length_3d:\t{:30.3f} m".format(self.length_3d))
-        print("moving_distance:\t{:22.3f} m".format(self.moving_distance))
-        print("stopped_distance:\t{:22.3f} m".format(self.stopped_distance))
 
-        print("uphill_climb:\t{:30.3f} m".format(self.uphill_climb))
-        print("downhill_climb:\t{:30.3f} m".format(self.downhill_climb))
-        print("minimum_elevation:\t{:22.3f} m".format(self.minimum_elevation))
-        print("maximum_elevation:\t{:22.3f} m".format(self.maximum_elevation))
 
-        # extra parameters:
-        print("max heart_rate:\t{:30.3f} bpm".format(self.max_heart_rate))
-        print("min heart_rate:\t{:30.3f} bpm".format(self.min_heart_rate))
-        print("avg heart_rate:\t{:30.3f} bpm".format(self.avg_heart_rate))
-
-        print("max power:\t{:30.3f} watt".format(self.max_power))
-        print("min power:\t{:30.3f} watt".format(self.min_power))
-        print("avg power:\t{:30.3f} watt".format(self.avg_power))
-
-        print("max cadence:\t{:30.3f} rpm".format(self.max_cadence))
-        print("min cadence:\t{:30.3f} rpm".format(self.min_cadence))
-        print("avg cadence:\t{:30.3f} rpm".format(self.avg_cadence))
-
-        print("max temperature:\t{:22.3f} ºC".format(self.max_temperature))
-        print("min temperature:\t{:22.3f} ºC".format(self.min_temperature))
-        print("avg temperature:\t{:22.3f} ºC".format(self.avg_temperature))
-
-    def to_html(self):
-        tT = """
-        <table border='1' class='dataframe table-condensed table-responsive table-success'>
-        <tbody>
-        __D
-        </tbody>
-        </table>
-        """
-        
-        tI = """
-            <tr>
-            <th align='left'>__N</th>
-            <td align='right'>__V</td>
-            </tr>
-        """
-
-        i = []
-        def _ai(tpl, data):
-            r = tpl
-            for k in data.keys():
-                name = k
-                value = data[k]
-                r = re.sub(f"{name}",f"{value}", r)
-            return r
-
-        i.append(_ai(tI, {'__N': 'Points','__V'      : self.number_of_points }))
-        i.append(_ai(tI, {'__N': 'Start Time','__V'  : self.start_time }))
-        i.append(_ai(tI, {'__N': 'End Time','__V'    : self.end_time }))
-        i.append(_ai(tI, {'__N': 'Duration','__V'    : str(datetime.timedelta(seconds=self.duration)) }))
-        i.append(_ai(tI, {'__N': 'Moving Time','__V' : str(datetime.timedelta(seconds=self.moving_time)) }))
-        i.append(_ai(tI, {'__N': 'Stopped Time','__V': str(datetime.timedelta(seconds=self.stopped_time)) }))
-        i.append(_ai(tI, {'__N': 'Max Speed','__V'   : "%.3f Km/h" % self.max_speed_kmh }))
-        i.append(_ai(tI, {'__N': 'Avg Speed','__V'   : "%.3f Km/h" %self.avg_speed_kmh }))
-        i.append(_ai(tI, {'__N': 'Length 2D','__V'   : "%.3f m" %self.length_2d }))
-        i.append(_ai(tI, {'__N': 'Length 3D','__V'   : "%.3f m" %self.length_3d }))
-        i.append(_ai(tI, {'__N': 'Distance (Moving)','__V' : "%.3f m" %self.moving_distance }))
-        i.append(_ai(tI, {'__N': 'Distance (Stopped)','__V': "%.3f m" %self.stopped_distance }))
-        
-        i.append(_ai(tI, {'__N': 'Climb (Uphill)', '__V' : "%.3f m" %self.uphill_climb }))
-        i.append(_ai(tI, {'__N': 'Climb (Downhill)','__V': "%.3f m" %self.downhill_climb }))
-        i.append(_ai(tI, {'__N': 'Min Elevation', '__V' : "%.3f m" %self.minimum_elevation }))
-        i.append(_ai(tI, {'__N': 'Max Elevation','__V': "%.3f m" %self.maximum_elevation }))
-
-        i.append(_ai(tI, {'__N': 'Max Heart Rate','__V' : "%d bpm" %self.max_heart_rate }))
-        i.append(_ai(tI, {'__N': 'Min Heart Rate', '__V': "%d bpm" %self.min_heart_rate }))
-        i.append(_ai(tI, {'__N': 'Avg Heart Rate','__V' : "%d bpm" %self.avg_heart_rate }))
-
-        i.append(_ai(tI, {'__N': 'Max Power','__V' : "%d watt" %self.max_power }))
-        i.append(_ai(tI, {'__N': 'Min Power', '__V': "%d watt" %self.min_power }))
-        i.append(_ai(tI, {'__N': 'Avg Power','__V' : "%d watt" %self.avg_power}))
-        
-        i.append(_ai(tI, {'__N': 'Max Cadence','__V' : "%d rpm" %self.max_cadence }))
-        i.append(_ai(tI, {'__N': 'Min Cadence', '__V': "%d rpm" %self.min_cadence }))
-        i.append(_ai(tI, {'__N': 'Avg Cadence','__V' : "%d rpm" %self.avg_cadence }))
-
-        i.append(_ai(tI, {'__N': 'Max Temperature','__V' : "%d &ordm;C" %self.max_temperature }))
-        i.append(_ai(tI, {'__N': 'Min Temperature', '__V': "%d &ordm;C" %self.min_temperature }))
-        i.append(_ai(tI, {'__N': 'Avg Temperature','__V' : "%d &ordm;C" %self.avg_temperature }))
-
-        tbl = _ai(tT, {'__D': os.linesep.join(i)})
-        return(tbl)
-
-    
     # "new" function to calculate a ton of new stats
     def calculate_stats(self, 
                         distance=100.0, 
@@ -301,7 +201,7 @@ class Stats:
             if filter_points:
                 if len(ys) < 135:
                     sg_index = next_odd_floor(len(ys))
-                    print("[W] Using %d as savitzky_golay index" % sg_index)
+                    #print("[W] Using %d as savitzky_golay index" % sg_index)
                     ys = savitzky_golay(np.array(ys), sg_index, 5)    
                 else:    
                     ys = savitzky_golay(np.array(ys), 135, 5)    
@@ -567,9 +467,44 @@ class Stats:
                     max_longitude=max_lon
                     )
 
+    def pprint(self):
+        print("Points:\t{:>38}".format(self.number_of_points))
+        print("start_time:\t{:>30}".format(str(self.start_time)))
+        print("end_time:\t{:>30}".format(str(self.end_time)))
+        print("duration:\t{:>30}".format(str(datetime.timedelta(seconds=self.duration))))
+        print("moving_time:\t{:>30}".format(str(datetime.timedelta(seconds=self.moving_time))))
+        print("stopped_time:\t{:>30}".format(str(datetime.timedelta(seconds=self.stopped_time))))
+        
+        print("Max Speed:\t{:30.3f} km/h".format(self.max_speed_kmh))
+        print("Avg Speed:\t{:30.3f} km/h".format(self.avg_speed_kmh))
+        
+        print("length_2d:\t{:30.3f} m".format(self.length_2d))
+        print("length_3d:\t{:30.3f} m".format(self.length_3d))
+        print("moving_distance:\t{:22.3f} m".format(self.moving_distance))
+        print("stopped_distance:\t{:22.3f} m".format(self.stopped_distance))
 
+        print("uphill_climb:\t{:30.3f} m".format(self.uphill_climb))
+        print("downhill_climb:\t{:30.3f} m".format(self.downhill_climb))
+        print("minimum_elevation:\t{:22.3f} m".format(self.minimum_elevation))
+        print("maximum_elevation:\t{:22.3f} m".format(self.maximum_elevation))
 
-    def PrintStats(self):
+        # extra parameters:
+        print("max heart_rate:\t{:30.3f} bpm".format(self.max_heart_rate))
+        print("min heart_rate:\t{:30.3f} bpm".format(self.min_heart_rate))
+        print("avg heart_rate:\t{:30.3f} bpm".format(self.avg_heart_rate))
+
+        print("max power:\t{:30.3f} watt".format(self.max_power))
+        print("min power:\t{:30.3f} watt".format(self.min_power))
+        print("avg power:\t{:30.3f} watt".format(self.avg_power))
+
+        print("max cadence:\t{:30.3f} rpm".format(self.max_cadence))
+        print("min cadence:\t{:30.3f} rpm".format(self.min_cadence))
+        print("avg cadence:\t{:30.3f} rpm".format(self.avg_cadence))
+
+        print("max temperature:\t{:22.3f} ºC".format(self.max_temperature))
+        print("min temperature:\t{:22.3f} ºC".format(self.min_temperature))
+        print("avg temperature:\t{:22.3f} ºC".format(self.avg_temperature))
+
         print("[*Distance GAP: %3.2f m (For Slopes)]" % self.distance_gap)
         print("[%12.2f] UP Avg: %8.2f D(%9.2f m)->%5.2f%% E(%8.2f m) S(%8.2f Km/h) T(%s)->%5.2f%%" % \
               (self.up_slope.score, 
@@ -625,4 +560,68 @@ class Stats:
         for i in self.errors.keys():
             s+= "%s: [%3.2f %%] " % (i, self.errors[i]['counter'])
         print("                  Errors: %s" % s)
-            
+
+
+    # deprecated code. to be removed soon
+    #   
+    # def to_html(self):
+    #     tT = """
+    #     <table border='1' class='dataframe table-condensed table-responsive table-success'>
+    #     <tbody>
+    #     __D
+    #     </tbody>
+    #     </table>
+    #     """
+        
+    #     tI = """
+    #         <tr>
+    #         <th align='left'>__N</th>
+    #         <td align='right'>__V</td>
+    #         </tr>
+    #     """
+
+    #     i = []
+    #     def _ai(tpl, data):
+    #         r = tpl
+    #         for k in data.keys():
+    #             name = k
+    #             value = data[k]
+    #             r = re.sub(f"{name}",f"{value}", r)
+    #         return r
+
+    #     i.append(_ai(tI, {'__N': 'Points','__V'      : self.number_of_points }))
+    #     i.append(_ai(tI, {'__N': 'Start Time','__V'  : self.start_time }))
+    #     i.append(_ai(tI, {'__N': 'End Time','__V'    : self.end_time }))
+    #     i.append(_ai(tI, {'__N': 'Duration','__V'    : str(datetime.timedelta(seconds=self.duration)) }))
+    #     i.append(_ai(tI, {'__N': 'Moving Time','__V' : str(datetime.timedelta(seconds=self.moving_time)) }))
+    #     i.append(_ai(tI, {'__N': 'Stopped Time','__V': str(datetime.timedelta(seconds=self.stopped_time)) }))
+    #     i.append(_ai(tI, {'__N': 'Max Speed','__V'   : "%.3f Km/h" % self.max_speed_kmh }))
+    #     i.append(_ai(tI, {'__N': 'Avg Speed','__V'   : "%.3f Km/h" %self.avg_speed_kmh }))
+    #     i.append(_ai(tI, {'__N': 'Length 2D','__V'   : "%.3f m" %self.length_2d }))
+    #     i.append(_ai(tI, {'__N': 'Length 3D','__V'   : "%.3f m" %self.length_3d }))
+    #     i.append(_ai(tI, {'__N': 'Distance (Moving)','__V' : "%.3f m" %self.moving_distance }))
+    #     i.append(_ai(tI, {'__N': 'Distance (Stopped)','__V': "%.3f m" %self.stopped_distance }))
+        
+    #     i.append(_ai(tI, {'__N': 'Climb (Uphill)', '__V' : "%.3f m" %self.uphill_climb }))
+    #     i.append(_ai(tI, {'__N': 'Climb (Downhill)','__V': "%.3f m" %self.downhill_climb }))
+    #     i.append(_ai(tI, {'__N': 'Min Elevation', '__V' : "%.3f m" %self.minimum_elevation }))
+    #     i.append(_ai(tI, {'__N': 'Max Elevation','__V': "%.3f m" %self.maximum_elevation }))
+
+    #     i.append(_ai(tI, {'__N': 'Max Heart Rate','__V' : "%d bpm" %self.max_heart_rate }))
+    #     i.append(_ai(tI, {'__N': 'Min Heart Rate', '__V': "%d bpm" %self.min_heart_rate }))
+    #     i.append(_ai(tI, {'__N': 'Avg Heart Rate','__V' : "%d bpm" %self.avg_heart_rate }))
+
+    #     i.append(_ai(tI, {'__N': 'Max Power','__V' : "%d watt" %self.max_power }))
+    #     i.append(_ai(tI, {'__N': 'Min Power', '__V': "%d watt" %self.min_power }))
+    #     i.append(_ai(tI, {'__N': 'Avg Power','__V' : "%d watt" %self.avg_power}))
+        
+    #     i.append(_ai(tI, {'__N': 'Max Cadence','__V' : "%d rpm" %self.max_cadence }))
+    #     i.append(_ai(tI, {'__N': 'Min Cadence', '__V': "%d rpm" %self.min_cadence }))
+    #     i.append(_ai(tI, {'__N': 'Avg Cadence','__V' : "%d rpm" %self.avg_cadence }))
+
+    #     i.append(_ai(tI, {'__N': 'Max Temperature','__V' : "%d &ordm;C" %self.max_temperature }))
+    #     i.append(_ai(tI, {'__N': 'Min Temperature', '__V': "%d &ordm;C" %self.min_temperature }))
+    #     i.append(_ai(tI, {'__N': 'Avg Temperature','__V' : "%d &ordm;C" %self.avg_temperature }))
+
+    #     tbl = _ai(tT, {'__D': os.linesep.join(i)})
+    #     return(tbl)

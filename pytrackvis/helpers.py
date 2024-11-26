@@ -14,10 +14,21 @@
 import gpxpy
 import math
 import os
+import glob
+
 class C:
     def __init__(self, **kargs):
         for i in kargs:
             self.__setattr__(i, kargs[i])
+
+
+def glob_filelist(files):
+    found_files = []
+    for fname in files:
+        for f in glob.glob(fname):
+            if f not in found_files:
+                found_files.append(f)
+    return found_files
 
 
 def manhattan_distance(a,b):

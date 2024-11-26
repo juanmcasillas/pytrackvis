@@ -1,3 +1,7 @@
+drop table if exists tracks;
+drop table if exists places;
+drop table if exists track_in_places;
+
 CREATE TABLE TRACKS (
     id                  INTEGER PRIMARY KEY AUTOINCREMENT,
     fname               TEXT DEFAULT "",
@@ -34,7 +38,7 @@ CREATE TABLE TRACKS (
     description         TEXT DEFAULT "",
     rating              INTEGER DEFAULT 0,
     is_circular         INTEGER DEFAULT 1,
-    quality             REAL DEFAULT 0.0
+    quality             REAL DEFAULT 0.0,
     is_clockwise        INTEGER DEFAULT 0,      -- 0 means clockwise route
     score               REAL DEFAULT 0,
     is_cloned           INTEGER DEFAULT 0,      -- track is done multiple times?
@@ -106,7 +110,7 @@ CREATE TABLE TRACKS (
     avg_cadence                     REAL DEFAULT 0,
     max_temperature                 INTEGER DEFAULT 0,
     min_temperature                 INTEGER DEFAULT 0,    
-    avg_temperature                 REAL DEFAULT 0,    
+    avg_temperature                 REAL DEFAULT 0
 );
 
 CREATE TABLE PLACES (

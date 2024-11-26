@@ -12,6 +12,7 @@ class GPXOptimizer:
         self.st_straight_points = 0
         self.st_final_points = 0
         self.st_stopped_points = 0
+        self.st_save_points_percent = 0
 
     def Print_stats(self):
         print("Optimizer Stats")
@@ -21,9 +22,18 @@ class GPXOptimizer:
         print("Straight Points:", self.st_straight_points)
         print("Final Points:", self.st_final_points)
         print("Stopped Points (d<1.0):", self.st_stopped_points)
-        if self.st_total_points != 0:
-            print("Save %3.2f %%" % float(100 - (self.st_final_points*100.0 /  self.st_total_points)))
+        print("Saved %3.2f %%" % self.st_save_points_percent)
 
+    def __str__(self):
+        s = "total: %d, near: %d, straight: %d, final: %d, stopped (d<1): %d, saved: %3.2f %%" % (
+            self.st_total_points,
+            self.st_near_points,
+            self.st_straight_points,
+            self.st_final_points,
+            self.st_stopped_points,
+            self.st_save_points_percent
+        )
+        return s
 
     def Optimize(self,points,keep_points=False):
 
@@ -44,6 +54,10 @@ class GPXOptimizer:
 
 
         self.st_final_points = len(p)
+        if self.st_total_points != 0:
+            self.st_save_points_percent = float(100 - (self.st_final_points*100.0 / 
+                                                        self.st_total_points))
+        
         return p
 
     def _optimize_stopped_points(self, points,keep_points=False):

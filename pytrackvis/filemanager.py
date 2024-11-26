@@ -56,6 +56,13 @@ class FileManager:
         for f in self.file_names:
             self.file_types[f] = self.guess_file_type(f)
         
+    def track(self):
+        "return the first track, or none"
+        list_keys = list(self.tracks.keys())
+        if len(list_keys) == 0:
+            return None
+        return self.tracks[list_keys[0]]
+
     def guess_file_type(self, fname=None):
         fname = fname if fname else self.file_name
         file_name, file_extension = os.path.splitext(fname)
@@ -160,7 +167,7 @@ class FileManager:
 
         return track_points
 
-    def load(self, optimize_points=True):
+    def load(self, optimize_points=True, filter_points=True):
         for i in self.file_names:
             if not self.file_types[i]:
                 raise ValueError("file %s has not valid type" % i)

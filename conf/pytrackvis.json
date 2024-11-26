@@ -1,12 +1,21 @@
 {
     "verbose": true,
+    "points": {
+        "optimize": true,
+        "filter": true
+    },
+    "database": {
+        "file": "db/trackdb.db",
+        "script": "db/trackdb.sql"
+    },
     "proxy": {
         "enabled": true,
         "url": "http://proxy.senado.es:8080"
     },
     "api_key_file": "conf/tokens.ini",
     "logs": {
-        "error": "logs/error.log",
+        "level": "INFO",
+        "format": "[%(asctime)s] %(levelname)s in %(module)s: %(message)s",
         "app": "logs/app.log"
     },
     "osm_cache": {

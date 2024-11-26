@@ -3,6 +3,7 @@
 data/fit/*
 data/gpx/*
 data/tokens.ini
+db/trackdb.db
 dev/*.html
 conf/tokens.ini
 OSM_CACHE
