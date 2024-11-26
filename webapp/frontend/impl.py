@@ -70,13 +70,13 @@ def tracks_get_track_info():
     obj = { 
         'id': id,
         'start': { 
-            'long': trk.start_point().position_long, 
-            'lat': trk.start_point().position_lat,
+            'long': trk.start_point().longitude, 
+            'lat': trk.start_point().latitude,
             'altitude': trk.start_point().altitude 
         },
         'end': { 
-            'long': trk.end_point().position_long, 
-            'lat': trk.end_point().position_lat,
+            'long': trk.end_point().longitude, 
+            'lat': trk.end_point().latitude,
             'altitude': trk.end_point().altitude 
         },
         'center': { 

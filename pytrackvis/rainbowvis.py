@@ -286,7 +286,8 @@ class ColourGradient:
         cPerUnit = (cEnd_Base10 - cStart_Base10)/numRange;
         c_Base10 = round(cPerUnit * (num -  self.minNum) + cStart_Base10);
         
-        return self.formatHex("%x" % math.fabs(c_Base10)) # 16
+
+        return self.formatHex("%x" % int(math.fabs(c_Base10))) # 16
     
 
     def formatHex(self,hexv): 

@@ -143,7 +143,7 @@ class FileManagerWithMaps(FileManager):
         gps_layer = pydeck.Layer(
            'ScatterplotLayer', # 'ColumnLayer',
            data=data,
-           get_position= ['position_long', 'position_lat', 'altitude'],
+           get_position= ['longitude', 'latitude', 'altitude'],
            #get_elevation = 10,
            radius=5,
            #elevation_scale=1,

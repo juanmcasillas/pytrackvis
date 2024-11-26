@@ -7,6 +7,8 @@ dev/*.html
 conf/tokens.ini
 OSM_CACHE
 OSM_CACHE/**
+*.png 
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

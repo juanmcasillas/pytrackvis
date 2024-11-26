@@ -16,7 +16,8 @@ import gpxpy
 import uuid
 import datetime 
 
-from .helpers import bearing, distancePoints
+
+from .helpers import bearing, distancePoints, module
 from .stats import Stats, get_fval
 from .optimizer import GPXOptimizer
 
@@ -88,8 +89,8 @@ class UnitConverter:
 class TrackPoint:
     def __init__(self,
                  timestamp     = None,
-                 position_lat  = None,
-                 position_long = None,
+                 latitude      = None,
+                 longitude     = None,
                  altitude      = None,
                  speed         = None,
                  power         = None,
@@ -103,8 +104,8 @@ class TrackPoint:
         """
         Units for the datatypes
         timestamp           2011-09-25 16:31:49+00:00
-        position_lat        521056079                   degrees
-        position_long       -947375686                  degrees
+        latitude           521056079                   degrees
+        longitude          -947375686                  degrees
         altitude            78.0                        m
         speed               0.0                         m/s
         power               None                        watts
@@ -115,8 +116,8 @@ class TrackPoint:
         """
 
         self.timestamp     = timestamp
-        self.position_lat  = position_lat
-        self.position_long = position_long
+        self.latitude      = latitude
+        self.longitude     = longitude
         self.altitude      = altitude
         self.speed         = speed
         self.power         = power
@@ -125,11 +126,14 @@ class TrackPoint:
         self.cadence       = cadence
         self.temperature   = temperature
 
+    def as_vector(self):
+        return [self.latitude, self.longitude, self.altitude]
+
     def as_dict(self):
         d = {}
         d['timestamp']     =self.timestamp
-        d['position_lat']  =self.position_lat
-        d['position_long'] =self.position_long
+        d['latitude']      =self.latitude
+        d['longitude']     =self.longitude
         d['altitude']      =self.altitude
         d['speed']         =self.speed
         d['power']         =self.power
@@ -161,8 +165,8 @@ class TrackPoint:
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                    "coordinates": [self.position_long, 
-                                    self.position_lat, 
+                    "coordinates": [self.latitude, 
+                                    self.longitude, 
                                     self.altitude]
                 },
                 "properties": {
@@ -178,12 +182,12 @@ class TrackPoint:
         return o
 
     def pos(self):
-        return (self.position_long, self.position_lat, self.altitude)
+        return (self.longitude, self.latitude, self.altitude)
 
     def pprint(self):
         print("{label:<20} {data} UTC".format(label="timestamp:",    data=self.timestamp))
-        print("{label:<20} {data} deg".format(label="position_lat:", data=self.position_lat))
-        print("{label:<20} {data} deg".format(label="position_long:",data=self.position_long))
+        print("{label:<20} {data} deg".format(label="latitude:",     data=self.latitude))
+        print("{label:<20} {data} deg".format(label="longitude:",    data=self.longitude))
         print("{label:<20} {data} m".format(label="altitude:",       data=self.altitude))
         print("{label:<20} {data} m/s".format(label="speed:",        data=self.speed))
         print("{label:<20} {data} w".format(label="power:",          data=self.power))
@@ -194,8 +198,8 @@ class TrackPoint:
 
     def __repr__(self):
         s = "long: %f lat: %f altitude: %f timestamp: %s" % (
-            self.position_long,
-            self.position_lat,
+            self.longitude,
+            self.latitude,
             self.altitude,
             self.timestamp
         )
@@ -205,8 +209,8 @@ class TrackPoint:
 class TrackPointFit(TrackPoint):
     """
     timestamp           2011-09-25 16:31:49+00:00
-    position_lat        521056079                   semicircles
-    position_long       -947375686                  semicircles
+    latitude        521056079                   semicircles
+    longitude       -947375686                  semicircles
     altitude            78.0                        m
     enhanced_altitude   78.0                        m
     enhanced_speed      0.0                         m/s
@@ -235,8 +239,8 @@ class TrackPointFit(TrackPoint):
         super().__init__(self) 
 
         self.timestamp         = UnitConverter.timestamp(timestamp).isoformat()
-        self.position_lat      = UnitConverter.position(position_lat)
-        self.position_long     = UnitConverter.position(position_long)
+        self.latitude          = UnitConverter.position(position_lat)
+        self.longitude         = UnitConverter.position(position_long)
         self.altitude          = UnitConverter.altitude(altitude)
         self.speed             = UnitConverter.speed(speed)
         self.power             = UnitConverter.power(power)
@@ -286,8 +290,8 @@ class TrackPointGPX(TrackPoint):
     
 
         self.timestamp         = UnitConverter.timestamp(timestamp, conv=UnitConverter._timezulu)
-        self.position_lat      = UnitConverter.position(lat,conv=UnitConverter._same)
-        self.position_long     = UnitConverter.position(lon,conv=UnitConverter._same)
+        self.latitude          = UnitConverter.position(lat,conv=UnitConverter._same)
+        self.longitude         = UnitConverter.position(lon,conv=UnitConverter._same)
         self.altitude          = UnitConverter.altitude(ele)
         self.power             = UnitConverter.power(PowerInWatts)
         self.heart_rate        = UnitConverter.heart_rate(hr)
@@ -310,12 +314,15 @@ class TrackPointGPX(TrackPoint):
 
 class Track:
     def __init__(self, name="Track", id=None):
-        self.fname = "-"
+        self.fname = None #see set_internal_data() for details 
         self.name = name
         self.points = []
+        self.hash = None #see set_internal_data() for details
         self.id = id if id is not None else str(uuid.uuid4())
         self._gpx = None
-
+        self._gpx_points = None
+        self._stats = None
+        
     def clear(self): 
         self.points = []
 
@@ -327,8 +334,8 @@ class Track:
         l = []
         c = 0
         for p in self.points:
-            if p.position_lat is not None and \
-               p.position_long is not None and \
+            if p.latitude is not None and \
+               p.longitude is not None and \
                p.timestamp is not None:
                 l.append(p)
             else:
@@ -338,6 +345,9 @@ class Track:
 
     def set_internal_data(self, fname, optimize_points=False):
         #prepare a gpxpy object to build all the required things, bounds, means, etc
+        #calculate the stats,
+        #optimize the track,
+        #calculate the "hash"
         self.fname = fname
 
    
@@ -356,16 +366,18 @@ class Track:
             "temperature": []
         }
 
+        hash_array = []
+
         # Create points:
         for p in self.points:
 
-            if p.position_lat is not None and \
-               p.position_long is not None and \
+            if p.latitude is not None and \
+               p.longitude is not None and \
                p.timestamp is not None:
 
                 p_gpx = gpxpy.gpx.GPXTrackPoint(
-                            latitude=p.position_lat,
-                            longitude=p.position_long,
+                            latitude=p.latitude,
+                            longitude=p.longitude,
                             elevation=p.altitude,
                             time=datetime.datetime.fromisoformat(p.timestamp))
 
@@ -375,14 +387,21 @@ class Track:
                 self._gpx_extensions['temperature'].append(get_fval(p.temperature))
 
                 gpx_segment.points.append(p_gpx)
+                hash_array.append(module(p.as_vector()))
 
+        self.hash = hash(tuple(hash_array)))
+        
+        
         if optimize_points:
             optmizer = GPXOptimizer()  
             gpx_points = optmizer.Optimize(self._gpx.tracks[0].segments[0].points)
             self._gpx.tracks[0].segments[0].points = gpx_points
             optmizer.Print_stats()
     
-
+        self._gpx_points = gpx_segment.points
+        # precalc stats
+        self.stats()
+    
     def pprint(self):
         print("Number of points: %d" % len(self.points))
         for p in self.points:
@@ -398,9 +417,9 @@ class Track:
     def as_poly(self):
         l = []
         for p in self.points:
-            if p.position_lat is not None and \
-               p.position_long is not None:
-                l.append((p.position_lat, p.position_long))
+            if p.latitude is not None and \
+               p.longitude is not None:
+                l.append((p.latitude, p.longitude))
         return l
 
     def as_geojson_line(self):
@@ -417,8 +436,8 @@ class Track:
         }
         for p in self.points:
             o["data"]["geometry"]["coordinates"].append([
-                p.position_long, 
-                p.position_lat, 
+                p.longitude, 
+                p.latitude, 
                 p.altitude]
             )
         return o
@@ -429,11 +448,12 @@ class Track:
             col["data"]["features"].append(p.as_geojson_point_feature())
         return col
 
-    def track_center(self):
+    def track_center(self, as_point=False):
         ## FIX_ME WITH GPXPY.
         l = self._gpx.tracks[0].get_center()
-        print(dir(l))
-        return(l.latitude, l.longitude, l.elevation)
+        if not as_point:
+            return(l.latitude, l.longitude, l.elevation)
+        return l
     
     def start_point(self):
         return(self.points[0])
@@ -453,7 +473,10 @@ class Track:
 
     def stats(self):
         # calculate some things about gpx info using gpxpy module.
-        s = Stats(self)
-        return s
+        # cache the stats, due they are expensive.
+        if self._stats is None:
+            self._stats = Stats(self)
+
+        return self._stats
 
 

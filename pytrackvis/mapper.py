@@ -473,14 +473,14 @@ class OSMMapper(GenericMapper):
 
 	def ProjectPoints(self, points, mapimg, color=(200,100,100), width=2):
 
-		rainbow = rainbowvis.Rainbow()
+		rainbow = Rainbow()
 		rainbow.setSpectrum('#0000D0','#00C000', '#FF0000')
 		rainbow.setNumberRange(-10, 10);
 		
 		for i in range(len(points)-1):
 			a = points[i]
 			b = points[i+1]
-			
+
 			distance = gpxpy.geo.distance(a.latitude, a.longitude, a.elevation,
 				   						  b.latitude, b.longitude, b.elevation,
 				   				   		  haversine=True )
@@ -531,7 +531,7 @@ class OSMMapper(GenericMapper):
 		
 		# use the half point of the track
 		d = 0
-		j = len(points)/2
+		j = int(len(points)/2)
 		while d < 200.0 and j < len(points):
 			d += gpxpy.geo.length_2d([points[j-1], points[j]])
 			j += 1

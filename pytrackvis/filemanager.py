@@ -122,7 +122,7 @@ class FileManager:
             print("running gpx_loader(%s)" % fname)
        
         extract_fields = [ 
-            'timestamp', 'position_lat', 'position_long', 'altitude',
+            'timestamp', 'latitude', 'longitude', 'altitude',
             # "optional"
             'enhanced_altitude',
             'enhanced_speed',

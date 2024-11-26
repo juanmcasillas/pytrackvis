@@ -1,9 +1,18 @@
 {
     "verbose": true,
+    "proxy": {
+        "enabled": true,
+        "url": "http://proxy.senado.es:8080"
+    },
     "api_key_file": "conf/tokens.ini",
     "logs": {
         "error": "logs/error.log",
         "app": "logs/app.log"
+    },
+    "osm_cache": {
+        "enabled": true,
+        "directory": "osm_cache",
+        "debug": true
     },
     "files": [
         "data/fit/garmin-edge-1000-bigone.fit",
