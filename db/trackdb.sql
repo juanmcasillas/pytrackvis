@@ -92,12 +92,38 @@ CREATE TABLE TRACKS (
     level_p_time                    REAL DEFAULT 0,
     downhill_p_time                 REAL DEFAULT 0,
     
-    uphill_slope_range_distance     TEXT DEFAULT "",
-    downhill_slope_range_distance   TEXT DEFAULT "",
- 
-    uphill_slope_range_time         TEXT DEFAULT "",
-    downhill_slope_range_time       TEXT DEFAULT "",
+    uphill_slope_range_distance_0     REAL DEFAULT 0,
+    uphill_slope_range_distance_1     REAL DEFAULT 0,
+    uphill_slope_range_distance_2     REAL DEFAULT 0,
+    uphill_slope_range_distance_3     REAL DEFAULT 0,
+    uphill_slope_range_distance_4     REAL DEFAULT 0,
+    uphill_slope_range_distance_5     REAL DEFAULT 0,
+    uphill_slope_range_distance_6     REAL DEFAULT 0,
+    
+    downhill_slope_range_distance_0     REAL DEFAULT 0,
+    downhill_slope_range_distance_1     REAL DEFAULT 0,
+    downhill_slope_range_distance_2     REAL DEFAULT 0,
+    downhill_slope_range_distance_3     REAL DEFAULT 0,
+    downhill_slope_range_distance_4     REAL DEFAULT 0,
+    downhill_slope_range_distance_5     REAL DEFAULT 0,
+    downhill_slope_range_distance_6     REAL DEFAULT 0,
 
+    uphill_slope_range_time_0         REAL DEFAULT 0,
+    uphill_slope_range_time_1         REAL DEFAULT 0,
+    uphill_slope_range_time_2         REAL DEFAULT 0,
+    uphill_slope_range_time_3         REAL DEFAULT 0,
+    uphill_slope_range_time_4         REAL DEFAULT 0,
+    uphill_slope_range_time_5         REAL DEFAULT 0,
+    uphill_slope_range_time_6         REAL DEFAULT 0,
+    
+    downhill_slope_range_time_0         REAL DEFAULT 0,
+    downhill_slope_range_time_1         REAL DEFAULT 0,
+    downhill_slope_range_time_2         REAL DEFAULT 0,
+    downhill_slope_range_time_3         REAL DEFAULT 0,
+    downhill_slope_range_time_4         REAL DEFAULT 0,
+    downhill_slope_range_time_5         REAL DEFAULT 0,
+    downhill_slope_range_time_6         REAL DEFAULT 0,
+    
     --misc data (from external sensors)
     max_heart_rate                  INTEGER DEFAULT 0,
     min_heart_rate                  INTEGER DEFAULT 0,

@@ -41,7 +41,6 @@ if __name__ == "__main__":
     manager.startup()
     
     if args.command == "create_db":
-        subargs = create_db_parser.parse_args()
         manager.create_database()
         sys.exit(0)
 

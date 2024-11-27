@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 # /////////////////////////////////////////////////////////////////////////////
 # //
-# // track.py 
+# // track.py
 # //
 # // Define the class to map abstract tracks (collection of points)
 # //
-# // 23/10/2024 10:00:14  
+# // 23/10/2024 10:00:14
 # // (c) 2024 Juan M. Casillas <juanm.casillas@gmail.com>
 # //
 # /////////////////////////////////////////////////////////////////////////////
@@ -14,7 +14,7 @@
 import re
 import gpxpy
 import uuid
-import datetime 
+import datetime
 
 
 from .helpers import bearing, distancePoints, module
@@ -28,7 +28,7 @@ class UnitConverter:
 
     def _same(data):
         return(data)
-    
+
     def _semicircles(data):
         return( float(data) / 11930465.0 ) # "2^32/360"
 
@@ -44,7 +44,7 @@ class UnitConverter:
 
 
     def convert(value, conv, kind=float):
-       
+
         ret = value
         if kind is not None:
             try:
@@ -60,28 +60,28 @@ class UnitConverter:
 
     def timestamp(value,  conv=_same ):
         return UnitConverter.convert(value, conv, kind=None)
-        
+
     def position(value, conv=_semicircles):
         return UnitConverter.convert(value, conv, kind=None)
 
     def altitude(value, conv=_same):
         return UnitConverter.convert(value, conv)
-    
+
     def speed(value, conv=_same):
         return UnitConverter.convert(value, conv)
-    
+
     def power(value, conv=_same):
         return UnitConverter.convert(value, conv, int)
-    
+
     def grade(value, conv=_same):
         return UnitConverter.convert(value, conv)
 
     def heart_rate(value, conv=_same):
         return UnitConverter.convert(value, conv, int)
-    
+
     def cadence(value, conv=_same):
         return UnitConverter.convert(value, conv, int)
-    
+
     def temperature(value, conv=_same):
         return UnitConverter.convert(value, conv)
 
@@ -146,27 +146,27 @@ class TrackPoint:
     def geojson_feature_collection(self):
         o = {
              "type": "geojson",
-             "data": { 
+             "data": {
                 "type": "FeatureCollection",
                 "features": [ ]
              }
         }
         return o
-    
+
     def as_geojson_point(self):
         o = self.geojson_feature_collection()
         # add it to the geojson
         o["data"]["features"].append(self.as_geojson_point_feature())
         return o
-    
+
 
     def as_geojson_point_feature(self):
         o = {
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                    "coordinates": [self.latitude, 
-                                    self.longitude, 
+                    "coordinates": [self.latitude,
+                                    self.longitude,
                                     self.altitude]
                 },
                 "properties": {
@@ -204,7 +204,7 @@ class TrackPoint:
             self.timestamp
         )
         return s
-    
+
 
 class TrackPointFit(TrackPoint):
     """
@@ -236,7 +236,7 @@ class TrackPointFit(TrackPoint):
                  enhanced_altitude = None,
                  enhanced_speed    = None
     ):
-        super().__init__(self) 
+        super().__init__(self)
 
         self.timestamp         = UnitConverter.timestamp(timestamp).isoformat()
         self.latitude          = UnitConverter.position(position_lat)
@@ -267,7 +267,7 @@ class TrackPointGPX(TrackPoint):
     cad                 32                          rpm
     atemp               27                          C
     Temperature         27                          C (enhanced)
-    
+
     No speed.
     No grade.
     """
@@ -283,11 +283,11 @@ class TrackPointGPX(TrackPoint):
                  atemp        = None,
                  Temperature  = None,
                  power        = None,
- 
-    ):
-        super().__init__(self) 
 
-    
+    ):
+        super().__init__(self)
+
+
 
         self.timestamp         = UnitConverter.timestamp(timestamp, conv=UnitConverter._timezulu)
         self.latitude          = UnitConverter.position(lat,conv=UnitConverter._same)
@@ -298,7 +298,7 @@ class TrackPointGPX(TrackPoint):
         self.cadence           = UnitConverter.cadence(cad)
         self.temperature       = UnitConverter.temperature(atemp)
 
-        # garmin 1000 
+        # garmin 1000
         # <power>0</power>
         if power is not None:
             p  = UnitConverter.power(PowerInWatts)
@@ -314,7 +314,7 @@ class TrackPointGPX(TrackPoint):
 
 class Track:
     def __init__(self, name="Track", id=None):
-        self.fname = None #see set_internal_data() for details 
+        self.fname = None #see set_internal_data() for details
         self.name = name
         self.points = []
         self.hash = None #see set_internal_data() for details
@@ -323,8 +323,12 @@ class Track:
         self._gpx_points = None
         self._stats = None
         self._optimizer = None
+        self.kind = "kind_ph"
+        self.device = "device_ph"
+        self.equipment = "equipment_ph"
+        self.description = "description_ph"
 
-    def clear(self): 
+    def clear(self):
         self.points = []
 
     def add_point(self, point):
@@ -342,7 +346,7 @@ class Track:
             else:
                 c += 1
         self.points = l
-        return c     
+        return c
 
     def set_internal_data(self, fname, optimize_points=False, filter_points=False):
         #prepare a gpxpy object to build all the required things, bounds, means, etc
@@ -351,7 +355,7 @@ class Track:
         #calculate the "hash"
         self.fname = fname
 
-   
+
         self._gpx = gpxpy.gpx.GPX()
         self._gpx.name = "internal gpx data"
         self._gpx.description = "internal  gpx file"
@@ -359,7 +363,7 @@ class Track:
         gpx_segment = gpxpy.gpx.GPXTrackSegment()
         gpx_track.segments.append(gpx_segment)
         self._gpx.tracks.append(gpx_track)
-         
+
         self._gpx_extensions = {
             "heart_rate":  [],
             "power":       [],
@@ -391,18 +395,18 @@ class Track:
                 hash_array.append(module(p.as_vector()))
 
         self.hash = hash(tuple(hash_array))
-        
-        
+
+
         if optimize_points:
-            self._optimizer = GPXOptimizer()  
+            self._optimizer = GPXOptimizer()
             gpx_points = self._optimizer.Optimize(self._gpx.tracks[0].segments[0].points)
             self._gpx.tracks[0].segments[0].points = gpx_points
-             
-    
+
+
         self._gpx_points = gpx_segment.points
         # precalc stats
         self.stats(filter_points=filter_points)
-    
+
     def pprint(self):
         print("Number of points: %d" % len(self.points))
         for p in self.points:
@@ -424,10 +428,10 @@ class Track:
         return l
 
     def as_geojson_line(self):
-       
+
         o = {}
         o["type"] = "geojson"
-        o["data"] = { 
+        o["data"] = {
                 "type": "Feature",
                 "properties": {},
                 "geometry": {
@@ -437,12 +441,12 @@ class Track:
         }
         for p in self.points:
             o["data"]["geometry"]["coordinates"].append([
-                p.longitude, 
-                p.latitude, 
+                p.longitude,
+                p.latitude,
                 p.altitude]
             )
         return o
-    
+
     def as_geojson_points(self, points):
         col = TrackPoint().geojson_feature_collection()
         for p in points:
@@ -455,13 +459,13 @@ class Track:
         if not as_point:
             return(l.latitude, l.longitude, l.elevation)
         return l
-    
+
     def start_point(self):
         return(self.points[0])
 
     def end_point(self):
         return(self.points[-1])
-    
+
     def middle_point(self):
         return(self.points[int(len(self.points)/2)])
 
@@ -469,7 +473,7 @@ class Track:
         min_lat, max_lat, min_lon, max_lon = self._gpx.tracks[0].segments[0].get_bounds()
         if not lonlat:
             return [[min_lat, min_lon], [max_lat, max_lon]]
-    
+
         return [[min_lon, min_lat], [max_lon, max_lat]]
 
     def stats(self, filter_points=False):
@@ -481,3 +485,122 @@ class Track:
         return self._stats
 
 
+    def as_tuple(self, db=False):
+
+
+        if not db:
+            # return the current object
+            # else, return also the stats in db format
+            pass
+        # id not passed
+        return (self.fname, self.hash, self._stats.number_of_points,
+                self._stats.duration, self._stats.length_2d,self._stats.length_3d,
+                self._stats.start_time, self._stats.end_time, self._stats.moving_time,
+
+                self._stats.stopped_time, self._stats.moving_distance,
+                self._stats.stopped_distance,
+
+                self._stats.max_speed_ms, self._stats.max_speed_kmh,
+                self._stats.avg_speed_ms, self._stats.avg_speed_kmh,
+                self._stats.uphill_climb,self._stats.downhill_climb,
+                self._stats.minimum_elevation,self._stats.maximum_elevation,
+
+                self.name, self.kind, self.device, self.equipment,
+                self.description, self._stats.rating,
+                self._stats.is_circular, self._stats.quality,
+                self._stats.is_clockwise, self._stats.score,
+                self._stats.is_cloned,
+
+                self._stats.bounds.min_latitude,
+                self._stats.bounds.min_longitude,
+                self._stats.bounds.max_latitude,
+                self._stats.bounds.max_longitude,
+
+                self._stats.middle_point.lat,
+                self._stats.middle_point.long,
+                self._stats.middle_point.elev,
+
+                self._stats.begin_point.lat,
+                self._stats.begin_point.long,
+                self._stats.begin_point.elev,
+
+                self._stats.end_point.lat,
+                self._stats.end_point.long,
+                self._stats.end_point.elev,
+
+                self._stats.up_slope.distance,
+                self._stats.level_slope.distance,
+                self._stats.down_slope.distance,
+
+                self._stats.up_slope.elevation,
+                self._stats.level_slope.elevation,
+                self._stats.down_slope.elevation,
+
+                self._stats.up_slope.avg,
+                self._stats.level_slope.avg,
+                self._stats.down_slope.avg,
+
+                self._stats.up_slope.p_distance,
+                self._stats.level_slope.p_distance,
+                self._stats.down_slope.p_distance,
+
+                self._stats.up_slope.speed,
+                self._stats.level_slope.speed,
+                self._stats.down_slope.speed,
+
+                self._stats.up_slope.time,
+                self._stats.level_slope.time,
+                self._stats.down_slope.time,
+
+                self._stats.up_slope.p_time,
+                self._stats.level_slope.p_time,
+                self._stats.down_slope.p_time,
+
+                self._stats.up_slope.range_distance[0],
+                self._stats.up_slope.range_distance[1],
+                self._stats.up_slope.range_distance[2],
+                self._stats.up_slope.range_distance[3],
+                self._stats.up_slope.range_distance[4],
+                self._stats.up_slope.range_distance[5],
+                self._stats.up_slope.range_distance[6],
+
+                self._stats.down_slope.range_distance[0],
+                self._stats.down_slope.range_distance[1],
+                self._stats.down_slope.range_distance[2],
+                self._stats.down_slope.range_distance[3],
+                self._stats.down_slope.range_distance[4],
+                self._stats.down_slope.range_distance[5],
+                self._stats.down_slope.range_distance[6],
+
+                self._stats.up_slope.range_time[0],
+                self._stats.up_slope.range_time[1],
+                self._stats.up_slope.range_time[2],
+                self._stats.up_slope.range_time[3],
+                self._stats.up_slope.range_time[4],
+                self._stats.up_slope.range_time[5],
+                self._stats.up_slope.range_time[6],
+
+                self._stats.down_slope.range_time[0],
+                self._stats.down_slope.range_time[1],
+                self._stats.down_slope.range_time[2],
+                self._stats.down_slope.range_time[3],
+                self._stats.down_slope.range_time[4],
+                self._stats.down_slope.range_time[5],
+                self._stats.down_slope.range_time[6],
+
+                self._stats.max_heart_rate,
+                self._stats.min_heart_rate,
+                self._stats.avg_heart_rate,
+                
+                self._stats.max_power,
+                self._stats.min_power,
+                self._stats.avg_power,
+                
+                self._stats.max_cadence,
+                self._stats.min_cadence,
+                self._stats.avg_cadence,
+                
+                self._stats.max_temperature,
+                self._stats.min_temperature,
+                self._stats.avg_temperature
+        )
