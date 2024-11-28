@@ -15,7 +15,7 @@ import gpxpy
 import math
 import os
 import glob
-
+from shapely.geometry import LineString
 class C:
     def __init__(self, **kargs):
         for i in kargs:
@@ -24,8 +24,9 @@ class C:
 
 def glob_filelist(files):
     found_files = []
+    # ('./**/'): .\app.py import_files .\data\Cartography\**\*.gpx
     for fname in files:
-        for f in glob.glob(fname):
+        for f in glob.glob(fname, recursive=True):
             if f not in found_files:
                 found_files.append(f)
     return found_files
@@ -44,21 +45,66 @@ def manhattan_point(p1,p2):
 def module(vector):
     return math.sqrt(sum(v**2 for v in vector))
 
+def same_track(trk1, trk2, radius=0.001, debug=False):
+    # https://gis.stackexchange.com/questions/81551/matching-gps-tracks
+
+    #import matplotlib.pyplot as plt
+    #from descartes import PolygonPatch
+    
+    track1=LineString([[p.latitude,p.longitude] for p in trk1._gpx_points])
+    track2=LineString([[p.latitude,p.longitude] for p in trk2._gpx_points])
+    
+    # track1_buffered=track1.buffer(BUFFER_SZ)
+    # fig=plt.figure()
+    # ax = fig.add_subplot(111)
+    # # fix descartes patch
+    # https://stackoverflow.com/questions/75287534/indexerror-descartes-polygonpatch-wtih-shapely
+    # patch.py:62 fix
+    # vertices = concatenate([
+    #    concatenate([asarray(t.exterior.coords)[:, :2]] +
+    #                [asarray(r.coords)[:, :2] for r in t.interiors])
+    #    for t in polygon])
+    # patch.py:46            polygon = [Polygon(p) for p in list(polygon.geoms)]
+
+    if debug:
+        fig=plt.figure()
+        ax = fig.add_subplot(111)
+        x,y=track1.xy
+        ax.plot(x,y,'b.')
+        x,y=track2.xy
+        ax.plot(x,y,'g.')
+        fig.savefig("same_track.png")
+
+    match1=track2.buffer(radius).intersection(track1).buffer(radius)
+    match2=track1.buffer(radius).intersection(track2).buffer(radius)
+    match=match1.intersection(match2)
+    
+    if match.is_empty:
+        return False
+
+    return match.buffer(radius).contains(track1) and match.buffer(radius).contains(track2)
+
 
 def track_similarity(trk1, trk2):
     # iterate the track with less points, and calculate
     # the sum of the manhattan_distance between points.
+    len_1 = len(trk1._gpx_points)
+    len_2 = len(trk2._gpx_points)
 
-    if len(trk1._gpx_points) >= len(trk2._gpx_points):
-        max_points = len(trk2._gpx_points) 
-    else:
-        max_points = len(trk1._gpx_points)
+    if len_1 != len_2:
+        if len_2 > len_1:
+            diff = len_2 - len_1
+            trk1._gpx_points += [gpxpy.gpx.GPXTrackPoint(latitude=0.0,longitude=0.0,elevation=0.0)] *diff
+        else:
+            diff = len_1 - len_2
+            trk2._gpx_points += [gpxpy.gpx.GPXTrackPoint(latitude=0.0,longitude=0.0,elevation=0.0)] *diff
+
 
     similarity = 0.0
-    for i in range(0,max_points):
+    for i in range(0,len_1):
         similarity += manhattan_point(trk1._gpx_points[i], trk2._gpx_points[i])
 
-    return similarity / max_points 
+    return similarity
 
 
 

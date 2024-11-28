@@ -92,20 +92,109 @@ class Manager:
         db.close()
 
     def import_files(self, files):
+        "load files from directory, or one by one. Check if track exists."
+        #  .\app.py import_files .\data\Cartography\**\*.fit # All files
+        #  .\app.py import_files .\data\fit\*.fit # ony files in this dir
+
         files = glob_filelist(files)
         for fname in files:
             fm = FileManager([fname])
-            fm.load(optimize_points=self.config.points["optimize"],
-                    filter_points=self.config.points["filter"]
-                    )
+            try:
+                fm.load(optimize_points=self.config.points["optimize"],
+                        filter_points=self.config.points["filter"]
+                        )
+                
+            except Exception as e:
+                self.logger.error("Cant' load %s: %s" % (fname, e))
+                continue
+
             self.logger.info("file loaded %s" % fname)
             track = fm.track()
             if track._optimizer:
                 self.logger.info("Optimizer results (points): %s" % track._optimizer)
 
-            self.store_track(track)
+            track_id = self.db_track_exists(track)
+            if not track_id:
+                self.db_store_track(track)
+            else:
+                track.id = track_id
+                self.logger.warning("Track %s exists on DB (id=%d)" % (track.hash, track.id))
 
-    def store_track(self, track):
+
+    def check_similarity(self):
+        # shows the similarity values of the tracks, and create matches.
+        data = self.db_get_similarity()
+        tracks = {}
+        
+        for d in data:
+            fname = d["fname"]
+            fm = FileManager([fname])
+            try:
+                fm.load(optimize_points=self.config.points["optimize"],
+                        filter_points=self.config.points["filter"]
+                        )
+                
+            except Exception as e:
+                self.logger.error("Cant' load %s: %s" % (fname, e))
+                continue
+
+            print("loaded: %s" % fname)
+            track = fm.track()
+            tracks[str(track.hash)] = track
+        
+        print("done:",len(tracks))
+        # check each track with the others. calculate the similarity values
+        # then classify the things ordered by similarity.
+        result = {}
+        for tx_key in tracks:
+            tx = tracks[tx_key]
+            for ty_key in tracks:
+                ty = tracks[ty_key]
+                if tx.hash == ty.hash:
+                    # same thing
+                    continue
+                key = "%s %s" % (tx.hash,ty.hash)
+                key_r = "%s %s" % (ty.hash,tx.hash)
+                if not key in result.keys() and not key_r in result.keys():
+                    similarity = track_similarity(tx,ty)
+                    result[key] = similarity
+
+        for k in result.keys():
+            h1,h2 = k.split(" ")
+            f1 = tracks[h1].fname
+            f2 = tracks[h2].fname
+            if result[k] < 100000.0:
+                print("-----")
+                print("%3.3f" % result[k])
+                print("%s" % f1)
+                print("%s" % f2)
+            
+
+
+    #
+    # database methods
+    #
+    def db_track_exists(self, track):
+        "check if the track is loaded in the database, using the hash"
+        sql = "select id,hash from tracks where hash = ?"
+        cursor = self.db.cursor()
+        cursor.execute(sql, (track.hash,))
+        data = cursor.fetchone()
+        cursor.close()
+        if not data:
+            return False
+        return data["id"]
+    
+    def db_get_similarity(self):
+        sql = "select id,hash,fname from tracks"
+        cursor = self.db.cursor()
+        cursor.execute(sql)
+        data = cursor.fetchall()
+        cursor.close()
+        return map(lambda x: dict(x), data)
+    
+
+    def db_store_track(self, track):
         sql = """
         insert into tracks(fname, hash, number_of_points, 
                            duration, length_2d, length_3d,

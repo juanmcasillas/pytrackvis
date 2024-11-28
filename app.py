@@ -32,6 +32,10 @@ if __name__ == "__main__":
     import_files_parser.set_defaults(command="import_files")
     import_files_parser.add_argument("files",help="fit or gpx files", nargs='+')
 
+
+    similarity_parser = subparsers.add_parser("check_similarity",help="Computes similarity on the DB")
+    similarity_parser.set_defaults(command="check_similarity")
+
     args = parser.parse_args()
 
     AppEnv.config(args.config_file)
@@ -47,5 +51,11 @@ if __name__ == "__main__":
     if args.command == "import_files":
         subargs = import_files_parser.parse_args()
         manager.import_files(subargs.files)
+        sys.exit(0)
+
+    if args.command == "check_similarity":
+        manager.check_similarity()
+        sys.exit(0)
+
 
     manager.shutdown()

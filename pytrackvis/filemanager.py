@@ -142,7 +142,7 @@ class FileManager:
         ]
         
         track_points = Track(name=fname)
-        with open(fname, 'r') as gpx_file:
+        with open(fname, 'r', encoding="utf-8") as gpx_file:
             gpx = gpxpy.parse(gpx_file)
             for track in gpx.tracks:
                 for segment in track.segments:

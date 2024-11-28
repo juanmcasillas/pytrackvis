@@ -1,6 +1,8 @@
 # Don't upload products, neither sample data.
 
+data/Cartography/*
 data/fit/*
+data
 data/gpx/*
 data/tokens.ini
 db/trackdb.db

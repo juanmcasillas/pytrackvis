@@ -16,6 +16,7 @@ from pytrackvis.filemanager_map import *
 from pytrackvis.appenv import *
 from pytrackvis.mapper import OSMMapper
 from pytrackvis.helpers import C, set_proxy,track_similarity, manhattan_point
+from pytrackvis.helpers import same_track
 import argparse
 import os.path 
 import json 
@@ -67,7 +68,7 @@ if __name__ == "__main__":
     track2 = fm.tracks[track_id_02]
     # check similarity
 
-    print(track_similarity(track,track2))
+    print(same_track(track,track2))
     sys.exit(0)
 
     # create preview for testing 
