@@ -328,6 +328,7 @@ class Track:
         self.equipment = "equipment_ph"
         self.description = "description_ph"
 
+
     def clear(self):
         self.points = []
 

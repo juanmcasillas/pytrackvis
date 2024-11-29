@@ -15,13 +15,10 @@
 import logging
 import logging.handlers
 import sqlite3
-import glob
-
-
 
 from pytrackvis.appenv import *
 from pytrackvis.mapper import OSMMapper
-from pytrackvis.helpers import C, set_proxy,track_similarity, manhattan_point
+from pytrackvis.helpers import C, set_proxy, manhattan_point, same_track
 from pytrackvis.helpers import glob_filelist
 from pytrackvis.filemanager import FileManager
 
@@ -123,10 +120,10 @@ class Manager:
 
     def check_similarity(self):
         # shows the similarity values of the tracks, and create matches.
-        data = self.db_get_similarity()
+        file_data = self.db_get_similarity()
         tracks = {}
-        
-        for d in data:
+
+        for d in file_data:
             fname = d["fname"]
             fm = FileManager([fname])
             try:
@@ -145,35 +142,74 @@ class Manager:
         print("done:",len(tracks))
         # check each track with the others. calculate the similarity values
         # then classify the things ordered by similarity.
-        result = {}
+        result = []
+        print(len(tracks.keys()))
+    
         for tx_key in tracks:
             tx = tracks[tx_key]
+            tx.similar_tracks = [tx.hash]
+            # create a point cache
+            #track1_cache=LineString([[p.latitude,p.longitude] for p in tx._gpx_points])
+            print("-> %s %s" % (tx.hash,tx.fname))
             for ty_key in tracks:
                 ty = tracks[ty_key]
+                print("\t*%s %s" % (ty.hash,ty.fname))
                 if tx.hash == ty.hash:
-                    # same thing
+                    # same track, skip
                     continue
-                key = "%s %s" % (tx.hash,ty.hash)
-                key_r = "%s %s" % (ty.hash,tx.hash)
-                if not key in result.keys() and not key_r in result.keys():
-                    similarity = track_similarity(tx,ty)
-                    result[key] = similarity
+                
+                if not ty.hash in tx.similar_tracks:
+                    #if same_track(tx, ty, trk1_cache=track1_cache):
+                    if same_track(tx, ty):
+                        tx.similar_tracks.append(ty.hash)
+    
+        ## done. Check all the data.
+        ## filter similar groups by matching then.
+        similar_tracks = []
+        for tx_key in tracks:
+            tracks[tx_key].similar_tracks.sort()
+            if tracks[tx_key].similar_tracks not in similar_tracks:
+                similar_tracks.append(tracks[tx_key].similar_tracks)
 
-        for k in result.keys():
-            h1,h2 = k.split(" ")
-            f1 = tracks[h1].fname
-            f2 = tracks[h2].fname
-            if result[k] < 100000.0:
-                print("-----")
-                print("%3.3f" % result[k])
-                print("%s" % f1)
-                print("%s" % f2)
+        for i in similar_tracks:
+            print(i)
+        self.db_save_similarity(similar_tracks)
+
+    def get_track(self, id):
+        trk_data = self.db_get_track(id)
+        fm = FileManager([trk_data.fname])
+        try:
+            fm.load(optimize_points=self.config.points["optimize"],
+                    filter_points=self.config.points["filter"]
+                    )
             
+        except Exception as e:
+            self.logger.error("Cant' load %s: %s" % (trk_data.fname, e))
+            return None
 
-
+        self.logger.info("file loaded %s" % trk_data.fname)
+        return fm.track()
+    
     #
     # database methods
     #
+    def db_get_track(self, id):
+        sql = "select * from tracks where id = ?"
+        cursor = self.db.cursor()
+        cursor.execute(sql, (id,))
+        data = cursor.fetchone()
+        #data = map(lambda x: dict(x), data))
+        return data
+    
+    def db_get_tracks_info(self):
+        sql = "select * from tracks"
+        cursor = self.db.cursor()
+        cursor.execute(sql)
+        data = cursor.fetchall()
+        data = map(lambda x: dict(x), data)
+        return data
+    
+
     def db_track_exists(self, track):
         "check if the track is loaded in the database, using the hash"
         sql = "select id,hash from tracks where hash = ?"
@@ -185,14 +221,52 @@ class Manager:
             return False
         return data["id"]
     
+    def db_save_similarity(self, data):
+        sql = "delete from similar_tracks"
+        cursor = self.db.cursor()
+        cursor.execute(sql)
+        self.db.commit()
+
+        sql = "insert into similar_tracks(id, hash_track) values (?, ?)"
+        for i in range(len(data)):
+            for j in data[i]:
+                cursor.execute(sql, (i, j,))  
+        
+        self.db.commit()
+        cursor.close()
+
     def db_get_similarity(self):
         sql = "select id,hash,fname from tracks"
         cursor = self.db.cursor()
         cursor.execute(sql)
         data = cursor.fetchall()
-        cursor.close()
-        return map(lambda x: dict(x), data)
+        track_data = map(lambda x: dict(x), data)
+        return track_data
     
+        # sql = "select id,hash_track from similar_tracks"
+        # cursor.execute(sql)
+        # data = cursor.fetchall()
+        # cursor.close()
+        # # build the array
+        # data = map(lambda x: dict(x), data)
+        
+        # similar_data = {}
+        # for d in data:
+        #     if d['id'] not in similar_data.keys():
+        #         similar_data[d['id']] = [ d['hash_track'] ]
+        #     else:
+        #         similar_data[d['id']].append(d['hash_track'])
+
+        # # [
+        # #     [-4733961121561410647, 2604169270486981572]
+        # #     [-7144163367426839845]
+        # #     [-1444645076578622331]
+        # # ]
+        # return track_data, list(similar_data.values())
+
+
+    
+   
 
     def db_store_track(self, track):
         sql = """

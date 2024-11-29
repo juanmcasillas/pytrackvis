@@ -37,7 +37,7 @@ def error():
 
 @impl.route('/tracks/list')
 def tracks_list():
-    tracks = current_app.file_manager.get_tracks_info()
+    tracks = current_app.manager.db_get_tracks_info()
     return render_template('list.html', tracks=tracks)
 
 @impl.route('/tracks/show', methods=['GET', 'POST'])
@@ -45,7 +45,7 @@ def tracks_show():
     id = request.args.get("id",None)
     if not id:
         return redirect(url_for('impl.error', msg="Invalid id"))
-    track = current_app.file_manager.tracks[id]
+    track = current_app.manager.db_get_track(id)
     return render_template('show.html',track=track)
 
 # json handlers
@@ -55,7 +55,10 @@ def tracks_as_geojson():
     id = request.args.get("id",None)
     if not id:
         return redirect(url_for('impl.error', msg="Invalid id"))
-    trk = current_app.file_manager.tracks[id]
+    trk = current_app.manager.get_track(id)
+    if trk is None:
+        return redirect(url_for('impl.error', msg="Invalid track id"))
+    
     return jsonify(trk.as_geojson_line()["data"]) 
     # default stuff to test things here.
 

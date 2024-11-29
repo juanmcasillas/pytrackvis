@@ -23,7 +23,7 @@
         <div class="card m-1" style="max-width: 18rem;">
             <div class="card-body">
               <h5 class="card-title">{{track.name}}</h5>
-              <p class="card-text">{{track.stats.length_3d}}</p>
+              <p class="card-text">{{'%3.2f'|format(track.length_3d|float)}} m</p>
               <center>
               <a href="/tracks/show?id={{track.id}}" class="btn btn-primary">Show</a>
               </center>

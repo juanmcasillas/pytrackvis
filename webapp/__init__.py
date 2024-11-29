@@ -13,7 +13,7 @@ from .frontend import register_frontend
 import sys
 sys.path.append('..')
 from pytrackvis.appenv import AppEnv
-from pytrackvis.filemanager import FileManager
+from pytrackvis.manager import Manager
 
 def create_app(configfile=None):
     # We are using the "Application Factory"-pattern here, which is described
@@ -55,9 +55,9 @@ def create_app(configfile=None):
     handler.setFormatter(logging.Formatter('[%(asctime)s] %(levelname)s in %(module)s: %(message)s'))
     app.logger.addHandler(handler)
 
-    app.file_manager = FileManager(AppEnv.config().files)
-    app.file_manager.logger = app.logger
-    app.file_manager.load()
+    app.manager = Manager(AppEnv.config())
+    app.manager.logger = app.logger
+    app.manager.startup()
     
     # inventory_helper.shutdown()
 

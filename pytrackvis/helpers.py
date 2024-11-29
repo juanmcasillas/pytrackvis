@@ -45,13 +45,17 @@ def manhattan_point(p1,p2):
 def module(vector):
     return math.sqrt(sum(v**2 for v in vector))
 
-def same_track(trk1, trk2, radius=0.001, debug=False):
+def same_track(trk1, trk2, radius=0.001, debug=False, trk1_cache=None):
     # https://gis.stackexchange.com/questions/81551/matching-gps-tracks
 
     #import matplotlib.pyplot as plt
     #from descartes import PolygonPatch
     
-    track1=LineString([[p.latitude,p.longitude] for p in trk1._gpx_points])
+    if not trk1_cache:
+        track1=LineString([[p.latitude,p.longitude] for p in trk1._gpx_points])
+    else:
+        track1 = trk1_cache
+
     track2=LineString([[p.latitude,p.longitude] for p in trk2._gpx_points])
     
     # track1_buffered=track1.buffer(BUFFER_SZ)
@@ -80,9 +84,16 @@ def same_track(trk1, trk2, radius=0.001, debug=False):
     match=match1.intersection(match2)
     
     if match.is_empty:
-        return False
-
-    return match.buffer(radius).contains(track1) and match.buffer(radius).contains(track2)
+        ret = False
+    else:
+        ret = match.buffer(radius).contains(track1) and match.buffer(radius).contains(track2)
+    
+    del match1
+    del match2
+    del match
+    del track1
+    del track2 
+    return ret 
 
 
 def track_similarity(trk1, trk2):

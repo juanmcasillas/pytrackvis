@@ -1,6 +1,7 @@
 drop table if exists tracks;
 drop table if exists places;
 drop table if exists track_in_places;
+drop table if exists similar_tracks;
 
 CREATE TABLE TRACKS (
     id                  INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -153,4 +154,9 @@ CREATE TABLE TRACK_IN_PLACES (
     id_place    INTEGER,
     FOREIGN KEY(id_track) REFERENCES TRACKS(id),
     FOREIGN KEY(id_track) REFERENCES PLACES(id)
+);
+
+CREATE TABLE SIMILAR_TRACKS (
+    id          INTEGER,
+    hash_track  INTEGER
 );
