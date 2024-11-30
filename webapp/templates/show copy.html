@@ -1,8 +1,7 @@
 {% from "bootstrap5/utils.html" import render_messages %}
 {%- extends "base.html" %}
 
-{% block title %}PC  XXX{%- endblock %}
-
+{% block title %}{% include 'title.html' %}{%- endblock %}
 
 {% block content %}
 
@@ -19,7 +18,7 @@
         pitch: 45,
         bearing: 0,
         hash: true,
-        style: 'https://api.maptiler.com/maps/hybrid/style.json?key=wDVDH3bq9aDZYRws8ami',
+        style: 'https://api.maptiler.com/maps/hybrid/style.json?key={{TOKENS.MAPTILER_KEY}}',
         maxZoom: 18,
         maxPitch: 85
     }));
@@ -41,7 +40,7 @@
 
         map.addSource("terrain", {
             type: "raster-dem",
-            url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=wDVDH3bq9aDZYRws8ami`
+            url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key={{TOKENS.MAPTILER_KEY}}`
         });
         
         map.setTerrain({

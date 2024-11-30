@@ -58,6 +58,7 @@ def create_app(configfile=None):
     app.manager = Manager(AppEnv.config())
     app.manager.logger = app.logger
     app.manager.startup()
+    app.manager.load_tokens()
     
     # inventory_helper.shutdown()
 

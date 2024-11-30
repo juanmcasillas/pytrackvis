@@ -12,6 +12,9 @@
         "enabled": true,
         "url": "http://proxy.senado.es:8080"
     },
+    "tokens": {
+        "MAPTILER_KEY": ""
+    },
     "api_key_file": "conf/tokens.ini",
     "logs": {
         "level": "INFO",
@@ -23,4 +26,5 @@
         "directory": "osm_cache",
         "debug": true
     }
+    
 }

@@ -1,8 +1,7 @@
 {% from "bootstrap5/utils.html" import render_messages %}
 {%- extends "base.html" %}
 
-{% block title %}PC  XXX{%- endblock %}
-
+{% block title %}{% include 'title.html' %}{%- endblock %}
 
 {% block content %}
 
@@ -13,7 +12,7 @@
             </div>
         </div>
         <div class="bg-light mt-2 p-2">
-            <h1 class="display-2">PyTrack Visualizer</h1>
+            <h1 class="display-2">{% include 'title.html' %}</h1>
             <p>Use the navbar menu to navigate some of the functions</p>
         </div>
     </div>

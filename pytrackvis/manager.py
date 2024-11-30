@@ -15,6 +15,8 @@
 import logging
 import logging.handlers
 import sqlite3
+import configparser
+import sys
 
 from pytrackvis.appenv import *
 from pytrackvis.mapper import OSMMapper
@@ -46,11 +48,30 @@ class Manager:
             self.db.close()
         raise SystemExit
 
+    def load_tokens(self, put_env=False):
+        tokens = configparser.ConfigParser()
+        tokens.read(self.config.api_key_file)
+        print(self.config.api_key_file)
+        if not 'TOKENS' in tokens.keys() or not 'MAPTILER_KEY' in tokens["TOKENS"]:
+            self.logger.error("can't get maptiler token")
+            sys.exit(0)
+        if put_env:
+            os.environ["MAPTILER_KEY"] = tokens["TOKENS"]["MAPTILER_KEY"]
+        
+        AppEnv.config_set(self.config.tokens["MAPTILER_KEY"],tokens["TOKENS"]["MAPTILER_KEY"])
+        
+        self.logger.info("MAPTILER_KEY token loaded")
+
     def configure_logger(self):
 
         logging.getLogger().setLevel(self.config.logs["level"])
         log_formatter = logging.Formatter(self.config.logs["format"])
         rootLogger = logging.getLogger()
+
+        
+        if not os.path.exists(self.config.logs["app"]):
+            logpath = os.path.dirname(self.config.logs["app"])
+            os.makedirs(logpath, exist_ok=True)            
 
         file_handler = logging.FileHandler(self.config.logs["app"])
         file_handler.setFormatter(log_formatter)

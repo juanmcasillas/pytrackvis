@@ -71,14 +71,6 @@ class FileManager:
             return file_extension
         return False
 
-    def load_tokens(self):
-        tokens = configparser.ConfigParser()
-        tokens.read(AppEnv.config().api_key_file)
-        if not 'TOKENS' in tokens.keys() or not 'MAPTILER_KEY' in tokens["TOKENS"]:
-            print("can't get maptiler token")
-            sys.exit(0)
-        os.environ["MAPTILER_KEY"] = tokens["TOKENS"]["MAPTILER_KEY"]
-
     def _fit_loader(self, fname):
 
         if self.verbose:

@@ -13,7 +13,6 @@ from flask import Blueprint, render_template, \
 from markupsafe import escape
 import flask_login
 import flask
-import pythoncom          
 import traceback
 import logging
 import os
@@ -46,7 +45,7 @@ def tracks_show():
     if not id:
         return redirect(url_for('impl.error', msg="Invalid id"))
     track = current_app.manager.db_get_track(id)
-    return render_template('show.html',track=track)
+    return render_template('show.html',track=track, TOKENS=app.config.tokens)
 
 # json handlers
 

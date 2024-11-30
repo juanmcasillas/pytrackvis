@@ -38,12 +38,16 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    if args.command is None:
+        parser.print_help()            
+        sys.exit(0)
+
     AppEnv.config(args.config_file)
     AppEnv.config_set("verbose",args.verbose)
 
+
     manager = Manager(AppEnv.config())
     manager.startup()
-    
     if args.command == "create_db":
         manager.create_database()
         sys.exit(0)
@@ -56,6 +60,5 @@ if __name__ == "__main__":
     if args.command == "check_similarity":
         manager.check_similarity()
         sys.exit(0)
-
 
     manager.shutdown()
