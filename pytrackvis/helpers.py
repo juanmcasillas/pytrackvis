@@ -22,7 +22,7 @@ class C:
             self.__setattr__(i, kargs[i])
 
 
-def glob_filelist(files):
+def  glob_filelist(files):
     found_files = []
     # ('./**/'): .\app.py import_files .\data\Cartography\**\*.gpx
     for fname in files:
@@ -45,17 +45,41 @@ def manhattan_point(p1,p2):
 def module(vector):
     return math.sqrt(sum(v**2 for v in vector))
 
-def same_track(trk1, trk2, radius=0.001, debug=False, trk1_cache=None):
+def add_similarity_helpers(track, radius=0.001):
+    track._trk_ls = LineString([[p.latitude,p.longitude] for p in track._gpx_points])
+    track._trk_buff = track._trk_ls.buffer(radius)
+
+def del_similarity_helpers(track, radius=0.001):
+    del track._trk_ls
+    del track._trk_buff
+
+
+def same_track(trk1, trk2, radius=0.001, debug=False, use_cache=False):
     # https://gis.stackexchange.com/questions/81551/matching-gps-tracks
 
-    #import matplotlib.pyplot as plt
-    #from descartes import PolygonPatch
-    
-    if not trk1_cache:
-        track1=LineString([[p.latitude,p.longitude] for p in trk1._gpx_points])
-    else:
-        track1 = trk1_cache
+    if use_cache:
+        match1=trk2._trk_buff.intersection(trk1._trk_ls).buffer(radius)
+        match2=trk1._trk_buff.intersection(trk2._trk_ls).buffer(radius)
+        match=match1.intersection(match2)
+            
+        if debug:
+            fig=plt.figure()
+            ax = fig.add_subplot(111)
+            x,y=trk1._trk_ls.xy
+            ax.plot(x,y,'b.')
+            x,y=trk2._trk_ls.xy
+            ax.plot(x,y,'g.')
+            fig.savefig("same_track_cache.png")
 
+        if match.is_empty:
+            ret = False
+        else:
+            mb = match.buffer(radius)
+            ret = mb.contains(trk1._trk_ls) and mb.contains(trk2._trk_ls)
+        return ret
+    
+    # standard version (calculated each time)
+    track1=LineString([[p.latitude,p.longitude] for p in trk1._gpx_points])
     track2=LineString([[p.latitude,p.longitude] for p in trk2._gpx_points])
     
     # track1_buffered=track1.buffer(BUFFER_SZ)

@@ -328,6 +328,10 @@ class Track:
         self.equipment = "equipment_ph"
         self.description = "description_ph"
 
+    def from_dict(self, d):
+        for i in d:
+            self.__setattr__(i, d[i])
+        return self
 
     def clear(self):
         self.points = []
@@ -349,7 +353,7 @@ class Track:
         self.points = l
         return c
 
-    def set_internal_data(self, fname, optimize_points=False, filter_points=False):
+    def set_internal_data(self, fname, optimize_points=False, filter_points=False, do_stats=True):
         #prepare a gpxpy object to build all the required things, bounds, means, etc
         #calculate the stats,
         #optimize the track,
@@ -406,7 +410,8 @@ class Track:
 
         self._gpx_points = gpx_segment.points
         # precalc stats
-        self.stats(filter_points=filter_points)
+        if do_stats:
+            self.stats(filter_points=filter_points)
 
     def pprint(self):
         print("Number of points: %d" % len(self.points))
@@ -481,7 +486,7 @@ class Track:
         # calculate some things about gpx info using gpxpy module.
         # cache the stats, due they are expensive.
         if self._stats is None:
-            self._stats = Stats(self, filter_points=filter_points)
+             self._stats = Stats(self, filter_points=filter_points)
 
         return self._stats
 

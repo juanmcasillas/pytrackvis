@@ -18,7 +18,7 @@
     "api_key_file": "conf/tokens.ini",
     "logs": {
         "level": "INFO",
-        "format": "[%(asctime)s] %(levelname)s in %(module)s: %(message)s",
+        "format": "[%(asctime)s] %(levelname)s in %(module)s:%(funcName)s:%(lineno)d: %(message)s",
         "app": "logs/app.log"
     },
     "osm_cache": {

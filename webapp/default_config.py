@@ -9,3 +9,6 @@ BOOTSTRAP_SERVE_LOCAL=True
 PYTRACKVIS_CONFIG_FILE = "conf/pytrackvis.json"
 VERBOSE= True
 DEBUG = True
+# cache config
+CACHE_TYPE="SimpleCache"
+CACHE_DEFAULT_TIMEOUT=300 # seconds

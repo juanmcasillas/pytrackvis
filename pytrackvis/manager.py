@@ -21,7 +21,8 @@ import sys
 from pytrackvis.appenv import *
 from pytrackvis.mapper import OSMMapper
 from pytrackvis.helpers import C, set_proxy, manhattan_point, same_track
-from pytrackvis.helpers import glob_filelist
+from pytrackvis.helpers import glob_filelist, add_similarity_helpers, del_similarity_helpers
+from pytrackvis.track import Track
 from pytrackvis.filemanager import FileManager
 
 class Manager:
@@ -31,7 +32,7 @@ class Manager:
         self.config = config
         self.verbose = self.config.verbose
         self.db = None
-        self.logger = logging.getLogger(Manager.LOG_NAME)
+        self.logger = logging.getLogger()
 
     def db_connect(self):
         self.db = sqlite3.connect(self.config.database["file"], check_same_thread=False)
@@ -51,7 +52,6 @@ class Manager:
     def load_tokens(self, put_env=False):
         tokens = configparser.ConfigParser()
         tokens.read(self.config.api_key_file)
-        print(self.config.api_key_file)
         if not 'TOKENS' in tokens.keys() or not 'MAPTILER_KEY' in tokens["TOKENS"]:
             self.logger.error("can't get maptiler token")
             sys.exit(0)
@@ -59,27 +59,27 @@ class Manager:
             os.environ["MAPTILER_KEY"] = tokens["TOKENS"]["MAPTILER_KEY"]
         
         AppEnv.config_set(self.config.tokens["MAPTILER_KEY"],tokens["TOKENS"]["MAPTILER_KEY"])
+        self.config.tokens["MAPTILER_KEY"] = tokens["TOKENS"]["MAPTILER_KEY"]
         
         self.logger.info("MAPTILER_KEY token loaded")
 
     def configure_logger(self):
 
-        logging.getLogger().setLevel(self.config.logs["level"])
-        log_formatter = logging.Formatter(self.config.logs["format"])
-        rootLogger = logging.getLogger()
-
+        self.logger.setLevel(self.config.logs["level"])
+        log_formatter = logging.Formatter("A" + self.config.logs["format"])
+        # rootLogger = logging.getLogger()
         
         if not os.path.exists(self.config.logs["app"]):
             logpath = os.path.dirname(self.config.logs["app"])
-            os.makedirs(logpath, exist_ok=True)            
+            os.makedirs(logpath, exist_ok=True)
 
-        file_handler = logging.FileHandler(self.config.logs["app"])
-        file_handler.setFormatter(log_formatter)
-        rootLogger.addHandler(file_handler)
+        #file_handler = logging.FileHandler(self.config.logs["app"])
+        #file_handler.setFormatter(log_formatter)
+        #self.logger.addHandler(file_handler)
 
         consoleHandler = logging.StreamHandler()
         consoleHandler.setFormatter(log_formatter)
-        rootLogger.addHandler(consoleHandler)
+        self.logger.addHandler(consoleHandler)
 
     ## some commands
 
@@ -123,7 +123,7 @@ class Manager:
                         )
                 
             except Exception as e:
-                self.logger.error("Cant' load %s: %s" % (fname, e))
+                self.logger.error("import_files: Can't load %s: %s" % (fname, e))
                 continue
 
             self.logger.info("file loaded %s" % fname)
@@ -149,15 +149,18 @@ class Manager:
             fm = FileManager([fname])
             try:
                 fm.load(optimize_points=self.config.points["optimize"],
-                        filter_points=self.config.points["filter"]
+                        filter_points=self.config.points["filter"],
+                        only_load=True
                         )
                 
             except Exception as e:
-                self.logger.error("Cant' load %s: %s" % (fname, e))
+                self.logger.error("check_similarity: Can't load %s: %s" % (fname, e))
                 continue
 
             print("loaded: %s" % fname)
             track = fm.track()
+            add_similarity_helpers(track)
+            # create the elements for fast comparation.
             tracks[str(track.hash)] = track
         
         print("done:",len(tracks))
@@ -170,7 +173,6 @@ class Manager:
             tx = tracks[tx_key]
             tx.similar_tracks = [tx.hash]
             # create a point cache
-            #track1_cache=LineString([[p.latitude,p.longitude] for p in tx._gpx_points])
             print("-> %s %s" % (tx.hash,tx.fname))
             for ty_key in tracks:
                 ty = tracks[ty_key]
@@ -181,7 +183,7 @@ class Manager:
                 
                 if not ty.hash in tx.similar_tracks:
                     #if same_track(tx, ty, trk1_cache=track1_cache):
-                    if same_track(tx, ty):
+                    if same_track(tx, ty, use_cache=True):
                         tx.similar_tracks.append(ty.hash)
     
         ## done. Check all the data.
@@ -198,17 +200,17 @@ class Manager:
 
     def get_track(self, id):
         trk_data = self.db_get_track(id)
-        fm = FileManager([trk_data.fname])
+        fm = FileManager([trk_data['fname']])
+        
         try:
             fm.load(optimize_points=self.config.points["optimize"],
                     filter_points=self.config.points["filter"]
                     )
-            
         except Exception as e:
-            self.logger.error("Cant' load %s: %s" % (trk_data.fname, e))
+            self.logger.error("get_track: Can't load %s: %s" % (trk_data['fname'], e))
             return None
 
-        self.logger.info("file loaded %s" % trk_data.fname)
+        self.logger.info("file loaded %s" % trk_data['fname'])
         return fm.track()
     
     #
@@ -219,15 +221,16 @@ class Manager:
         cursor = self.db.cursor()
         cursor.execute(sql, (id,))
         data = cursor.fetchone()
-        #data = map(lambda x: dict(x), data))
-        return data
+        cursor.close()
+        return dict(data)
     
     def db_get_tracks_info(self):
         sql = "select * from tracks"
         cursor = self.db.cursor()
         cursor.execute(sql)
         data = cursor.fetchall()
-        data = map(lambda x: dict(x), data)
+        data = map(lambda x: dict(x), data)        
+        cursor.close()
         return data
     
 
@@ -262,6 +265,7 @@ class Manager:
         cursor.execute(sql)
         data = cursor.fetchall()
         track_data = map(lambda x: dict(x), data)
+        cursor.close()
         return track_data
     
         # sql = "select id,hash_track from similar_tracks"

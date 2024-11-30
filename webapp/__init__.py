@@ -1,13 +1,12 @@
 from flask import Flask, render_template 
 from flask_appconfig import AppConfig
 from flask_bootstrap import Bootstrap5
-from flask_login import LoginManager
 from flask_socketio import SocketIO
 from flask.logging import default_handler
-import flask_login 
 import logging
 
 
+from .caching import cache
 from .frontend import register_frontend
 
 import sys
@@ -19,6 +18,8 @@ def create_app(configfile=None):
     # We are using the "Application Factory"-pattern here, which is described
     # in detail inside the Flask docs:
     # http://flask.pocoo.org/docs/patterns/appfactories/
+
+
 
     app = Flask(__name__)
     @app.errorhandler(404) 
@@ -50,9 +51,9 @@ def create_app(configfile=None):
     app.config['BOOTSTRAP_SERVE_LOCAL'] = True
 
     # redirect the log to a file
-    app.logger.setLevel(logging.INFO)
+    app.logger.setLevel(AppEnv.config().logs["level"])
     handler = logging.FileHandler(AppEnv.config().logs["app"])
-    handler.setFormatter(logging.Formatter('[%(asctime)s] %(levelname)s in %(module)s: %(message)s'))
+    handler.setFormatter(logging.Formatter('[%(asctime)s] %(levelname)s in %(module)s:%(funcName)s:%(lineno)d: %(message)s'))
     app.logger.addHandler(handler)
 
     app.manager = Manager(AppEnv.config())
@@ -60,12 +61,19 @@ def create_app(configfile=None):
     app.manager.startup()
     app.manager.load_tokens()
     
+    cache.init_app(app)
     # inventory_helper.shutdown()
 
-    @app.context_processor
-    def add_imports():
-        # to add modules to jinja2
-        # Note: we only define the top-level module names!
-        # return dict(email=email, datetime=datetime, os=os)
-        return dict(flask_login=flask_login)
+    #@app.context_processor
+    #def add_imports():
+        # # to add modules to jinja2
+        # # Note: we only define the top-level module names!
+        # # return dict(email=email, datetime=datetime, os=os)
+        # pass
+        # return dict(flask_login=flask_login)
+
+
     return app
+
+def register_extensions(app):
+    cache.init_app(app)

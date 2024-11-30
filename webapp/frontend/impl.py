@@ -9,15 +9,19 @@ from flask import Blueprint, render_template, \
                   flash, redirect, url_for, current_app, request, Response, \
                   after_this_request, send_file, jsonify
 
+
+
 #from flask_bootstrap import __version__ as FLASK_BOOTSTRAP_VERSION
 from markupsafe import escape
-import flask_login
+
 import flask
 import traceback
 import logging
 import os
 import sys
 import time
+
+from webapp.caching import cache
 
 impl = Blueprint('impl', __name__)
 
@@ -45,11 +49,13 @@ def tracks_show():
     if not id:
         return redirect(url_for('impl.error', msg="Invalid id"))
     track = current_app.manager.db_get_track(id)
-    return render_template('show.html',track=track, TOKENS=app.config.tokens)
+
+    return render_template('show.html',track=track, TOKENS=current_app.manager.config.tokens)
 
 # json handlers
 
 @impl.route('/tracks/as_geojson', methods=['GET', 'POST'])
+@cache.cached(timeout=50,query_string=True)
 def tracks_as_geojson():
     id = request.args.get("id",None)
     if not id:
@@ -62,31 +68,34 @@ def tracks_as_geojson():
     # default stuff to test things here.
 
 @impl.route('/tracks/get_track_info', methods=['GET', 'POST'])
+@cache.cached(timeout=50,query_string=True)
 def tracks_get_track_info():
     id = request.args.get("id",None)
     if not id:
         return redirect(url_for('impl.error', msg="Invalid id"))
 
-    trk = current_app.file_manager.tracks[id]
-    center_lat, center_lon, center_alt = trk.track_center()
+    trk = current_app.manager.db_get_track(id)
+    #center_lat, center_lon, center_alt = trk.track_center()
+    # use the data stored in db:
+
     obj = { 
         'id': id,
         'start': { 
-            'long': trk.start_point().longitude, 
-            'lat': trk.start_point().latitude,
-            'altitude': trk.start_point().altitude 
+            'long': trk['begin_long'], 
+            'lat': trk['begin_lat'],
+            'altitude': trk['begin_elev'] 
         },
         'end': { 
-            'long': trk.end_point().longitude, 
-            'lat': trk.end_point().latitude,
-            'altitude': trk.end_point().altitude 
+            'long': trk['end_long'], 
+            'lat': trk['end_lat'],
+            'altitude': trk['end_elev'] 
         },
         'center': { 
-            'long': center_lon, 
-            'lat': center_lat,
-            'altitude': center_alt 
+            'long': trk["middle_long"], 
+            'lat': trk["middle_lat"],
+            'altitude': trk["middle_elev"] 
         },
-        'bounds':  trk.bounds(lonlat=True)
+        'bounds': [[trk['min_long'], trk['min_lat']], [trk['max_long'], trk['max_lat']]]
     }
 
     return jsonify(obj) 

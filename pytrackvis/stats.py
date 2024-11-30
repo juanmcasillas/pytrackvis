@@ -120,6 +120,8 @@ class Stats:
             raise ValueError("[W] No gpx_points to work with (len=0). Returning empty stats")
 
         center = self.track._gpx.tracks[0].get_center()
+        # get_center() doesn't compute the average value for center elevation.
+        center.elevation = self.track._gpx_points[int(len(self.track._gpx_points)/2)].elevation
         self.middle_point = C(
                         lat=center.latitude,
                         long=center.longitude,
