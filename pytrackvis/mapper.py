@@ -18,6 +18,8 @@
 import math
 import random
 import urllib3
+import ssl
+
 import io
 import os.path
 from collections import namedtuple
@@ -59,7 +61,7 @@ class GenericMapper:
 
 	def __init__(self, img_sz):
 		self.debug = True
-		self.img_sz = img_sz
+		self.img_sz = Size(width=img_sz[0],height=img_sz[1])
 
 	def Debug(self, debugme):
 		self.debug = debugme
@@ -107,9 +109,10 @@ class OSMMapper(GenericMapper):
 	#cachedir   	= "cache"		# directory name where cache tiles is stored.
 	debug	   	= 2				# debug level, from 0 to 10
 
-	def __init__(self, img_sz, cachedir="cache"):
+	def __init__(self, img_sz, cachedir="cache", unsafe_ssl=False):
 		GenericMapper.__init__(self, img_sz)
 		self.cachedir = cachedir
+		self.unsafe_ssl = unsafe_ssl
 
 	def GetMapBB(self,bb, mapempty=False,mapcolor=None, zoom_base=None, bounding_box=True):
 
@@ -361,7 +364,16 @@ class OSMMapper(GenericMapper):
 			#fd = urllib.urlopen(url)
 			#image_file = io.BytesIO(fd.read())
 			#fd.close()
-			resp = urllib3.request("GET",url)
+			if self.unsafe_ssl:
+				custom_ssl_context = ssl.create_default_context()
+				custom_ssl_context.check_hostname = False
+				custom_ssl_context.verify_mode = ssl.CERT_NONE
+				urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+				http = urllib3.PoolManager(cert_reqs=None, ssl_context=custom_ssl_context)
+			else:
+				http = urllib3.PoolManager()
+
+			resp = http.request("GET",url)
 			image_file = io.BytesIO(resp.data)
 			tileimage = Image.open(image_file)
 			

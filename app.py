@@ -57,7 +57,8 @@ if __name__ == "__main__":
 
     if args.command == "import_files":
         subargs = import_files_parser.parse_args()
-        manager.import_files(subargs.files)
+        # remove the current command in the args.
+        manager.import_files(subargs.files[1:])
         sys.exit(0)
 
     if args.command == "check_similarity":

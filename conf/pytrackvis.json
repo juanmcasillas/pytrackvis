@@ -1,5 +1,6 @@
 {
     "verbose": true,
+    
     "points": {
         "optimize": true,
         "filter": true
@@ -25,6 +26,32 @@
         "enabled": true,
         "directory": "osm_cache",
         "debug": true
+    },
+    "map_preview": {
+        "unsafe_ssl": true,
+        "track_size": [800, 600],
+        "track_color": [255, 255, 80],
+        "track_width": 3,
+
+        "direction_width":  2,
+        "arrow_width": 6,
+        "radius": 8,
+        "small_img_size": 400,
+        "direction_width_big": 3,
+        "arrow_width_big": 8,
+        "radius_big": 20,
+
+        "direction_color": [255, 0, 0],
+        "arrows_color": [240, 10, 10],
+        "center_color": [100, 100, 200],
+        "center_radius": 2,
+
+        "start_color": [10, 180, 10],
+        "start_radius": 3,
+        "start_outline_color": [10, 100, 10],
+        "end_color": [50, 50, 220],
+        "end_radius": 3,
+        "end_outline_color": [50, 50, 100]
     }
     
 }

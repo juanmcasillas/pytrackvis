@@ -24,6 +24,7 @@ from pytrackvis.helpers import C, set_proxy, manhattan_point, same_track
 from pytrackvis.helpers import glob_filelist, add_similarity_helpers, del_similarity_helpers
 from pytrackvis.track import Track
 from pytrackvis.filemanager import FileManager
+from pytrackvis.mapreview import MapPreviewManager
 
 class Manager:
     LOG_NAME = "PyTrackVis"
@@ -42,6 +43,9 @@ class Manager:
         self.configure_logger()
         self.configure_proxy()
         self.db_connect()
+        self.mappreview_manager = MapPreviewManager(self.config.map_preview, 
+                                                    cachedir=self.config.osm_cache["directory"],
+                                                    debug=self.config.osm_cache["debug"])
         
 
     def shutdown(self):
@@ -143,7 +147,9 @@ class Manager:
 
             track_id = self.db_track_exists(track)
             if not track_id:
-                self.db_store_track(track)
+                map = self.mappreview_manager.create_map_preview(track)
+                map.save("map.png", 'PNG')
+                #self.db_1_track(track)
                 # calculate similarity
                 # create map preview
             else:

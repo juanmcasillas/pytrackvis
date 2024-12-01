@@ -24,7 +24,6 @@ class C:
         for i in kargs:
             self.__setattr__(i, kargs[i])
 
-
 class CacheManager:
     def __init__(self, cachedir):
         self.cachedir = cachedir
@@ -86,6 +85,9 @@ def  glob_filelist(files):
         for f in glob.glob(fname, recursive=True):
             if f not in found_files:
                 found_files.append(f)
+        # if fname is a real file, and not in found file, add it, also.
+        if os.path.exists(fname) and os.path.isfile(fname) and not fname in found_files:
+            found_files.append(fname)
     return found_files
 
 
