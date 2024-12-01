@@ -7,6 +7,7 @@ CREATE TABLE TRACKS (
     id                  INTEGER PRIMARY KEY AUTOINCREMENT,
     fname               TEXT DEFAULT "",
     hash                TEXT DEFAULT "",
+    preview             TEXT DEFAULT "",
 
     number_of_points    INTEGER DEFAULT 0,
     duration            INTEGER DEFAULT 0,

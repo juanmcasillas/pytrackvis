@@ -50,19 +50,21 @@ class MapPreviewManager:
         track_width = self.config["track_width"] if track_width is None else track_width
         
         
-        mapper = OSMMapper(img_size, cachedir=self.cachedir, unsafe_ssl=self.config["unsafe_ssl"])
+        mapper = OSMMapper(img_size, 
+                           cachedir=self.cachedir, 
+                           unsafe_ssl=self.config["unsafe_ssl"])
+        
         mapper.Debug(self.debug)
-        min_pos, max_pos = track.bounds()
-        min_lat, min_lon = min_pos
-        max_lat, max_lon = max_pos
-        NW = gpxpy.geo.Location(max_lat or 0.0, min_lon or 0.0)
-        NE = gpxpy.geo.Location(max_lat or 0.0, max_lon or 0.0)
-        SE =  gpxpy.geo.Location(min_lat or 0.0, max_lon or 0.0)
-        SW =  gpxpy.geo.Location(min_lat or 0.0, min_lon  or 0.0)
-        map = mapper.GetMapBB((NW, NE, SE, SW), mapempty=False, bounding_box=False)
+        map = mapper.GetMapBB(track.bounds(), mapempty=False, bounding_box=False)
         
         if len(track._gpx_points) > 0:
-            mapper.ProjectPoints(track._gpx_points, map, color=tuple(track_color), width=track_width)
+            mapper.ProjectPoints(track._gpx_points, 
+                                 map, 
+                                 color=tuple(track_color), 
+                                 width=track_width,
+                                 use_gradient = self.config["use_gradient"],
+                                 gradient_value= self.config["gradient_value"]
+                                 )
              
             arrow_width = self.arrow_width
             radius = self.radius

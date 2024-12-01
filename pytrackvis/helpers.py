@@ -66,9 +66,15 @@ class CacheManager:
         return False
     
 
-    def map_object(self, fpath):
-        fid = hashlib.md5(fpath.encode('utf-8')).hexdigest()
+    def map_object(self, fpath, create_dirs=False, relative=False):
+        fid = hashlib.md5(str(fpath).encode('utf-8')).hexdigest()
         tgt = os.sep.join([self.cachedir, fid[0:2].upper(), fid[2:4].upper(),fid])
+        if create_dirs:
+            d = os.path.dirname(tgt)
+            os.makedirs(d,exist_ok=True)
+        if relative:
+            # remove the cache directory, return only the relative one.
+            tgt = os.sep.join([fid[0:2].upper(), fid[2:4].upper(),fid])
         return tgt
 
 def test_cache():

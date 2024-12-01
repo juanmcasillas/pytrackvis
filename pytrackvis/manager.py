@@ -22,6 +22,7 @@ from pytrackvis.appenv import *
 from pytrackvis.mapper import OSMMapper
 from pytrackvis.helpers import C, set_proxy, manhattan_point, same_track
 from pytrackvis.helpers import glob_filelist, add_similarity_helpers, del_similarity_helpers
+from pytrackvis.helpers import CacheManager
 from pytrackvis.track import Track
 from pytrackvis.filemanager import FileManager
 from pytrackvis.mapreview import MapPreviewManager
@@ -34,6 +35,7 @@ class Manager:
         self.verbose = self.config.verbose
         self.db = None
         self.logger = logging.getLogger()
+        self.track_previews = CacheManager(self.config.map_preview["track_previews_dir"])
 
     def db_connect(self):
         self.db = sqlite3.connect(self.config.database["file"], check_same_thread=False)
@@ -147,11 +149,17 @@ class Manager:
 
             track_id = self.db_track_exists(track)
             if not track_id:
+                # create track map preview
                 map = self.mappreview_manager.create_map_preview(track)
-                map.save("map.png", 'PNG')
-                #self.db_1_track(track)
+                #relative route (for www)
+                track.preview = "%s.png" % self.track_previews.map_object(track.hash, create_dirs=True, relative=True)
+                # absolute path (for store)
+                target = self.track_previews.map_object(track.hash)
+                map.save(target, 'PNG')
+                
+                self.db_store_track(track)
                 # calculate similarity
-                # create map preview
+ 
             else:
                 track.id = track_id
                 self.logger.warning("Track %s exists on DB (id=%d)" % (track.hash, track.id))
@@ -329,7 +337,7 @@ class Manager:
 
     def db_store_track(self, track):
         sql = """
-        insert into tracks(fname, hash, number_of_points, 
+        insert into tracks(fname, hash, preview, number_of_points, 
                            duration, length_2d, length_3d,
                            start_time,end_time,moving_time,
                            
@@ -403,7 +411,7 @@ class Manager:
                            max_power,min_power,avg_power,
                            max_cadence,min_cadence,avg_cadence,
                            max_temperature,min_temperature,avg_temperature)
-        values ( ?, ?, ?, 
+        values ( ?, ?, ?, ?,
                  ?, ?, ?,
                  ?, ?, ?,
 

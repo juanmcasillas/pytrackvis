@@ -499,7 +499,7 @@ class Track:
             # else, return also the stats in db format
             pass
         # id not passed
-        return (self.fname, self.hash, self._stats.number_of_points,
+        return (self.fname, self.hash, self.preview, self._stats.number_of_points,
                 self._stats.duration, self._stats.length_2d,self._stats.length_3d,
                 self._stats.start_time, self._stats.end_time, self._stats.moving_time,
 

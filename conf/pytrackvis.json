@@ -28,8 +28,11 @@
         "debug": true
     },
     "map_preview": {
+        "track_previews_dir": "webapp/static/img/track_previews",
         "unsafe_ssl": true,
-        "track_size": [800, 600],
+        "use_gradient": true,
+        "gradient_value": "elevation",
+        "track_size": [450, 250],
         "track_color": [255, 255, 80],
         "track_width": 3,
 
@@ -46,12 +49,11 @@
         "center_color": [100, 100, 200],
         "center_radius": 2,
 
-        "start_color": [10, 180, 10],
+        "start_color": [10, 220, 10],
         "start_radius": 3,
         "start_outline_color": [10, 100, 10],
-        "end_color": [50, 50, 220],
+        "end_color": [220, 10, 10],
         "end_radius": 3,
-        "end_outline_color": [50, 50, 100]
+        "end_outline_color": [100, 10, 10]
     }
-    
 }

@@ -20,6 +20,7 @@
         <div class="row", data-masonry='{"percentPosition": true }'>
         {% for track in tracks %}
         <div class="card m-1" style="max-width: 18rem;">
+            <img src="{{url_for('static', filename='img/track_previews')}}/{{track.preview}}" class="pt-2 card-img-top" ></img>
             <div class="card-body">
               <h5 class="card-title">{{track.name}}</h5>
               <p class="card-text">{{'%3.2f'|format(track.length_3d|float)}} m</p>
