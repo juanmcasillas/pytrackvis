@@ -32,9 +32,12 @@ if __name__ == "__main__":
     import_files_parser.set_defaults(command="import_files")
     import_files_parser.add_argument("files",help="fit or gpx files", nargs='+')
 
-
     similarity_parser = subparsers.add_parser("check_similarity",help="Computes similarity on the DB")
     similarity_parser.set_defaults(command="check_similarity")
+
+    list_parser = subparsers.add_parser("list_tracks",help="Show imported tracks")
+    list_parser.set_defaults(command="list_tracks")
+
 
     args = parser.parse_args()
 
@@ -60,5 +63,10 @@ if __name__ == "__main__":
     if args.command == "check_similarity":
         manager.check_similarity()
         sys.exit(0)
+
+    if args.command == "list_tracks":
+        manager.list_tracks()
+        sys.exit(0)
+
 
     manager.shutdown()

@@ -40,7 +40,9 @@ class Manager:
 
     def startup(self):
         self.configure_logger()
+        self.configure_proxy()
         self.db_connect()
+        
 
     def shutdown(self):
         """ends the execution, closes the database
@@ -63,23 +65,31 @@ class Manager:
         
         self.logger.info("MAPTILER_KEY token loaded")
 
+
+    def configure_proxy(self):
+        if self.config.proxy["enabled"]:
+            set_proxy(self.config.proxy["url"])
+            self.logger.info("proxy enabled: %s" % self.config.proxy["url"])
+        else:
+            self.logger.info("proxy disabled, direct connection")
+
     def configure_logger(self):
 
         self.logger.setLevel(self.config.logs["level"])
-        log_formatter = logging.Formatter("A" + self.config.logs["format"])
+        log_formatter = logging.Formatter(self.config.logs["format"])
         # rootLogger = logging.getLogger()
         
         if not os.path.exists(self.config.logs["app"]):
             logpath = os.path.dirname(self.config.logs["app"])
             os.makedirs(logpath, exist_ok=True)
 
-        #file_handler = logging.FileHandler(self.config.logs["app"])
-        #file_handler.setFormatter(log_formatter)
-        #self.logger.addHandler(file_handler)
+        file_handler = logging.FileHandler(self.config.logs["app"])
+        file_handler.setFormatter(log_formatter)
+        self.logger.addHandler(file_handler)
 
-        consoleHandler = logging.StreamHandler()
-        consoleHandler.setFormatter(log_formatter)
-        self.logger.addHandler(consoleHandler)
+        #consoleHandler = logging.StreamHandler()
+        #consoleHandler.setFormatter(log_formatter)
+        #self.logger.addHandler(consoleHandler)
 
     ## some commands
 
@@ -134,6 +144,8 @@ class Manager:
             track_id = self.db_track_exists(track)
             if not track_id:
                 self.db_store_track(track)
+                # calculate similarity
+                # create map preview
             else:
                 track.id = track_id
                 self.logger.warning("Track %s exists on DB (id=%d)" % (track.hash, track.id))
@@ -198,6 +210,13 @@ class Manager:
             print(i)
         self.db_save_similarity(similar_tracks)
 
+
+    def list_tracks(self):
+        tracks = self.db_get_tracks()
+        for track in tracks:
+            print("id:%s hash:[%s] fname:%s" % (track['id'], track['hash'], track['fname']))
+        print("%d tracks loaded" % len(tracks))
+
     def get_track(self, id):
         trk_data = self.db_get_track(id)
         fm = FileManager([trk_data['fname']])
@@ -213,9 +232,18 @@ class Manager:
         self.logger.info("file loaded %s" % trk_data['fname'])
         return fm.track()
     
-    #
+    #ca
     # database methods
     #
+    def db_get_tracks(self):
+        sql = "select * from tracks"
+        cursor = self.db.cursor()
+        cursor.execute(sql)
+        data = cursor.fetchall()
+        data = map(lambda x: dict(x), data)
+        cursor.close()
+        return list(data)
+    
     def db_get_track(self, id):
         sql = "select * from tracks where id = ?"
         cursor = self.db.cursor()
@@ -229,9 +257,9 @@ class Manager:
         cursor = self.db.cursor()
         cursor.execute(sql)
         data = cursor.fetchall()
-        data = map(lambda x: dict(x), data)        
+        data = map(lambda x: dict(x), data)
         cursor.close()
-        return data
+        return list(data)
     
 
     def db_track_exists(self, track):
@@ -266,7 +294,7 @@ class Manager:
         data = cursor.fetchall()
         track_data = map(lambda x: dict(x), data)
         cursor.close()
-        return track_data
+        return list(track_data)
     
         # sql = "select id,hash_track from similar_tracks"
         # cursor.execute(sql)

@@ -11,6 +11,11 @@ conf/tokens.ini
 OSM_CACHE
 OSM_CACHE/**
 *.png 
+cache
+cache/**
+CACHE
+CACHE/**
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -51,3 +51,5 @@ https://documentation.maptiler.com/hc/en-us/articles/5224821308177-How-to-build-
 ## TODO
 
 * `/Archive/Cartography/files/FENIX3/2024/2024-01-25-17-13-31 - [RUN,FENIX3,RASE23] San Martín - Camino de Cadalso - Cementerio - San Martín.fit` check this track for problems in the optimizer (infinite coords)
+* Add Preview
+* Improve the Import code so we do the previsualization, initial map, and similar matching

@@ -9,7 +9,7 @@
         "script": "db/trackdb.sql"
     },
     "proxy": {
-        "enabled": true,
+        "enabled": false,
         "url": "http://proxy.senado.es:8080"
     },
     "tokens": {

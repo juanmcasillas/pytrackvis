@@ -16,10 +16,67 @@ import math
 import os
 import glob
 from shapely.geometry import LineString
+import hashlib
+import shutil
+
 class C:
     def __init__(self, **kargs):
         for i in kargs:
             self.__setattr__(i, kargs[i])
+
+
+class CacheManager:
+    def __init__(self, cachedir):
+        self.cachedir = cachedir
+
+    def store(self, fname, force=False):
+        if not os.path.exists(fname) or not os.path.isfile(fname):
+            raise FileExistsError("file %s doesn't exists" % fname)
+
+        tgt = self.map_object(fname)
+        if not force:
+            if os.path.exists(tgt):
+                return None
+
+        # default: store file in the cache directory
+        try:
+            os.makedirs(os.path.dirname(tgt),exist_ok=True)
+            shutil.copyfile(fname, tgt)
+        except Exception as e:
+            raise IOError("can't store %s in cache" % fname)
+        
+        return tgt
+
+
+    def retrieve(self, fname):
+        "if not found on cache, store it and retrieve"
+        tgt = self.map_object(fname)
+        if not os.path.exists(tgt):
+            tgt = self.store(fname)
+        
+        return tgt
+        
+    def remove(self, fname):
+        tgt = self.map_object(fname)
+        if os.path.exists(tgt):
+            try:
+                os.remove(tgt)
+            except Exception as e:
+                raise IOError("Can't delete file from cache%s" % fname)
+            return True
+        return False
+    
+
+    def map_object(self, fpath):
+        fid = hashlib.md5(fpath.encode('utf-8')).hexdigest()
+        tgt = os.sep.join([self.cachedir, fid[0:2].upper(), fid[2:4].upper(),fid])
+        return tgt
+
+def test_cache():
+    cm = CacheManager("cache")
+    print("hola")
+    print(cm.retrieve("file.txt"))
+
 
 
 def  glob_filelist(files):
@@ -268,3 +325,6 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     lastvals = y[-1] + np.abs(y[-half_window-1:-1][::-1] - y[-1])
     y = np.concatenate((firstvals, y, lastvals))
     return np.convolve( m[::-1], y, mode='valid')
+
+if __name__ == "__main__":
+    test_cache()
