@@ -14,7 +14,7 @@
         <div class="bg-light mt-2 p-2">
             <h1 class="display-2">PyTrack Visualizer</h1>
             <h1 class="display-5">List Available tracks</h1>
-            <p>Here you are the available track list</p>
+            <p>These are the available tracks</p>
         </div>
         
         <div class="row", data-masonry='{"percentPosition": true }'>
@@ -22,8 +22,13 @@
         <div class="card m-1" style="max-width: 18rem;">
             <img src="{{url_for('static', filename='img/track_previews')}}/{{track.preview}}" class="pt-2 card-img-top" ></img>
             <div class="card-body">
+              {{track.stamp|strftimestamp}}</br>
               <h5 class="card-title">{{track.name}}</h5>
-              <p class="card-text">{{'%3.2f'|format(track.length_3d|float)}} m</p>
+              <p class="card-text">
+                Longitud: {{track.length_3d|humandistance}}</br>
+                Score: {{'%3.2f'|format(track.score|float)}}</br>
+                
+               </p>
               <center>
               <a href="/tracks/show?id={{track.id}}" class="btn btn-primary">Show</a>
               </center>

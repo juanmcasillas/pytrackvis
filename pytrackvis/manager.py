@@ -17,6 +17,7 @@ import logging.handlers
 import sqlite3
 import configparser
 import sys
+import shutil
 
 from pytrackvis.appenv import *
 from pytrackvis.mapper import OSMMapper
@@ -124,6 +125,10 @@ class Manager:
 
         db.commit()
         db.close()
+        # clear the directory of previews
+        shutil.rmtree(self.config.map_preview["track_previews_dir"])
+        os.makedirs(self.config.map_preview["track_previews_dir"],exist_ok=True)
+
 
     def import_files(self, files):
         "load files from directory, or one by one. Check if track exists."
@@ -156,7 +161,6 @@ class Manager:
                 # absolute path (for store)
                 target = self.track_previews.map_object(track.hash)
                 map.save("%s.png" % target, 'PNG')
-                
                 self.db_store_track(track)
                 # calculate similarity
  
@@ -337,7 +341,7 @@ class Manager:
 
     def db_store_track(self, track):
         sql = """
-        insert into tracks(fname, hash, preview, number_of_points, 
+        insert into tracks(fname, hash, preview, stamp, number_of_points, 
                            duration, length_2d, length_3d,
                            start_time,end_time,moving_time,
                            
@@ -350,10 +354,8 @@ class Manager:
                            minimum_elevation,maximum_elevation,
                            
                            name,kind,device,equipment,
-                           description,rating,
-                           is_circular,quality,
+                           description,
                            is_clockwise,score,
-                           is_cloned,
                            
                            min_lat,min_long,max_lat,max_long,
                            
@@ -411,7 +413,7 @@ class Manager:
                            max_power,min_power,avg_power,
                            max_cadence,min_cadence,avg_cadence,
                            max_temperature,min_temperature,avg_temperature)
-        values ( ?, ?, ?, ?,
+        values ( ?, ?, ?, ?, ?,
                  ?, ?, ?,
                  ?, ?, ?,
 
@@ -424,10 +426,8 @@ class Manager:
                  ?, ?,
 
                  ?, ?, ?, ?, 
-                 ?, ?, 
+                 ?,  
                  ?, ?,
-                 ?, ?,
-                 ?, 
 
                  ?, ?, ?, ?,    
 

@@ -15,9 +15,12 @@ import re
 import gpxpy
 import uuid
 import datetime
+import os
+import time
+import datetime
 
 
-from .helpers import bearing, distancePoints, module
+from .helpers import bearing, distancePoints, module, C
 from .stats import Stats, get_fval
 from .optimizer import GPXOptimizer
 
@@ -327,6 +330,19 @@ class Track:
         self.device = "device_ph"
         self.equipment = "equipment_ph"
         self.description = "description_ph"
+        self.stamp = time.time()
+
+
+    def set_metadata(self):
+        metadata = self.parse_fname(self.fname)
+        self.name = metadata.name
+        self.kind = metadata.kind
+        self.device = metadata.device
+        self.equipment = metadata.equipment
+        self.places = metadata.places
+        self.stamp = metadata.stamp
+
+
 
     def from_dict(self, d):
         for i in d:
@@ -359,7 +375,9 @@ class Track:
         #optimize the track,
         #calculate the "hash"
         self.fname = fname
+        
 
+        self.set_metadata()
 
         self._gpx = gpxpy.gpx.GPX()
         self._gpx.name = "internal gpx data"
@@ -384,7 +402,7 @@ class Track:
             if p.latitude is not None and \
                p.longitude is not None and \
                p.timestamp is not None:
-
+        
                 p_gpx = gpxpy.gpx.GPXTrackPoint(
                             latitude=p.latitude,
                             longitude=p.longitude,
@@ -405,6 +423,7 @@ class Track:
         if optimize_points:
             self._optimizer = GPXOptimizer()
             gpx_points = self._optimizer.Optimize(self._gpx.tracks[0].segments[0].points)
+
             self._gpx.tracks[0].segments[0].points = gpx_points
 
 
@@ -445,11 +464,13 @@ class Track:
                     "coordinates": [ ]
                 }
         }
-        for p in self.points:
+        #
+        # use the processed data, no the raw one loaded
+        for p in self._gpx_points:
             o["data"]["geometry"]["coordinates"].append([
                 p.longitude,
                 p.latitude,
-                p.altitude]
+                p.elevation]
             )
         return o
 
@@ -499,7 +520,7 @@ class Track:
             # else, return also the stats in db format
             pass
         # id not passed
-        return (self.fname, self.hash, self.preview, self._stats.number_of_points,
+        return (self.fname, self.hash, self.preview, self.stamp, self._stats.number_of_points,
                 self._stats.duration, self._stats.length_2d,self._stats.length_3d,
                 self._stats.start_time, self._stats.end_time, self._stats.moving_time,
 
@@ -512,11 +533,9 @@ class Track:
                 self._stats.minimum_elevation,self._stats.maximum_elevation,
 
                 self.name, self.kind, self.device, self.equipment,
-                self.description, self._stats.rating,
-                self._stats.is_circular, self._stats.quality,
+                self.description,
                 self._stats.is_clockwise, self._stats.score,
-                self._stats.is_cloned,
-
+     
                 self._stats.bounds.min_latitude,
                 self._stats.bounds.min_longitude,
                 self._stats.bounds.max_latitude,
@@ -610,3 +629,45 @@ class Track:
                 self._stats.min_temperature,
                 self._stats.avg_temperature
         )
+    
+    def parse_fname(self, fname):
+        ret = C(stamp=None, tags=None, places=None, extension=None, 
+                kind=None, device=None, equipment=None,
+                name=None)
+
+        """
+        /Archive/Cartography/files/FENIX3/2023/
+        2023-01-02-16-10-14 - [RUN,FENIX3,NB_HIERRO] San Martín - Camino de Pelayos - Acorte (Largo) - Camino Angosto - San Martín.fit
+        """
+        
+        regstr = re.match("(\d{4}-\d{2}-\d{2}-\w{2}-\w{2}-\w{2}|\d{10}|\d{8})?\s*(-+)?\s*(\[.+\])*\s*(.+)\.(.+)", 
+                        os.path.basename(fname), 
+                        re.I)
+
+        if regstr:
+            if regstr.group(1):
+                stamp = regstr.group(1)
+                stamp = stamp.upper().replace('X', '0')  # to manage UNKNOWN dates (from creation)
+                ret.stamp = time.mktime(datetime.datetime.strptime(stamp, "%Y-%m-%d-%H-%M-%S").timetuple())
+
+            if regstr.group(3):
+                tags = regstr.group(3)
+                tags = re.sub('\]\s*\[', ',', tags)
+                tags = re.sub('[\[\]]', '', tags)
+                tags = tags.split(',')
+                ret.tags = list(filter(lambda x: x.strip(), tags))
+                ret.kind = ret.tags[0]
+                ret.device = ret.tags[1]
+                ret.equipment = ret.tags[2]
+
+
+            if regstr.group(4):
+                places = regstr.group(4)
+                places = re.split("\s*[-_]+\s*", places)
+                ret.places = list(filter(lambda x: x.strip(), places))
+                ret.name = " - ".join(ret.places)
+
+            if regstr.group(5):
+                ret.extension = regstr.group(5).lower()
+
+        return ret

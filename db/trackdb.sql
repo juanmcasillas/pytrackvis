@@ -8,6 +8,7 @@ CREATE TABLE TRACKS (
     fname               TEXT DEFAULT "",
     hash                TEXT DEFAULT "",
     preview             TEXT DEFAULT "",
+    stamp               INTEGER DEFAULT 0,
 
     number_of_points    INTEGER DEFAULT 0,
     duration            INTEGER DEFAULT 0,
@@ -38,12 +39,8 @@ CREATE TABLE TRACKS (
     device              TEXT DEFAULT "",
     equipment           TEXT DEFAULT "",
     description         TEXT DEFAULT "",
-    rating              INTEGER DEFAULT 0,
-    is_circular         INTEGER DEFAULT 1,
-    quality             REAL DEFAULT 0.0,
     is_clockwise        INTEGER DEFAULT 0,      -- 0 means clockwise route
     score               REAL DEFAULT 0,
-    is_cloned           INTEGER DEFAULT 0,      -- track is done multiple times?
 
     -- boundingbox information
     min_lat              REAL DEFAULT 0.0,

@@ -4,6 +4,8 @@ from flask_bootstrap import Bootstrap5
 from flask_socketio import SocketIO
 from flask.logging import default_handler
 import logging
+import time
+import datetime 
 
 
 from .caching import cache
@@ -72,6 +74,21 @@ def create_app(configfile=None):
         # pass
         # return dict(flask_login=flask_login)
 
+    @app.template_filter('strftimestamp')
+    def _jinja2_filter_strfftimestamp(stamp, fmt=None):
+        
+        fmt = fmt if fmt is not None else "%d/%m/%Y %H:%M:%S"
+        dt = datetime.datetime.fromtimestamp(stamp)
+        return  dt.strftime(fmt)
+
+    @app.template_filter('humandistance')
+    def _jinja2_filter_humandistance(distance):
+        if distance >= 1000.0:
+            s =  "%3.2f Km" % (float(distance) / 1000)
+            return(s)
+
+        return "%3.2f m" % float(distance)
+        
 
     return app
 

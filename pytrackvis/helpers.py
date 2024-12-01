@@ -18,11 +18,21 @@ import glob
 from shapely.geometry import LineString
 import hashlib
 import shutil
+import re
+import os
+import time
+import datetime
 
 class C:
     def __init__(self, **kargs):
         for i in kargs:
             self.__setattr__(i, kargs[i])
+
+    def __str__(self):
+        s= ""
+        for i in self.__dict__.keys():
+            s += "<%s: %s>, " % (i, self.__dict__[i])
+        return s
 
 class CacheManager:
     def __init__(self, cachedir):
@@ -77,12 +87,15 @@ class CacheManager:
             tgt = os.sep.join([fid[0:2].upper(), fid[2:4].upper(),fid])
         return tgt
 
-def test_cache():
-    cm = CacheManager("cache")
-    print("hola")
-    print(cm.retrieve("file.txt"))
+# def test_cache():
+#     cm = CacheManager("cache")
+#     print("hola")
+#     print(cm.retrieve("file.txt"))
 
 
+
+
+        
 
 def  glob_filelist(files):
     found_files = []
