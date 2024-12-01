@@ -155,7 +155,7 @@ class Manager:
                 track.preview = "%s.png" % self.track_previews.map_object(track.hash, create_dirs=True, relative=True)
                 # absolute path (for store)
                 target = self.track_previews.map_object(track.hash)
-                map.save(target, 'PNG')
+                map.save("%s.png" % target, 'PNG')
                 
                 self.db_store_track(track)
                 # calculate similarity

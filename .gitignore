@@ -15,7 +15,7 @@ cache
 cache/**
 CACHE
 CACHE/**
-
+webapp/static/img/track_previews/**
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
