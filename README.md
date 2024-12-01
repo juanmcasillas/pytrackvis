@@ -1,6 +1,16 @@
 # pytrackvis
 A simple Python GPX and FIT track file format visualization app on 2D / 3D Map using leafmap. Only accept FIT and GPX files. Try to keep the software standard and simple, getting only the required data. The maplibre install only works on python 3.11.x
 
+<img src="img/screenshot_01.png"></img>
+
+<img src="img/screenshot_02.png"></img>
+
+<img src="img/screenshot_03.png"></img>
+
+<img src="img/screenshot_04.png"></img>
+
+<img src="img/screenshot_05.png"></img>
+
 ## Libs
 
 * [fitdecode](https://fitdecode.readthedocs.io/en/latest/) To read FIT files

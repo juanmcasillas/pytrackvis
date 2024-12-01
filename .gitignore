@@ -10,7 +10,6 @@ dev/*.html
 conf/tokens.ini
 OSM_CACHE
 OSM_CACHE/**
-*.png 
 cache
 cache/**
 CACHE
