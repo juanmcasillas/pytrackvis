@@ -136,10 +136,14 @@ def same_track(trk1, trk2, radius=0.001, debug=False, use_cache=False):
     # https://gis.stackexchange.com/questions/81551/matching-gps-tracks
 
     if use_cache:
+        print("before")
         match1=trk2._trk_buff.intersection(trk1._trk_ls).buffer(radius)
+        print("match1",  len(trk1._trk_buff.coords ))
         match2=trk1._trk_buff.intersection(trk2._trk_ls).buffer(radius)
+        print("match2",  len(trk2._trk_buff.coords ))
         match=match1.intersection(match2)
-            
+        print("intersection")
+
         if debug:
             fig=plt.figure()
             ax = fig.add_subplot(111)
@@ -153,7 +157,9 @@ def same_track(trk1, trk2, radius=0.001, debug=False, use_cache=False):
             ret = False
         else:
             mb = match.buffer(radius)
+            print("contains-before")
             ret = mb.contains(trk1._trk_ls) and mb.contains(trk2._trk_ls)
+            print("contains-after")
         return ret
     
     # standard version (calculated each time)
