@@ -74,6 +74,7 @@ class Manager:
 
 
     def configure_proxy(self):
+
         if self.config.proxy["enabled"]:
             set_proxy(self.config.proxy["url"])
             self.logger.info("proxy enabled: %s" % self.config.proxy["url"])
@@ -126,7 +127,7 @@ class Manager:
         db.commit()
         db.close()
         # clear the directory of previews
-        shutil.rmtree(self.config.map_preview["track_previews_dir"])
+        shutil.rmtree(self.config.map_preview["track_previews_dir"], ignore_errors=True)
         os.makedirs(self.config.map_preview["track_previews_dir"],exist_ok=True)
 
 
@@ -275,10 +276,41 @@ class Manager:
         cursor = self.db.cursor()
         cursor.execute(sql)
         data = cursor.fetchall()
-        data = map(lambda x: dict(x), data)
+        data = list(map(lambda x: dict(x), data))
         cursor.close()
-        return list(data)
+        for i in data:
+            i['similar'] = self.db_get_track_similarity(i['id'])
+        return data
+
     
+    def db_get_track_similarity(self, id):
+        sql = """
+            select * from tracks where id in (
+	            select id_track from SIMILAR_TRACKS where id in (
+		            select id from SIMILAR_TRACKS where id_track = ?
+	            )
+            );"""
+        
+        """
+        get the groups of track similarity, but process them. If only 
+        one track in the group, return an empty set (no similar, only me)
+        if not, then extract my own id from the list.
+        """
+        cursor = self.db.cursor()
+        cursor.execute(sql,(id,))
+        data = cursor.fetchall()
+        data = list(map(lambda x: dict(x), data))
+        cursor.close()
+        ret = []
+        if len(data) == 1:
+            return ret
+        for i in data:
+            if i['id'] == id:
+                continue
+            ret.append(i)
+
+        return ret
+
 
     def db_track_exists(self, track):
         "check if the track is loaded in the database, using the hash"
@@ -297,10 +329,16 @@ class Manager:
         cursor.execute(sql)
         self.db.commit()
 
-        sql = "insert into similar_tracks(id, hash_track) values (?, ?)"
+        sql = "insert into similar_tracks(id, hash_track, id_track) values (?, ?, ?)"
+        sql2 = "select id from tracks where hash = ?"
+    
         for i in range(len(data)):
             for j in data[i]:
-                cursor.execute(sql, (i, j,))  
+                cursor2 = self.db.cursor()
+                cursor2.execute(sql2,(j,))
+                track_id = cursor2.fetchone()["id"]
+                cursor2.close()
+                cursor.execute(sql, (i, j, track_id,))  
         
         self.db.commit()
         cursor.close()
@@ -334,6 +372,7 @@ class Manager:
         # #     [-1444645076578622331]
         # # ]
         # return track_data, list(similar_data.values())
+
 
 
     

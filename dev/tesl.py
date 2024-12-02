@@ -16,14 +16,14 @@ def track_similarity(trk1, trk2):
     # iterate the track with less points, and calculate
     # the sum of the manhattan_distance between points.
 
-    if len(trk1._gpx_points) >= len(trk2._gpx_points):
-        max_points = len(trk2._gpx_points) 
+    if len(trk1.points) >= len(trk2.points):
+        max_points = len(trk2.points) 
     else:
-        max_points = len(trk1._gpx_points)
+        max_points = len(trk1.points)
 
     similarity = 0.0
     for i in range(0,max_points):
-        similarity += manhattan_point(trk1._gpx_points[i], trk2._gpx_points[i])
+        similarity += manhattan_point(trk1.points[i], trk2.points[i])
 
     return similarity / max_points 
 

@@ -124,7 +124,7 @@ def module(vector):
     return math.sqrt(sum(v**2 for v in vector))
 
 def add_similarity_helpers(track, radius=0.001):
-    track._trk_ls = LineString([[p.latitude,p.longitude] for p in track._gpx_points])
+    track._trk_ls = LineString([[p.latitude,p.longitude] for p in track.points])
     track._trk_buff = track._trk_ls.buffer(radius)
 
 def del_similarity_helpers(track, radius=0.001):
@@ -157,8 +157,8 @@ def same_track(trk1, trk2, radius=0.001, debug=False, use_cache=False):
         return ret
     
     # standard version (calculated each time)
-    track1=LineString([[p.latitude,p.longitude] for p in trk1._gpx_points])
-    track2=LineString([[p.latitude,p.longitude] for p in trk2._gpx_points])
+    track1=LineString([[p.latitude,p.longitude] for p in trk1.points])
+    track2=LineString([[p.latitude,p.longitude] for p in trk2.points])
     
     # track1_buffered=track1.buffer(BUFFER_SZ)
     # fig=plt.figure()
@@ -201,21 +201,21 @@ def same_track(trk1, trk2, radius=0.001, debug=False, use_cache=False):
 def track_similarity(trk1, trk2):
     # iterate the track with less points, and calculate
     # the sum of the manhattan_distance between points.
-    len_1 = len(trk1._gpx_points)
-    len_2 = len(trk2._gpx_points)
+    len_1 = len(trk1.points)
+    len_2 = len(trk2.points)
 
     if len_1 != len_2:
         if len_2 > len_1:
             diff = len_2 - len_1
-            trk1._gpx_points += [gpxpy.gpx.GPXTrackPoint(latitude=0.0,longitude=0.0,elevation=0.0)] *diff
+            trk1.points += [gpxpy.gpx.GPXTrackPoint(latitude=0.0,longitude=0.0,elevation=0.0)] *diff
         else:
             diff = len_1 - len_2
-            trk2._gpx_points += [gpxpy.gpx.GPXTrackPoint(latitude=0.0,longitude=0.0,elevation=0.0)] *diff
+            trk2.points += [gpxpy.gpx.GPXTrackPoint(latitude=0.0,longitude=0.0,elevation=0.0)] *diff
 
 
     similarity = 0.0
     for i in range(0,len_1):
-        similarity += manhattan_point(trk1._gpx_points[i], trk2._gpx_points[i])
+        similarity += manhattan_point(trk1.points[i], trk2.points[i])
 
     return similarity
 

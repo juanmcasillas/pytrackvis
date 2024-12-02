@@ -156,5 +156,7 @@ CREATE TABLE TRACK_IN_PLACES (
 
 CREATE TABLE SIMILAR_TRACKS (
     id          INTEGER,
-    hash_track  INTEGER
+    hash_track  INTEGER,
+    id_track    INTEGER,
+    FOREIGN KEY(id_track) REFERENCES TRACKS(id) 
 );

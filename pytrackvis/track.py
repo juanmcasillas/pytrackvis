@@ -323,7 +323,6 @@ class Track:
         self.hash = None #see set_internal_data() for details
         self.id = id if id is not None else str(uuid.uuid4())
         self._gpx = None
-        self._gpx_points = None
         self._stats = None
         self._optimizer = None
         self.kind = "kind_ph"
@@ -427,7 +426,9 @@ class Track:
             self._gpx.tracks[0].segments[0].points = gpx_points
 
 
-        self._gpx_points = gpx_segment.points
+        # clear the intermediate structure.
+        del self.points
+        self.points = gpx_segment.points
         # precalc stats
         if do_stats:
             self.stats(filter_points=filter_points)
@@ -466,7 +467,7 @@ class Track:
         }
         #
         # use the processed data, no the raw one loaded
-        for p in self._gpx_points:
+        for p in self.points:
             o["data"]["geometry"]["coordinates"].append([
                 p.longitude,
                 p.latitude,
@@ -640,7 +641,7 @@ class Track:
         2023-01-02-16-10-14 - [RUN,FENIX3,NB_HIERRO] San Martín - Camino de Pelayos - Acorte (Largo) - Camino Angosto - San Martín.fit
         """
         
-        regstr = re.match("(\d{4}-\d{2}-\d{2}-\w{2}-\w{2}-\w{2}|\d{10}|\d{8})?\s*(-+)?\s*(\[.+\])*\s*(.+)\.(.+)", 
+        regstr = re.match(r"(\d{4}-\d{2}-\d{2}-\w{2}-\w{2}-\w{2}|\d{10}|\d{8})?\s*(-+)?\s*(\[.+\])*\s*(.+)\.(.+)", 
                         os.path.basename(fname), 
                         re.I)
 
@@ -652,8 +653,8 @@ class Track:
 
             if regstr.group(3):
                 tags = regstr.group(3)
-                tags = re.sub('\]\s*\[', ',', tags)
-                tags = re.sub('[\[\]]', '', tags)
+                tags = re.sub(r'\]\s*\[', ',', tags)
+                tags = re.sub(r'[\[\]]', '', tags)
                 tags = tags.split(',')
                 ret.tags = list(filter(lambda x: x.strip(), tags))
                 ret.kind = ret.tags[0]
@@ -663,7 +664,7 @@ class Track:
 
             if regstr.group(4):
                 places = regstr.group(4)
-                places = re.split("\s*[-_]+\s*", places)
+                places = re.split(r"\s*[-_]+\s*", places)
                 ret.places = list(filter(lambda x: x.strip(), places))
                 ret.name = " - ".join(ret.places)
 

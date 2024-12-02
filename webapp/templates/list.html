@@ -29,9 +29,16 @@
                 Score: {{'%3.2f'|format(track.score|float)}}</br>
                 
                </p>
-              <center>
-              <a href="/tracks/show?id={{track.id}}" class="btn btn-primary">Show</a>
-              </center>
+                <center>
+                <a href="/tracks/show?id={{track.id}}" class="btn btn-primary">Show</a>
+                </center>
+              {% if track.similar|length >= 1 %}  
+                <br>
+                <h6>Similar tracks</h6>
+                {% for similar in track.similar %}  
+                        <li><a href="/tracks/show?id={{similar.id}}">{{similar.name}} ({{similar.id}})</a>
+                {% endfor %}
+              {% endif %}
             </div>
           </div>
         {% endfor %}

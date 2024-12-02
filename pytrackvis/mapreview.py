@@ -57,8 +57,8 @@ class MapPreviewManager:
         mapper.Debug(self.debug)
         map = mapper.GetMapBB(track.bounds(), mapempty=False, bounding_box=False)
         
-        if len(track._gpx_points) > 0:
-            mapper.ProjectPoints(track._gpx_points, 
+        if len(track.points) > 0:
+            mapper.ProjectPoints(track.points, 
                                  map, 
                                  color=tuple(track_color), 
                                  width=track_width,
@@ -93,16 +93,16 @@ class MapPreviewManager:
                                     radius=radius, width=direction_width)
 
             mapper.ProjectArrows(track.stats().length_2d, 
-                                track._gpx_points, map, color=tuple(self.arrows_color), 
+                                track.points, map, color=tuple(self.arrows_color), 
                                 width=arrow_width)
 
 
 
-            mapper.ProjectCircle(track._gpx_points[0], map, 
+            mapper.ProjectCircle(track.points[0], map, 
                                  color=tuple(self.start_color), 
                                 radius=self.start_radius, 
                                 outline=tuple(self.start_outline_color))
-            mapper.ProjectCircle(track._gpx_points[-1], map, 
+            mapper.ProjectCircle(track.points[-1], map, 
                                 color=tuple(self.end_color), 
                                 radius=self.end_radius, 
                                 outline=tuple(self.end_outline_color))

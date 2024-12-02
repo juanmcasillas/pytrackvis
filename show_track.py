@@ -86,8 +86,8 @@ if __name__ == "__main__":
     SW =  gpxpy.geo.Location(min_lat or 0.0, min_lon  or 0.0)
     map = mapper.GetMapBB((NW, NE, SE, SW), mapempty=False, bounding_box=False)
     
-    if len(track._gpx_points) > 0:
-        mapper.ProjectPoints(track._gpx_points, map, color=(255, 0, 0), width=3)
+    if len(track.points) > 0:
+        mapper.ProjectPoints(track.points, map, color=(255, 0, 0), width=3)
         
         direction_width = 2
         arrow_width = 6
@@ -114,12 +114,12 @@ if __name__ == "__main__":
                                 radius=radius, width=direction_width)
 
         mapper.ProjectArrows(track.stats().length_2d, 
-                             track._gpx_points, map, color=(240, 10, 10), 
+                             track.points, map, color=(240, 10, 10), 
                              width=arrow_width)
 
-        mapper.ProjectCircle(track._gpx_points[0], map, color=(10, 180, 10), 
+        mapper.ProjectCircle(track.points[0], map, color=(10, 180, 10), 
                              radius=3, outline=(10, 100, 10))
-        mapper.ProjectCircle(track._gpx_points[-1], map, color=(50, 50, 220), 
+        mapper.ProjectCircle(track.points[-1], map, color=(50, 50, 220), 
                              radius=3, outline=(50, 50, 100))   
             
     map.imagemap.save("map.png", 'PNG')
