@@ -37,6 +37,7 @@ class Manager:
         self.db = None
         self.logger = logging.getLogger()
         self.track_previews = CacheManager(self.config.map_preview["track_previews_dir"])
+        self.sim_previews = CacheManager(self.config.sim_preview["sim_previews_dir"])
 
     def db_connect(self):
         self.db = sqlite3.connect(self.config.database["file"], check_same_thread=False)
@@ -49,6 +50,9 @@ class Manager:
         self.mappreview_manager = MapPreviewManager(self.config.map_preview, 
                                                     cachedir=self.config.osm_cache["directory"],
                                                     debug=self.config.osm_cache["debug"])
+        self.simpreview_manager = MapPreviewManager(self.config.sim_preview, 
+                                                    cachedir=None,
+                                                    debug=False)
         
 
     def shutdown(self):
@@ -164,6 +168,9 @@ class Manager:
                 map.save("%s.png" % target, 'PNG')
                 self.db_store_track(track)
                 # calculate similarity
+                map_sim = self.simpreview_manager.create_map_preview(track, empty_map=True, track_color=(200,200,200))
+                target = self.sim_previews.map_object(track.hash, create_dirs=True)
+                map_sim.save("%s.png" % target, 'PNG')
  
             else:
                 track.id = track_id

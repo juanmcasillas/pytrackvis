@@ -27,9 +27,24 @@
         "directory": "osm_cache",
         "debug": true
     },
+    "sim_preview": {
+        "sim_previews_dir": "ssim",
+        "draw_bar": false,
+        "draw_ccw": false,
+        "draw_startstop": false,
+        "draw_center": false,
+        "track_size": [150, 150],
+        "track_width": 2
+
+    },
     "map_preview": {
         "track_previews_dir": "webapp/static/img/track_previews",
         "unsafe_ssl": true,
+        "draw_bar": true,
+        "draw_ccw": true,
+        "draw_startstop": true,
+        "draw_center": true,
+
         "use_gradient": true,
         "gradient_value": "elevation",
         "track_size": [450, 250],

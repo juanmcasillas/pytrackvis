@@ -506,10 +506,12 @@ class OSMMapper(GenericMapper):
     def ProjectPoints(self, 
                       points, mapimg, color=(200,100,100), width=2, 
                       use_gradient=False, gradient_value=None,
+                      draw_bar=True
                       ):
 
-        rainbow = Rainbow()
-        rainbow.setSpectrum('#0000D0','#00C000', '#FF0000')
+        if use_gradient:
+            rainbow = Rainbow()
+            rainbow.setSpectrum('#0000D0','#00C000', '#FF0000')
 
         def get_point_value(obj, what, ret=None):
             if what in dir(obj):
@@ -538,7 +540,8 @@ class OSMMapper(GenericMapper):
             min_val = -10
             max_val =  10
     
-        rainbow.setNumberRange(min_val, max_val)
+        if use_gradient:
+            rainbow.setNumberRange(min_val, max_val)
 
         for i in range(len(points)-1):
             a = points[i]
@@ -573,22 +576,23 @@ class OSMMapper(GenericMapper):
                 del draw
                 #mapimg.imagemap.putpixel((i,j),color)
 
-        # set the scale on gradient the map.
-        # this must be parametrized in in one moment
-        draw = ImageDraw.Draw(mapimg.imagemap)
-        x = 15
-        y = 25
-        how_many = 17
-        step_width = math.ceil((max_val - min_val) / how_many)
-        start = min_val
-        for i in range(how_many):
-            draw.line( (x,y, x, y+10), fill="#%s" % rainbow.colourAt(start), width=5)
-            y+=10
-            start += step_width
-        draw.text((10, 10), "Min: %3.2f" % min_val, fill="#%s" % rainbow.colourAt(min_val))
-        draw.text((10, 200), "Max: %3.2f" % max_val, fill="#%s" % rainbow.colourAt(max_val))
-        draw.text((10, 210), gradient_value, fill="#%s" % rainbow.colourAt(max_val))
-        del draw
+        if draw_bar and use_gradient:
+            # set the scale on gradient the map.
+            # this must be parametrized in in one moment
+            draw = ImageDraw.Draw(mapimg.imagemap)
+            x = 15
+            y = 25
+            how_many = 17
+            step_width = math.ceil((max_val - min_val) / how_many)
+            start = min_val
+            for i in range(how_many):
+                draw.line( (x,y, x, y+10), fill="#%s" % rainbow.colourAt(start), width=5)
+                y+=10
+                start += step_width
+            draw.text((10, 10), "Min: %3.2f" % min_val, fill="#%s" % rainbow.colourAt(min_val))
+            draw.text((10, 200), "Max: %3.2f" % max_val, fill="#%s" % rainbow.colourAt(max_val))
+            draw.text((10, 210), gradient_value, fill="#%s" % rainbow.colourAt(max_val))
+            del draw
 
                 
 

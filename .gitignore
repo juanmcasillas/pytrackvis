@@ -15,7 +15,7 @@ cache/**
 CACHE
 CACHE/**
 webapp/static/img/track_previews/**
-
+ssim/**
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
