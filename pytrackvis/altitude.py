@@ -43,7 +43,7 @@ class PNGFactory():
         # fixed colors
 
         
-        self.fontname = "webapp/static/webfonts/BebasNeue.otf"
+        self.fontname = "webapp/static/webfonts/BebasNeue-Regular.otf"
         self.fontsize = 16
         self.gap = (5,5) # space in the sides (padding)
 
@@ -200,7 +200,7 @@ class PNGFactory():
             max_r_v = "%3.2f m (max)" % max_elevation
             min_r_v = "%3.2f m (min)" % min_elevation
             len_r_v = "%3.2f Km distance" % (int(track_length)/1000.0)
-            alt_r_v = "%3.2f m Alt" % elevation
+            alt_r_v = "%3.2f m Climb" % (elevation if elevation is not None else 0.0)
             scale_h_v   = "1:500h/1:50v"
 
             font = ImageFont.truetype(self.fontname, self.fontsize)

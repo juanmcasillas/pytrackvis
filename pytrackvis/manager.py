@@ -18,8 +18,8 @@ import sqlite3
 import configparser
 import sys
 import shutil
-import cv2
 import numpy as np
+from PIL import Image, ImageChops
 
 from pytrackvis.appenv import *
 from pytrackvis.altitude import *
@@ -172,12 +172,13 @@ class Manager:
                 self.db_store_track(track)
                 # calculate similarity
                 map_sim = self.simpreview_manager.create_map_preview(track, empty_map=True, track_color=(200,200,200))
-                target = self.sim_previews.map_object(track.hash, create_dirs=True)
-                map_sim.save("%s.png" % target, 'PNG')
+                target_sim = self.sim_previews.map_object(track.hash, create_dirs=True)
+                map_sim = map_sim.convert('L').point(lambda x : 255 if x > 1 else 0, mode='1')
+                map_sim.save("%s.png" % target_sim, 'png')
 
                 # elevation profile
                 png = PNGFactory( outputfname="%s_elevation.png" % target)
-                png.CreatePNG(track._gpx)
+                png.CreatePNG(track._gpx, elevation=track.stats().uphill_climb)
                 
 
  
@@ -247,6 +248,36 @@ class Manager:
 
     def check_similarity(self, match_treshold=500.0):
 
+        def is_similar(image1, image2):
+            # print(image1.shape)
+            # print(image2.shape)
+            # print(image1)
+            # print(image2)
+            s = np.bitwise_xor(image1,image2).any()
+            return image1.shape == image2.shape and not(np.bitwise_xor(image1,image2).any())
+        
+        def difference(image1, image2):
+           
+            diff = image1 - image2
+            if np.all(diff == 0):
+                return False
+            else:
+                img = Image.fromarray(np.uint8(diff)).convert('L')
+                img.save("diff.png","png")
+                return True
+
+            im1 = Image.fromarray(np.uint8(image1)).convert('L')
+            im2 = Image.fromarray(np.uint8(image2)).convert('L')
+            diff = ImageChops.difference(im1, im2)
+            diff.save("diff.png","png")
+            r = diff.getbbox()
+            print("getbox", r)
+            if r:
+                return True
+            else:
+                return False
+        
+
         def mse(image1, image2):
             # the 'Mean Squared Error' between the two images is the
             # sum of the squared difference between the two images;
@@ -262,7 +293,6 @@ class Manager:
         file_data = self.db_get_similarity()
         tracks = {}
 
-
         for d in file_data:
             fname = d["fname"]
             hash = d["hash"]
@@ -271,8 +301,14 @@ class Manager:
             if not os.path.exists(target):
                 self.logger.error("check_similarity: Can't load %s: %s" % (fname, target))
                 continue
+
+            data = Image.open(target) # open colour image
+            data = data.convert('L')
+            data = np.asarray(data)
+  
+
             
-            data = cv2.imread( target, cv2.IMREAD_GRAYSCALE )
+            #data = cv2.imread( target, cv2.IMREAD_GRAYSCALE )
             print("loaded: %s" % target)
             # create the elements for fast comparation.
             tracks[str(hash)] = C(similar_tracks=[], img=data, hash=hash, fname=fname, target=target)
@@ -295,11 +331,17 @@ class Manager:
                 
                 if not ty.hash in tx.similar_tracks:
                     mse_val = mse(tx.img, ty.img)
+                    is_sim = is_similar(tx.img, ty.img)
+                    
+
                     if mse_val < match_treshold:
+                         is_dif = difference(tx.img, ty.img)
                          tx.similar_tracks.append(ty.hash)
                          print("\t-> %s %s" % (tx.target,tx.fname))                    
                          print("\t*  %s %s" % (ty.target,ty.fname))                    
                          print("\tmse: %3.2f" % mse_val)
+                         print("\tisSim: %s" % is_sim)
+                         print("\tis_dif: %s" % is_dif)
     
         ## done. Check all the data.
         ## filter similar groups by matching then.
