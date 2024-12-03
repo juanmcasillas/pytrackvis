@@ -18,8 +18,11 @@ import sqlite3
 import configparser
 import sys
 import shutil
+import cv2
+import numpy as np
 
 from pytrackvis.appenv import *
+from pytrackvis.altitude import *
 from pytrackvis.mapper import OSMMapper
 from pytrackvis.helpers import C, set_proxy, manhattan_point, same_track
 from pytrackvis.helpers import glob_filelist, add_similarity_helpers, del_similarity_helpers
@@ -171,58 +174,132 @@ class Manager:
                 map_sim = self.simpreview_manager.create_map_preview(track, empty_map=True, track_color=(200,200,200))
                 target = self.sim_previews.map_object(track.hash, create_dirs=True)
                 map_sim.save("%s.png" % target, 'PNG')
+
+                # elevation profile
+                png = PNGFactory( outputfname="%s_elevation.png" % target)
+                png.CreatePNG(track._gpx)
+                
+
  
             else:
                 track.id = track_id
                 self.logger.warning("Track %s exists on DB (id=%d)" % (track.hash, track.id))
 
 
-    def check_similarity(self):
+    # def check_similarity_points(self):
+    #     # shows the similarity values of the tracks, and create matches.
+    #     file_data = self.db_get_similarity()
+    #     tracks = {}
+
+    #     for d in file_data:
+    #         fname = d["fname"]
+    #         fm = FileManager([fname])
+    #         try:
+    #             fm.load(optimize_points=self.config.points["optimize"],
+    #                     filter_points=self.config.points["filter"],
+    #                     only_load=True
+    #                     )
+                
+    #         except Exception as e:
+    #             self.logger.error("check_similarity: Can't load %s: %s" % (fname, e))
+    #             continue
+
+    #         print("loaded: %s" % fname)
+    #         track = fm.track()
+    #         add_similarity_helpers(track)
+    #         # create the elements for fast comparation.
+    #         tracks[str(track.hash)] = track
+        
+    #     print("done:",len(tracks))
+    #     # check each track with the others. calculate the similarity values
+    #     # then classify the things ordered by similarity.
+    #     result = []
+    #     print(len(tracks.keys()))
+    
+    #     for tx_key in tracks:
+    #         tx = tracks[tx_key]
+    #         tx.similar_tracks = [tx.hash]
+    #         # create a point cache
+    #         print("-> %s %s" % (tx.hash,tx.fname))
+    #         for ty_key in tracks:
+    #             ty = tracks[ty_key]
+    #             print("\t*%s %s" % (ty.hash,ty.fname))
+    #             if tx.hash == ty.hash:
+    #                 # same track, skip
+    #                 continue
+                
+    #             if not ty.hash in tx.similar_tracks:
+    #                 #if same_track(tx, ty, trk1_cache=track1_cache):
+    #                 if same_track(tx, ty, use_cache=True):
+    #                     tx.similar_tracks.append(ty.hash)
+    
+    #     ## done. Check all the data.
+    #     ## filter similar groups by matching then.
+    #     similar_tracks = []
+    #     for tx_key in tracks:
+    #         tracks[tx_key].similar_tracks.sort()
+    #         if tracks[tx_key].similar_tracks not in similar_tracks:
+    #             similar_tracks.append(tracks[tx_key].similar_tracks)
+
+    #     for i in similar_tracks:
+    #         print(i)
+    #     self.db_save_similarity(similar_tracks)
+
+    def check_similarity(self, match_treshold=500.0):
+
+        def mse(image1, image2):
+            # the 'Mean Squared Error' between the two images is the
+            # sum of the squared difference between the two images;
+            # NOTE: the two images must have the same dimension
+            err = np.sum((image1.astype("float") - image2.astype("float")) ** 2)
+            err /= float(image1.shape[0] * image1.shape[1])
+            # return the MSE, the lower the error, the more "similar"
+            # the two images are
+            return err            
+
         # shows the similarity values of the tracks, and create matches.
+        # based on sim files (similarity files using distance)
         file_data = self.db_get_similarity()
         tracks = {}
 
+
         for d in file_data:
             fname = d["fname"]
-            fm = FileManager([fname])
-            try:
-                fm.load(optimize_points=self.config.points["optimize"],
-                        filter_points=self.config.points["filter"],
-                        only_load=True
-                        )
-                
-            except Exception as e:
-                self.logger.error("check_similarity: Can't load %s: %s" % (fname, e))
+            hash = d["hash"]
+            # XXX
+            target = "%s.png" % self.sim_previews.map_object(hash)
+            if not os.path.exists(target):
+                self.logger.error("check_similarity: Can't load %s: %s" % (fname, target))
                 continue
-
-            print("loaded: %s" % fname)
-            track = fm.track()
-            add_similarity_helpers(track)
+            
+            data = cv2.imread( target, cv2.IMREAD_GRAYSCALE )
+            print("loaded: %s" % target)
             # create the elements for fast comparation.
-            tracks[str(track.hash)] = track
+            tracks[str(hash)] = C(similar_tracks=[], img=data, hash=hash, fname=fname, target=target)
         
         print("done:",len(tracks))
         # check each track with the others. calculate the similarity values
         # then classify the things ordered by similarity.
         result = []
-        print(len(tracks.keys()))
     
         for tx_key in tracks:
             tx = tracks[tx_key]
             tx.similar_tracks = [tx.hash]
             # create a point cache
-            print("-> %s %s" % (tx.hash,tx.fname))
             for ty_key in tracks:
                 ty = tracks[ty_key]
-                print("\t*%s %s" % (ty.hash,ty.fname))
                 if tx.hash == ty.hash:
                     # same track, skip
+                    # pass for tests continue
                     continue
                 
                 if not ty.hash in tx.similar_tracks:
-                    #if same_track(tx, ty, trk1_cache=track1_cache):
-                    if same_track(tx, ty, use_cache=True):
-                        tx.similar_tracks.append(ty.hash)
+                    mse_val = mse(tx.img, ty.img)
+                    if mse_val < match_treshold:
+                         tx.similar_tracks.append(ty.hash)
+                         print("\t-> %s %s" % (tx.target,tx.fname))                    
+                         print("\t*  %s %s" % (ty.target,ty.fname))                    
+                         print("\tmse: %3.2f" % mse_val)
     
         ## done. Check all the data.
         ## filter similar groups by matching then.
@@ -235,6 +312,8 @@ class Manager:
         for i in similar_tracks:
             print(i)
         self.db_save_similarity(similar_tracks)
+
+
 
 
     def list_tracks(self):

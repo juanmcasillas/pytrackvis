@@ -26,6 +26,8 @@ A simple Python GPX and FIT track file format visualization app on 2D / 3D Map u
 * [flask-caching](https://flask-caching.readthedocs.io/en/latest/) extension to Flask that adds caching support for various backends to any Flask application
 
 
+
+
 These are for now not used.
 
 * [leafmap](https://leafmap.org/installation/) Draw awesome maps
@@ -69,7 +71,7 @@ https://documentation.maptiler.com/hc/en-us/articles/5224821308177-How-to-build-
 
 ## similar tracks using openCV method
 `https://scikit-image.org/docs/stable/user_guide/install.html`
-`/opt/local/bin/python3.10 -m pip install opencv-python`
+`C:\Python312\python.exe -m pip install opencv-python opencv-contrib-python`
 https://stackoverflow.com/questions/11541154/checking-images-for-similarity-with-opencv
 in mac, I have to test it using python 3.6 install.
 

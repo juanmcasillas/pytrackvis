@@ -1,3 +1,4 @@
+import glob
 import cv2
 #import numpy as np
 #from skimage.metrics import structural_similarity
@@ -12,30 +13,22 @@ import sys
 #first = cv2.imread('ssim/5E/B5/5eb58f600fb9dc31731ca9847de11e5e.png', cv2.IMREAD_GRAYSCALE)
 #second = cv2.imread('ssim/19/CD/19cdbc746fc63a8a3a4a31269eca796b.png', cv2.IMREAD_GRAYSCALE) # 0
 
-files = [
-    'ssim/5E/B5/5eb58f600fb9dc31731ca9847de11e5e.png',
-    'ssim//19/CD/19cdbc746fc63a8a3a4a31269eca796b.png',
-    'ssim//30/2C/302c834a206c355d9bbebcec290d87e8.png',
-    'ssim//33/77/3377a4675696eaa6baa5e0f4e4053fb1.png',
-    'ssim//59/E0/59e0b8e4bc17a35b12edd844f0f02556.png',
-    'ssim//AB/AD/abad55d5a513175ba71ff01681a245c7.png',
-    'ssim//B1/0E/b10eb17ba74f7467aeceb369a927c966.png',
-    'ssim//B1/4E/b14e9b3c487a4a268f4716cb54101d22.png',
-    'ssim//BC/65/bc65956fe0ca247075daf1e681fed219.png',
-    'ssim//C0/D3/c0d341a80f52f7ce439dc180d158d562.png',
-    'ssim//CD/EF/cdef2ee7d9a67535fd973f3fe0832f4f.png',
-    'ssim//DC/2D/dc2db22527f309a1b4bd5c11dc80c3aa.png',
-    'ssim//EA/B6/eab65c2c7bb21651154ffecee9fd59f4.png'
-]
+#files = glob.glob("ssim/**/*.png", recursive=True)
 
+files = [
+    'ssim/41/2B/412b1706328be8dc6d7dd4192313049c.png',
+    'ssim/42/27/4227c1fa11f3493c1a14b4a894f27550.png'
+]
 first = cv2.imread( files[0], cv2.IMREAD_GRAYSCALE )
+print("f1: %s" % files[0])
+hd = cv2.createHausdorffDistanceExtractor()
+
 for i in range(1,len(files)):
     second = cv2.imread( files[i], cv2.IMREAD_GRAYSCALE )
     pts_a = cv2.findNonZero(first)
     pts_b = cv2.findNonZero(second)
-    hd = cv2.createHausdorffDistanceExtractor()
     d1 = hd.computeDistance(pts_a, pts_b)
-    print("error (lower, better): %3.2f  f1:%s / f2:%s" % (d1,files[0], files[i]))
+    print("error (lower, better): %f  f2:%s" % (d1,files[i]))
 
 sys.exit(0)
 

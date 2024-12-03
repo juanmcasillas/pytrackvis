@@ -11,37 +11,53 @@
                 {{ render_messages() }}
             </div>
         </div>
-        <div class="bg-light mt-2 p-2">
-            <h1 class="display-2">PyTrack Visualizer</h1>
-            <h1 class="display-5">List Available tracks</h1>
-            <p>These are the available tracks</p>
-        </div>
-        
-        <div class="row", data-masonry='{"percentPosition": true }'>
-        {% for track in tracks %}
-        <div class="card m-1" style="max-width: 18rem;">
-            <img src="{{url_for('static', filename='img/track_previews')}}/{{track.preview}}" class="pt-2 card-img-top" ></img>
-            <div class="card-body">
-              {{track.stamp|strftimestamp}}</br>
-              <h5 class="card-title">{{track.name}}</h5>
-              <p class="card-text">
-                Longitud: {{track.length_3d|humandistance}}</br>
-                Score: {{'%3.2f'|format(track.score|float)}}</br>
-                
-               </p>
-                <center>
-                <a href="/tracks/show?id={{track.id}}" class="btn btn-primary">Show</a>
-                </center>
-              {% if track.similar|length >= 1 %}  
-                <br>
-                <h6>Similar tracks</h6>
-                {% for similar in track.similar %}  
-                        <li><a href="/tracks/show?id={{similar.id}}">{{similar.name}} ({{similar.id}})</a>
-                {% endfor %}
-              {% endif %}
+        <div class="row">
+            <div class="col-md-12">
+                <div class="bg-light mt-2 p-2">
+                    <h1 class="display-2">PyTrack Visualizer</h1>
+                    <h1 class="display-5">List Available tracks</h1>
+                    <p>These are the available tracks</p>
+                </div>
             </div>
-          </div>
-        {% endfor %}
+        </div>
+        <div class="row"> 
+            <!-- <div class="col-md-1">
+            </div>-->
+
+            <div class="col-md-12 mx-auto">
+                {% for track in tracks %}
+                <div class="card m-1 ">
+                    <div class="row g-0">
+                        <div class="col-md-3">
+                            <img src="{{url_for('static', filename='img/track_previews')}}/{{track.preview}}" class="img-fluid" ></img>
+                        </div>
+                        <div class="col-md-9">
+                            <div class="card-body">
+                            <span class="track date">Created: {{track.stamp|strftimestamp}}</i></span>
+                            <span class="track score">Score: {{'%3.2f'|format(track.score|float)}}</span>
+                            <span class="track title">{{track.name}}</span>
+                            <p class="card-text">
+                                <span class="track length">Length: {{track.length_3d|humandistance}}</span>
+                                <a href="/tracks/show?id={{track.id}}" class="">3D view</a>
+                            </p>
+                            
+                            {% if track.similar|length >= 1 %}  
+                                <div>
+                                <h6>Similar tracks</h6>
+                                {% for similar in track.similar %}  
+                                        <li><a href="/tracks/show?id={{similar.id}}">{{similar.name}} ({{similar.id}})</a>
+                                {% endfor %}
+                                </div>
+                            {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>  
+
+            <!--<div class="col-md-1">
+            </div>-->
         </div>
     </div>
 

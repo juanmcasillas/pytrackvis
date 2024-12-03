@@ -33,7 +33,7 @@
         "draw_ccw": false,
         "draw_startstop": false,
         "draw_center": false,
-        "track_size": [150, 150],
+        "track_size": [250, 250],
         "track_width": 2
 
     },

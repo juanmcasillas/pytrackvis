@@ -77,7 +77,10 @@ def create_app(configfile=None):
     @app.template_filter('strftimestamp')
     def _jinja2_filter_strfftimestamp(stamp, fmt=None):
         
+        if not stamp:
+            return "--/--/---- --:--:--"
         fmt = fmt if fmt is not None else "%d/%m/%Y %H:%M:%S"
+        
         dt = datetime.datetime.fromtimestamp(stamp)
         return  dt.strftime(fmt)
 

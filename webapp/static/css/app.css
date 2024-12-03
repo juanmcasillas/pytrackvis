@@ -10,3 +10,24 @@ body {
 html, body, #map { 
     height: 100%; 
 }
+
+
+.track.date {
+    font-size: small;
+    font-style: italic;
+    display: block;
+}
+.track.title {
+    font-size: larger;
+    font-weight: bold;
+    display: block;
+}
+.track.length {
+    display: block;
+}
+.track.score {
+    font-size: large;
+    font-weight: bold;
+    display: block;
+    color: rgb(179, 38, 38);
+}
