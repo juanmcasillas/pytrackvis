@@ -43,7 +43,7 @@ class MapPreviewManager:
         self.end_radius = self.config['end_radius'] if 'end_radius' in self.config else 0
         self.end_outline_color = self.config['end_outline_color'] if 'end_outline_color' in self.config else 0
 
-    def create_map_preview(self, track, img_size=None, track_color=None, track_width=None, empty_map=False):
+    def create_map_preview(self, track, img_size=None, track_color=None, track_width=None, empty_map=False, zoom_level=None):
 
         img_size = self.config["track_size"] if img_size is None and 'track_size' in self.config else img_size
         track_color = self.config["track_color"] if track_color is None  and 'track_color' in self.config else track_color
@@ -55,7 +55,7 @@ class MapPreviewManager:
                            unsafe_ssl=self.config["unsafe_ssl"] if "unsafe_ssl" in self.config else False)
         
         mapper.Debug(self.debug)
-        map = mapper.GetMapBB(track.bounds(), mapempty=empty_map, bounding_box=False)
+        map = mapper.GetMapBB(track.bounds(), mapempty=empty_map, bounding_box=False, zoom_base=zoom_level)
         
         if len(track.points) > 0:
             mapper.ProjectPoints(track.points, 

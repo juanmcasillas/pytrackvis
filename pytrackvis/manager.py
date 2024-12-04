@@ -20,6 +20,9 @@ import sys
 import shutil
 import numpy as np
 from PIL import Image, ImageChops
+import cv2 
+import json
+import math
 
 from pytrackvis.appenv import *
 from pytrackvis.altitude import *
@@ -161,6 +164,7 @@ class Manager:
                 self.logger.info("Optimizer results (points): %s" % track._optimizer)
 
             track_id = self.db_track_exists(track)
+            
             if not track_id:
                 # create track map preview
                 map = self.mappreview_manager.create_map_preview(track)
@@ -180,7 +184,18 @@ class Manager:
                 png = PNGFactory( outputfname="%s_elevation.png" % target)
                 png.CreatePNG(track._gpx, elevation=track.stats().uphill_climb)
                 
-
+                # metadata info for checking similarity:
+                metadata = {
+                    'center': { 
+                        'latitude':  track.stats().middle_point.lat,
+                        'longitude': track.stats().middle_point.long,
+                        'elevation': track.stats().middle_point.elev,
+                    },
+                    'length': track.stats().length_3d
+                }
+                fd = open("%s.json" % target_sim,"w+")
+                fd.write(json.dumps(metadata))
+                fd.close()
  
             else:
                 track.id = track_id
@@ -297,27 +312,37 @@ class Manager:
             fname = d["fname"]
             hash = d["hash"]
             # XXX
-            target = "%s.png" % self.sim_previews.map_object(hash)
-            if not os.path.exists(target):
-                self.logger.error("check_similarity: Can't load %s: %s" % (fname, target))
+            target_png = "%s.png" % self.sim_previews.map_object(hash)
+            target_json = "%s.json" % self.sim_previews.map_object(hash)
+            if not os.path.exists(target_png):
+                self.logger.error("check_similarity: Can't load %s: %s" % (fname, target_png))
                 continue
 
-            data = Image.open(target) # open colour image
-            data = data.convert('L')
-            data = np.asarray(data)
-  
-
+            #data = Image.open(target) # open colour image
+            #data = data.convert('L')
+            data = cv2.imread(target_png, cv2.IMREAD_GRAYSCALE) #cv2.COLOR_BGR2GRAY, ,cv2.COLOR_BGR2GRAY
+            cv2.imshow("", data)
+            #cv2.waitKey(100)
+            points = cv2.findNonZero(data)
             
+            fd = open(target_json)
+            data_json =fd.read()
+            fd.close()
+            data_json = json.loads(data_json)
+        
+
             #data = cv2.imread( target, cv2.IMREAD_GRAYSCALE )
-            print("loaded: %s" % target)
+            print("loaded: %s" % target_png)
             # create the elements for fast comparation.
-            tracks[str(hash)] = C(similar_tracks=[], img=data, hash=hash, fname=fname, target=target)
+            tracks[str(hash)] = C(similar_tracks=[], img=data, points=points, hash=hash, fname=fname, 
+                                  target=target_png, json=data_json)
         
         print("done:",len(tracks))
         # check each track with the others. calculate the similarity values
         # then classify the things ordered by similarity.
         result = []
-    
+        distance_manager = cv2.createHausdorffDistanceExtractor()
+
         for tx_key in tracks:
             tx = tracks[tx_key]
             tx.similar_tracks = [tx.hash]
@@ -330,19 +355,28 @@ class Manager:
                     continue
                 
                 if not ty.hash in tx.similar_tracks:
-                    mse_val = mse(tx.img, ty.img)
-                    is_sim = is_similar(tx.img, ty.img)
-                    
+                    #mse_val = mse(tx.img, ty.img)
+                    #is_sim = is_similar(tx.img, ty.img)
+                    hausdor_d = distance_manager.computeDistance(tx.points, ty.points)
+                    tx_center = C(latitude=tx.json['center']['latitude'],
+                                  longitude=tx.json['center']['longitude'],
+                                  elevation=tx.json['center']['elevation'] )
 
-                    if mse_val < match_treshold:
-                         is_dif = difference(tx.img, ty.img)
-                         tx.similar_tracks.append(ty.hash)
-                         print("\t-> %s %s" % (tx.target,tx.fname))                    
-                         print("\t*  %s %s" % (ty.target,ty.fname))                    
-                         print("\tmse: %3.2f" % mse_val)
-                         print("\tisSim: %s" % is_sim)
-                         print("\tis_dif: %s" % is_dif)
-    
+                    ty_center = C(latitude=ty.json['center']['latitude'],
+                                  longitude=ty.json['center']['longitude'],
+                                  elevation=ty.json['center']['elevation'] )
+
+
+                    geo_d = distancePoints3D(tx_center, ty_center)
+                    length_d = tx.json['length'] - ty.json['length']
+                    if hausdor_d <2.0 and geo_d < 100.0 and math.fabs(length_d) <= 100:
+                        tx.similar_tracks.append(ty.hash)
+                        print("\t-> %s %s" % (tx.target,tx.fname))                    
+                        print("\t*  %s %s" % (ty.target,ty.fname))                    
+                        print("\t: hau_d %3.2f" % hausdor_d)
+                        print("\t: geo_d %3.2f" % geo_d)
+                        print("\t: len_d %3.2f" % length_d)
+        
         ## done. Check all the data.
         ## filter similar groups by matching then.
         similar_tracks = []
