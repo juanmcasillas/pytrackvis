@@ -170,6 +170,7 @@ class Manager:
                 map = self.mappreview_manager.create_map_preview(track)
                 #relative route (for www)
                 track.preview = "%s.png" % self.track_previews.map_object(track.hash, create_dirs=True, relative=True)
+                track.preview_elevation = "%s_elevation.png" % self.track_previews.map_object(track.hash, create_dirs=True, relative=True)
                 # absolute path (for store)
                 target = self.track_previews.map_object(track.hash)
                 map.save("%s.png" % target, 'PNG')
@@ -181,21 +182,9 @@ class Manager:
                 map_sim.save("%s.png" % target_sim, 'png')
 
                 # elevation profile
-                png = PNGFactory( outputfname="%s_elevation.png" % target)
+                png = PNGFactory(outputfname="%s_elevation.png" % self.track_previews.map_object(track.hash, create_dirs=True, relative=False))
                 png.CreatePNG(track._gpx, elevation=track.stats().uphill_climb)
                 
-                # metadata info for checking similarity:
-                metadata = {
-                    'center': { 
-                        'latitude':  track.stats().middle_point.lat,
-                        'longitude': track.stats().middle_point.long,
-                        'elevation': track.stats().middle_point.elev,
-                    },
-                    'length': track.stats().length_3d
-                }
-                fd = open("%s.json" % target_sim,"w+")
-                fd.write(json.dumps(metadata))
-                fd.close()
  
             else:
                 track.id = track_id
@@ -272,7 +261,6 @@ class Manager:
             return image1.shape == image2.shape and not(np.bitwise_xor(image1,image2).any())
         
         def difference(image1, image2):
-           
             diff = image1 - image2
             if np.all(diff == 0):
                 return False
@@ -311,6 +299,11 @@ class Manager:
         for d in file_data:
             fname = d["fname"]
             hash = d["hash"]
+            
+            t_center = C(latitude=d['middle_lat'],longitude=d['middle_long'],elevation=d['middle_elev'])
+            t_len= d['length_3d']
+            metadata = C(center=t_center, length=t_len)
+
             # XXX
             target_png = "%s.png" % self.sim_previews.map_object(hash)
             target_json = "%s.json" % self.sim_previews.map_object(hash)
@@ -324,18 +317,14 @@ class Manager:
             cv2.imshow("", data)
             #cv2.waitKey(100)
             points = cv2.findNonZero(data)
-            
-            fd = open(target_json)
-            data_json =fd.read()
-            fd.close()
-            data_json = json.loads(data_json)
+
         
 
             #data = cv2.imread( target, cv2.IMREAD_GRAYSCALE )
             print("loaded: %s" % target_png)
             # create the elements for fast comparation.
             tracks[str(hash)] = C(similar_tracks=[], img=data, points=points, hash=hash, fname=fname, 
-                                  target=target_png, json=data_json)
+                                  target=target_png, metadata=metadata)
         
         print("done:",len(tracks))
         # check each track with the others. calculate the similarity values
@@ -352,27 +341,33 @@ class Manager:
                 if tx.hash == ty.hash:
                     # same track, skip
                     # pass for tests continue
-                    continue
+                    pass
                 
                 if not ty.hash in tx.similar_tracks:
                     #mse_val = mse(tx.img, ty.img)
                     #is_sim = is_similar(tx.img, ty.img)
-                    hausdor_d = distance_manager.computeDistance(tx.points, ty.points)
-                    tx_center = C(latitude=tx.json['center']['latitude'],
-                                  longitude=tx.json['center']['longitude'],
-                                  elevation=tx.json['center']['elevation'] )
 
-                    ty_center = C(latitude=ty.json['center']['latitude'],
-                                  longitude=ty.json['center']['longitude'],
-                                  elevation=ty.json['center']['elevation'] )
+                    geo_d = distancePoints3D(tx.metadata.center, ty.metadata.center)
+                    length_d = math.fabs(tx.metadata.length - ty.metadata.length)
+                    hausdor_d = 9999999.0
 
+                    # fix the treshold here based on empirically works.
+                    if geo_d < 1000.0 and length_d < 2000.0:
+                        hausdor_d = distance_manager.computeDistance(tx.points, ty.points)
+                    
+                    # print("\t-> %s %s" % (tx.target,tx.fname))
+                    # print("\t*  %s %s" % (ty.target,ty.fname))
+                    # print("\t: hau_d %3.2f" % hausdor_d)
+                    # print("\t: geo_d %3.2f" % geo_d)
+                    # print("\t: len_d %3.2f" % length_d)
 
-                    geo_d = distancePoints3D(tx_center, ty_center)
-                    length_d = tx.json['length'] - ty.json['length']
-                    if hausdor_d <2.0 and geo_d < 100.0 and math.fabs(length_d) <= 100:
+                    # use < 2 approx with thigh values
+                    # maybe must be proportional on length of track...
+                    if hausdor_d < 10.0:
+                    #if hausdor_d <2.0 and geo_d < 100.0 and math.fabs(length_d) <= 100:
                         tx.similar_tracks.append(ty.hash)
-                        print("\t-> %s %s" % (tx.target,tx.fname))                    
-                        print("\t*  %s %s" % (ty.target,ty.fname))                    
+                        print("\t-> %s %s" % (tx.target,tx.fname))
+                        print("\t*  %s %s" % (ty.target,ty.fname))
                         print("\t: hau_d %3.2f" % hausdor_d)
                         print("\t: geo_d %3.2f" % geo_d)
                         print("\t: len_d %3.2f" % length_d)
@@ -506,7 +501,7 @@ class Manager:
         cursor.close()
 
     def db_get_similarity(self):
-        sql = "select id,hash,fname from tracks"
+        sql = "select id,hash,fname,middle_lat,middle_long,middle_elev, length_3d  from tracks"
         cursor = self.db.cursor()
         cursor.execute(sql)
         data = cursor.fetchall()
@@ -542,7 +537,7 @@ class Manager:
 
     def db_store_track(self, track):
         sql = """
-        insert into tracks(fname, hash, preview, stamp, number_of_points, 
+        insert into tracks(fname, hash, preview, preview_elevation, stamp, number_of_points, 
                            duration, length_2d, length_3d,
                            start_time,end_time,moving_time,
                            
@@ -614,7 +609,7 @@ class Manager:
                            max_power,min_power,avg_power,
                            max_cadence,min_cadence,avg_cadence,
                            max_temperature,min_temperature,avg_temperature)
-        values ( ?, ?, ?, ?, ?,
+        values ( ?, ?, ?, ?, ?, ?,
                  ?, ?, ?,
                  ?, ?, ?,
 

@@ -8,6 +8,7 @@ CREATE TABLE TRACKS (
     fname               TEXT DEFAULT "",
     hash                TEXT DEFAULT "",
     preview             TEXT DEFAULT "",
+    preview_elevation   TEXT DEFAULT "",
     stamp               INTEGER DEFAULT 0,
 
     number_of_points    INTEGER DEFAULT 0,

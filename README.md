@@ -76,3 +76,6 @@ https://stackoverflow.com/questions/11541154/checking-images-for-similarity-with
 in mac, I have to test it using python 3.6 install.
 
 python3.6 dev/test_ssim.py
+
+On mac, python3.9 works flawless with cv2, flask and so on.
+/usr/local/bin/flask --app=webapp.py run  --debug

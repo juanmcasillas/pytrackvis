@@ -28,7 +28,7 @@
         "debug": true
     },
     "sim_preview": {
-        "sim_previews_dir": "ssim",
+        "sim_previews_dir": "sim",
         "draw_bar": false,
         "draw_ccw": false,
         "draw_startstop": false,

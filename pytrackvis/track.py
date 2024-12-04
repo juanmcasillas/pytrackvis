@@ -330,7 +330,8 @@ class Track:
         self.equipment = "equipment_ph"
         self.description = "description_ph"
         self.stamp = time.time()
-
+        self.preview = None
+        self.preview_elevation = None
 
     def set_metadata(self):
         metadata = self.parse_fname(self.fname)
@@ -521,7 +522,7 @@ class Track:
             # else, return also the stats in db format
             pass
         # id not passed
-        return (self.fname, self.hash, self.preview, self.stamp, self._stats.number_of_points,
+        return (self.fname, self.hash, self.preview, self.preview_elevation, self.stamp, self._stats.number_of_points,
                 self._stats.duration, self._stats.length_2d,self._stats.length_3d,
                 self._stats.start_time, self._stats.end_time, self._stats.moving_time,
 
