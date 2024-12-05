@@ -48,7 +48,7 @@ class PNGFactory():
         self.gap = (5,5) # space in the sides (padding)
 
 
-    def CreatePNG(self, gpx, distance=None, elevation=None, optimize=False, full_featured=True):
+    def CreatePNG(self, gpx, distance=None, elevation=None, optimize=False, full_featured=True, draw_border=True):
 
         points = gpx.tracks[0].segments[0].points
         
@@ -191,7 +191,8 @@ class PNGFactory():
 
         #fill_points = fill_points[1:-1]
         #pygame.draw.lines( self.mapimg, self.config.colors.line.colortuple, False, fill_points, 3)
-        dm.rectangle( [ (0,0), (self.size[0]-1, self.size[1]-1)], outline=self.bordercolor )
+        if draw_border:
+            dm.rectangle( [ (0,0), (self.size[0]-1, self.size[1]-1)], outline=self.bordercolor )
         #pygame.draw.rect(self.mapimg, self.config.colors.border.colortuple, (0,0,self.mapimg.get_rect().width, self.mapimg.get_rect().height),1)
 
 

@@ -7,7 +7,8 @@
 
 from flask import Blueprint, render_template, \
                   flash, redirect, url_for, current_app, request, Response, \
-                  after_this_request, send_file, jsonify
+                  after_this_request, send_file, jsonify, \
+                  send_from_directory
 
 
 
@@ -24,6 +25,11 @@ import time
 from webapp.caching import cache
 
 impl = Blueprint('impl', __name__)
+
+@impl.route('/static/<path>')
+@cache.cached(timeout=60*60*24)  # Cache for 24 hours
+def static_files(path):
+    return send_from_directory('static', path)
 
 # Our index-page just shows a quick explanation. Check out the template
 # "templates/index.html" documentation for more details.

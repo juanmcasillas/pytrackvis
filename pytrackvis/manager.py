@@ -29,7 +29,7 @@ from pytrackvis.altitude import *
 from pytrackvis.mapper import OSMMapper
 from pytrackvis.helpers import C, set_proxy, manhattan_point, same_track
 from pytrackvis.helpers import glob_filelist, add_similarity_helpers, del_similarity_helpers
-from pytrackvis.helpers import CacheManager
+from pytrackvis.helpers import CacheManager, distancePoints
 from pytrackvis.track import Track
 from pytrackvis.filemanager import FileManager
 from pytrackvis.mapreview import MapPreviewManager
@@ -183,7 +183,7 @@ class Manager:
 
                 # elevation profile
                 png = PNGFactory(outputfname="%s_elevation.png" % self.track_previews.map_object(track.hash, create_dirs=True, relative=False))
-                png.CreatePNG(track._gpx, elevation=track.stats().uphill_climb)
+                png.CreatePNG(track._gpx, elevation=track.stats().uphill_climb, draw_border=False)
                 
  
             else:
@@ -301,7 +301,7 @@ class Manager:
             hash = d["hash"]
             
             t_center = C(latitude=d['middle_lat'],longitude=d['middle_long'],elevation=d['middle_elev'])
-            t_len= d['length_3d']
+            t_len= d['length_2d']
             metadata = C(center=t_center, length=t_len)
 
             # XXX
@@ -347,7 +347,7 @@ class Manager:
                     #mse_val = mse(tx.img, ty.img)
                     #is_sim = is_similar(tx.img, ty.img)
 
-                    geo_d = distancePoints3D(tx.metadata.center, ty.metadata.center)
+                    geo_d = distancePoints(tx.metadata.center, ty.metadata.center)
                     length_d = math.fabs(tx.metadata.length - ty.metadata.length)
                     hausdor_d = 9999999.0
 
@@ -501,7 +501,7 @@ class Manager:
         cursor.close()
 
     def db_get_similarity(self):
-        sql = "select id,hash,fname,middle_lat,middle_long,middle_elev, length_3d  from tracks"
+        sql = "select id,hash,fname,middle_lat,middle_long,middle_elev, length_2d  from tracks"
         cursor = self.db.cursor()
         cursor.execute(sql)
         data = cursor.fetchall()
@@ -538,7 +538,7 @@ class Manager:
     def db_store_track(self, track):
         sql = """
         insert into tracks(fname, hash, preview, preview_elevation, stamp, number_of_points, 
-                           duration, length_2d, length_3d,
+                           duration, quality, length_2d, length_3d,
                            start_time,end_time,moving_time,
                            
                            stopped_time, moving_distance,
@@ -551,7 +551,7 @@ class Manager:
                            
                            name,kind,device,equipment,
                            description,
-                           is_clockwise,score,
+                           is_clockwise,score,rating,
                            
                            min_lat,min_long,max_lat,max_long,
                            
@@ -610,7 +610,7 @@ class Manager:
                            max_cadence,min_cadence,avg_cadence,
                            max_temperature,min_temperature,avg_temperature)
         values ( ?, ?, ?, ?, ?, ?,
-                 ?, ?, ?,
+                 ?, ?, ?, ?,
                  ?, ?, ?,
 
                  ?, ?,
@@ -623,7 +623,7 @@ class Manager:
 
                  ?, ?, ?, ?, 
                  ?,  
-                 ?, ?,
+                 ?, ?,?,
 
                  ?, ?, ?, ?,    
 

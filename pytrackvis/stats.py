@@ -74,6 +74,7 @@ class Stats:
         self.quality = 0.0
         self.is_clockwise = False
         self.score = 0.0
+        self.rating = 0.0
         self.is_cloned = False
 
         #self.middle_point = C(lat=0.0, long=0.0, altitude=0.0)

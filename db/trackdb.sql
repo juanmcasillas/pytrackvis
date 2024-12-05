@@ -13,6 +13,7 @@ CREATE TABLE TRACKS (
 
     number_of_points    INTEGER DEFAULT 0,
     duration            INTEGER DEFAULT 0,
+    quality             REAL DEFAULT 0.0,
 
     length_2d           REAL DEFAULT 0.0,
     length_3d           REAL DEFAULT 0.0,
@@ -42,6 +43,7 @@ CREATE TABLE TRACKS (
     description         TEXT DEFAULT "",
     is_clockwise        INTEGER DEFAULT 0,      -- 0 means clockwise route
     score               REAL DEFAULT 0,
+    rating              REAL DEFAULT 0,
 
     -- boundingbox information
     min_lat              REAL DEFAULT 0.0,

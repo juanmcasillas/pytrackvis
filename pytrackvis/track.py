@@ -523,7 +523,7 @@ class Track:
             pass
         # id not passed
         return (self.fname, self.hash, self.preview, self.preview_elevation, self.stamp, self._stats.number_of_points,
-                self._stats.duration, self._stats.length_2d,self._stats.length_3d,
+                self._stats.duration, self._stats.quality, self._stats.length_2d,self._stats.length_3d,
                 self._stats.start_time, self._stats.end_time, self._stats.moving_time,
 
                 self._stats.stopped_time, self._stats.moving_distance,
@@ -536,7 +536,7 @@ class Track:
 
                 self.name, self.kind, self.device, self.equipment,
                 self.description,
-                self._stats.is_clockwise, self._stats.score,
+                self._stats.is_clockwise, self._stats.score,self._stats.rating,
      
                 self._stats.bounds.min_latitude,
                 self._stats.bounds.min_longitude,

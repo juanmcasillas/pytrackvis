@@ -31,3 +31,18 @@ html, body, #map {
     display: block;
     color: rgb(179, 38, 38);
 }
+.track.data {
+    display: block;
+    font-size: small;
+    
+}
+
+.track.slope {
+    font-size: small;
+    vertical-align: middle;
+}
+.track.slope-image {
+    display: inline;
+    width: 1em;
+
+}
