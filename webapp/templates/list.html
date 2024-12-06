@@ -8,15 +8,15 @@
 {% for track in tracks %}
 <div class="card m-1 ">
     <div class="row g-0">
-        <div class="col-md-4">
-            <div onclick="show_big('{{url_for('static', filename='img/track_previews')}}/{{track.preview}}',
-                                   '{{url_for('static', filename='img/track_previews')}}/{{track.preview_elevation}}'
-                        )">
-            <img src="{{url_for('static', filename='img/track_previews')}}/{{track.preview}}" class="img-fluid" ></img>
-            <img src="{{url_for('static', filename='img/track_previews')}}/{{track.preview_elevation}}" class="img-fluid" ></img>
-            </div>
+        <div class="col-md-2"
+              onclick="show_big('{{url_for('static', filename='img/track_previews')}}/{{track.preview}}',
+                                   '{{url_for('static', filename='img/track_previews')}}/{{track.preview_elevation}}')"
+                        class="">
+            <img src="{{url_for('static', filename='img/track_previews')}}/{{track.preview|as_thumb}}" class="img-fluid" ></img>
+            <img src="{{url_for('static', filename='img/track_previews')}}/{{track.preview_elevation|as_thumb}}" class="pt-1 img-fluid"></img>
+
         </div>
-        <div class="col-md-8">
+        <div class="col-md-10">
             <div class="card-body">
                 <span class="track title">{{track.name}}</span>
                 <div>
@@ -56,6 +56,8 @@
                         Elevation: {{track.level_elevation|humandistance}} 
                     </span>
                     </div>
+                    
+                    <div id="rateYo_{{track.id}}" class="track rating"></div></br>
 
             <p class="card-text">
                 <span class="track length"></span>
@@ -78,23 +80,36 @@
         </div>
     </div>
 </div>
+<script>
+    $("#rateYo_{{track.id}}").rateYo({starWidth: "18px",
+                            //readOnly: true,
+                            rating: {{track.rating}},
+                            userData: {{track.id}}, 
+                            fullStar: true,
+                            onSet: function (rating, rateYoInstance) {
+                                var id = rateYoInstance.option("userData");
+                                UpdateTrackRating(id, rating);
+                            }
+                        });
+</script>
+
 {% endfor %}
 
 <script>
-function show_big(map_img, elev_img, sz) {
+function show_big(map_img, elev_img) {
     Swal.fire({
     title: '',
-    width: 'auto',
+    width: '800px',
     html: `
     <div class="" role="alert">
         <div class="w-100">
             <img src="${map_img}" class="img-fluid w-100" ></img>
-            <img src="${elev_img}" class="img-fluid w-100" ></img>
+            <img src="${elev_img}" class="pt-1 img-fluid w-100" ></img>
         </div>
     </div>
     `,
     showCloseButton: false,
-    confirmButtonText: 'Aceptar',
+    confirmButtonText: 'Close',
     })
 }
 </script>

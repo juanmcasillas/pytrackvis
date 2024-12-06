@@ -79,3 +79,5 @@ python3.6 dev/test_ssim.py
 
 On mac, python3.9 works flawless with cv2, flask and so on.
 /usr/local/bin/flask --app=webapp.py run  --debug
+
+

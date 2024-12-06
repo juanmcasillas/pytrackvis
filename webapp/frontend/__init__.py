@@ -1,7 +1,9 @@
-from .impl import impl
+from .web_impl import web_impl
+from .track_impl import track_impl
 
 frontend_modules = [
-    impl,
+    web_impl,
+    track_impl,
 ]
 
 def register_frontend(app):

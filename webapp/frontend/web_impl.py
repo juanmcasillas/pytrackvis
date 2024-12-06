@@ -24,61 +24,61 @@ import time
 
 from webapp.caching import cache
 
-impl = Blueprint('impl', __name__)
+web_impl = Blueprint('web_impl', __name__)
 
-@impl.route('/static/<path>')
+@web_impl.route('/static/<path>')
 @cache.cached(timeout=60*60*24)  # Cache for 24 hours
 def static_files(path):
     return send_from_directory('static', path)
 
 # Our index-page just shows a quick explanation. Check out the template
 # "templates/index.html" documentation for more details.
-@impl.route('/')
+@web_impl.route('/')
 def index():
     return render_template('index.html')
 
-@impl.route('/error', methods=['GET', 'POST'])
+@web_impl.route('/error', methods=['GET', 'POST'])
 def error():
     msg = request.args.get("msg","Unknown error")
     return render_template('error.html',msg=msg)
 
 # page handlers
 
-@impl.route('/tracks/list')
+@web_impl.route('/tracks/list')
 def tracks_list():
     tracks = current_app.manager.db_get_tracks_info()
     return render_template('list.html', tracks=tracks)
 
-@impl.route('/tracks/show', methods=['GET', 'POST'])
+@web_impl.route('/tracks/show', methods=['GET', 'POST'])
 def tracks_show():
     id = request.args.get("id",None)
     if not id:
-        return redirect(url_for('impl.error', msg="Invalid id"))
+        return redirect(url_for('web_impl.error', msg="Invalid id"))
     track = current_app.manager.db_get_track(id)
 
     return render_template('show.html',track=track, TOKENS=current_app.manager.config.tokens)
 
 # json handlers
 
-@impl.route('/tracks/as_geojson', methods=['GET', 'POST'])
+@web_impl.route('/tracks/as_geojson', methods=['GET', 'POST'])
 @cache.cached(timeout=50,query_string=True)
 def tracks_as_geojson():
     id = request.args.get("id",None)
     if not id:
-        return redirect(url_for('impl.error', msg="Invalid id"))
+        return redirect(url_for('web_impl.error', msg="Invalid id"))
     trk = current_app.manager.get_track(id)
     if trk is None:
-        return redirect(url_for('impl.error', msg="Invalid track id"))
+        return redirect(url_for('web_impl.error', msg="Invalid track id"))
     
     return jsonify(trk.as_geojson_line()["data"]) 
     # default stuff to test things here.
 
-@impl.route('/tracks/get_track_info', methods=['GET', 'POST'])
+@web_impl.route('/tracks/get_track_info', methods=['GET', 'POST'])
 @cache.cached(timeout=50,query_string=True)
 def tracks_get_track_info():
     id = request.args.get("id",None)
     if not id:
-        return redirect(url_for('impl.error', msg="Invalid id"))
+        return redirect(url_for('web_impl.error', msg="Invalid id"))
 
     trk = current_app.manager.db_get_track(id)
     #center_lat, center_lon, center_alt = trk.track_center()

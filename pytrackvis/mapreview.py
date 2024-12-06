@@ -64,7 +64,8 @@ class MapPreviewManager:
                                  width=track_width,
                                  use_gradient = self.config["use_gradient"] if 'use_gradient' in self.config else False,
                                  gradient_value= self.config["gradient_value"] if 'gradient_value' in self.config else 0,
-                                 draw_bar = self.config["draw_bar"]
+                                 draw_bar = self.config["draw_bar"],
+                                 elevation_extremes=track._gpx.get_elevation_extremes()
                                  )
             
             if self.config["draw_ccw"]:

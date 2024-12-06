@@ -6,7 +6,7 @@ from flask.logging import default_handler
 import logging
 import time
 import datetime 
-
+import os
 
 from .caching import cache
 from .frontend import register_frontend
@@ -91,9 +91,18 @@ def create_app(configfile=None):
             return(s)
 
         return "%3.2f m" % float(distance)
-        
+
+    @app.template_filter('as_thumb')
+    def _jinja2_filter_as_thumb(url):
+        "add the tb suffix so we can manage thumbs in the web without breaking anything e.g. map.png -> map_tb.png"
+        fname, extension = os.path.splitext(url)
+        return "%s_tb%s" % (fname, extension)
+
+
 
     return app
 
 def register_extensions(app):
     cache.init_app(app)
+    with app.app_context():
+        cache.clear()

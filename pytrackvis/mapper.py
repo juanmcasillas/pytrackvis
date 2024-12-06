@@ -506,36 +506,30 @@ class OSMMapper(GenericMapper):
     def ProjectPoints(self, 
                       points, mapimg, color=(200,100,100), width=2, 
                       use_gradient=False, gradient_value=None,
-                      draw_bar=True
+                      draw_bar=True,
+                      elevation_extremes=(0, 0),
                       ):
 
         if use_gradient:
             rainbow = Rainbow()
             rainbow.setSpectrum('#0000D0','#00C000', '#FF0000')
 
-        def get_point_value(obj, what, ret=None):
-            if what in dir(obj):
-                if what in obj.__dict__.keys():
-                    return obj.__dict__[what]
-                if what in obj.__slots__:
-                    return getattr(obj, what)
-            return ret
+        # how to use slots in GPX object
+        # def get_point_value(obj, what, ret=None):
+        #     if what in dir(obj):
+        #         if what in obj.__dict__.keys():
+        #             return obj.__dict__[what]
+        #         if what in obj.__slots__:
+        #             return getattr(obj, what)
+        #     return ret
         
         # get max and min value.
         if use_gradient and gradient_value and gradient_value in dir(points[0]):
-    
-            max_val = get_point_value(points[0],gradient_value, 0)
-            min_val = get_point_value(points[0],gradient_value, 0)
-            
-            for i in range(len(points)):
-                
-                av = get_point_value(points[i] ,gradient_value, 0)
-                if av < min_val:
-                    min_val = av
-                if av > max_val:
-                    max_val = av
-        
-            
+            (min_val, max_val) = elevation_extremes
+            # to fix THEORIC tracks (no elevation)
+            if min_val == None: min_val = 0.0
+            if max_val == None: max_val = 0.0
+
         else:
             min_val = -10
             max_val =  10
@@ -584,14 +578,14 @@ class OSMMapper(GenericMapper):
             y = 25
             how_many = 17
             step_width = math.ceil((max_val - min_val) / how_many)
-            start = min_val
+            start = max_val
             for i in range(how_many):
                 draw.line( (x,y, x, y+10), fill="#%s" % rainbow.colourAt(start), width=5)
                 y+=10
-                start += step_width
-            draw.text((10, 10), "Min: %3.2f" % min_val, fill="#%s" % rainbow.colourAt(min_val))
-            draw.text((10, 200), "Max: %3.2f" % max_val, fill="#%s" % rainbow.colourAt(max_val))
-            draw.text((10, 210), gradient_value, fill="#%s" % rainbow.colourAt(max_val))
+                start -= step_width
+            draw.text((10, 200), "Min: %3.2f" % min_val, fill="#%s" % rainbow.colourAt(min_val))
+            draw.text((10,  10), "Max: %3.2f" % max_val, fill="#%s" % rainbow.colourAt(max_val))
+            draw.text((10, 210), gradient_value, fill="#%s" % rainbow.colourAt(min_val))
             del draw
 
                 

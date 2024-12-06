@@ -41,8 +41,18 @@ html, body, #map {
     font-size: small;
     vertical-align: middle;
 }
+
 .track.slope-image {
     display: inline;
     width: 1em;
 
+}
+
+.track.map {
+    border: 2px red solid;
+
+}
+
+.track.rating {
+    display: block;
 }

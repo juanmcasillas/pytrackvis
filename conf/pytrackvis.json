@@ -37,6 +37,11 @@
         "track_width": 2
 
     },
+    "elevation_profile": {
+        "border": false,
+        "size": [800, 100],
+        "thumb_size": [200, 40]
+    },
     "map_preview": {
         "track_previews_dir": "webapp/static/img/track_previews",
         "unsafe_ssl": true,
@@ -47,7 +52,41 @@
 
         "use_gradient": true,
         "gradient_value": "elevation",
-        "track_size": [450, 250],
+        "track_size": [800, 400],
+        "track_color": [255, 255, 80],
+        "track_width": 3,
+
+        "direction_width":  2,
+        "arrow_width": 6,
+        "radius": 8,
+        "small_img_size": 400,
+        "direction_width_big": 3,
+        "arrow_width_big": 8,
+        "radius_big": 20,
+
+        "direction_color": [255, 0, 0],
+        "arrows_color": [240, 10, 10],
+        "center_color": [100, 100, 200],
+        "center_radius": 2,
+
+        "start_color": [10, 220, 10],
+        "start_radius": 3,
+        "start_outline_color": [10, 100, 10],
+        "end_color": [220, 10, 10],
+        "end_radius": 3,
+        "end_outline_color": [100, 10, 10]
+    },
+    "map_preview_thumb": {
+        "track_previews_dir": "webapp/static/img/track_previews",
+        "unsafe_ssl": true,
+        "draw_bar": false,
+        "draw_ccw": false,
+        "draw_startstop": true,
+        "draw_center": false,
+
+        "use_gradient": true,
+        "gradient_value": "elevation",
+        "track_size": [200, 100],
         "track_color": [255, 255, 80],
         "track_width": 3,
 

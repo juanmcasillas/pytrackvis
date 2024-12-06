@@ -56,6 +56,9 @@ class Manager:
         self.mappreview_manager = MapPreviewManager(self.config.map_preview, 
                                                     cachedir=self.config.osm_cache["directory"],
                                                     debug=self.config.osm_cache["debug"])
+        self.mappreview_manager_thumb = MapPreviewManager(self.config.map_preview_thumb, 
+                                                    cachedir=self.config.osm_cache["directory"],
+                                                    debug=self.config.osm_cache["debug"])
         self.simpreview_manager = MapPreviewManager(self.config.sim_preview, 
                                                     cachedir=None,
                                                     debug=False)
@@ -166,29 +169,54 @@ class Manager:
             track_id = self.db_track_exists(track)
             
             if not track_id:
+                # create all the required images and products.
                 # create track map preview
-                map = self.mappreview_manager.create_map_preview(track)
-                #relative route (for www)
-                track.preview = "%s.png" % self.track_previews.map_object(track.hash, create_dirs=True, relative=True)
-                track.preview_elevation = "%s_elevation.png" % self.track_previews.map_object(track.hash, create_dirs=True, relative=True)
-                # absolute path (for store)
-                target = self.track_previews.map_object(track.hash)
-                map.save("%s.png" % target, 'PNG')
+                self.create_image_products(track)
                 self.db_store_track(track)
-                # calculate similarity
-                map_sim = self.simpreview_manager.create_map_preview(track, empty_map=True, track_color=(200,200,200))
-                target_sim = self.sim_previews.map_object(track.hash, create_dirs=True)
-                map_sim = map_sim.convert('L').point(lambda x : 255 if x > 1 else 0, mode='1')
-                map_sim.save("%s.png" % target_sim, 'png')
-
-                # elevation profile
-                png = PNGFactory(outputfname="%s_elevation.png" % self.track_previews.map_object(track.hash, create_dirs=True, relative=False))
-                png.CreatePNG(track._gpx, elevation=track.stats().uphill_climb, draw_border=False)
-                
  
             else:
                 track.id = track_id
                 self.logger.warning("Track %s exists on DB (id=%d)" % (track.hash, track.id))
+
+
+    def create_image_products(self, track):
+        target_fname = self.track_previews.map_object(track.hash, create_dirs=True, relative=True)
+        target_fname_abs = self.track_previews.map_object(track.hash)
+
+        map = self.mappreview_manager.create_map_preview(track)
+        map_thumb = self.mappreview_manager_thumb.create_map_preview(track)
+
+        #relative route (for www)
+        track.preview = "%s.png" % target_fname
+        track.preview_elevation = "%s_elevation.png" % target_fname
+        # absolute path (for store)
+        
+        map.save("%s.png" % target_fname_abs, 'PNG')
+        map_thumb.save("%s_tb.png" % target_fname_abs, 'PNG')
+        
+        # elevation profile
+        elev_profile_fname = "%s_elevation.png" % target_fname_abs
+        elev_profile_fname_thumb = "%s_elevation_tb.png" % target_fname_abs
+
+        png = PNGFactory(outputfname=elev_profile_fname, size=self.config.elevation_profile['size'])
+        png.CreatePNG(track._gpx, 
+                        elevation=track.stats().uphill_climb, 
+                        draw_border=self.config.elevation_profile['border'])
+
+
+        png = PNGFactory(outputfname=elev_profile_fname_thumb, size=self.config.elevation_profile['thumb_size'])
+        png.CreatePNG(track._gpx, 
+                        elevation=track.stats().uphill_climb, 
+                        draw_border=self.config.elevation_profile['border'],
+                        full_featured=False)
+
+        # calculate similarity
+        map_sim = self.simpreview_manager.create_map_preview(track, empty_map=True, track_color=(200,200,200))
+        target_sim = self.sim_previews.map_object(track.hash, create_dirs=True)
+        map_sim = map_sim.convert('L').point(lambda x : 255 if x > 1 else 0, mode='1')
+        map_sim.save("%s.png" % target_sim, 'png')
+
+
 
 
     # def check_similarity_points(self):
@@ -314,7 +342,7 @@ class Manager:
             #data = Image.open(target) # open colour image
             #data = data.convert('L')
             data = cv2.imread(target_png, cv2.IMREAD_GRAYSCALE) #cv2.COLOR_BGR2GRAY, ,cv2.COLOR_BGR2GRAY
-            cv2.imshow("", data)
+            #cv2.imshow("", data)
             #cv2.waitKey(100)
             points = cv2.findNonZero(data)
 
@@ -468,6 +496,17 @@ class Manager:
 
         return ret
 
+    def db_track_exists_id(self, track_id):
+        "check if the track is loaded in the database, using the hash"
+        sql = "select id,hash from tracks where id = ?"
+        cursor = self.db.cursor()
+        cursor.execute(sql, (track_id,))
+        data = cursor.fetchone()
+        cursor.close()
+        if not data:
+            return False
+        return data["hash"]
+
 
     def db_track_exists(self, track):
         "check if the track is loaded in the database, using the hash"
@@ -532,8 +571,13 @@ class Manager:
 
 
 
-    
-   
+    def db_update_track_field(self, field_name, track_id, field_value):
+        sql = "update tracks set %s = ? where id = ?" % field_name
+        cursor = self.db.cursor()
+        cursor.execute(sql, (field_value,track_id))
+        self.db.commit()
+        cursor.close()
+
 
     def db_store_track(self, track):
         sql = """
