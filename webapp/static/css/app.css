@@ -3,6 +3,7 @@
 }
 
 body { 
+
     margin: 0; 
     padding: 0; 
 }
@@ -17,11 +18,23 @@ html, body, #map {
     font-style: italic;
     display: block;
 }
-.track.title {
+.track.name {
     font-size: larger;
     font-weight: bold;
     display: block;
 }
+.track.name a {
+    text-decoration: none;
+    color: black;
+}
+
+.track.name a:hover {
+	color:black;
+	background-color:#FFFFFF;
+	text-decoration:underline;
+}
+
+
 .track.length {
     display: block;
 }
@@ -31,6 +44,12 @@ html, body, #map {
     display: block;
     color: rgb(179, 38, 38);
 }
+
+.track.description {
+    font-size: small;
+    font-style: italic;
+}
+
 .track.data {
     display: block;
     font-size: small;
@@ -48,11 +67,41 @@ html, body, #map {
 
 }
 
-.track.map {
-    border: 2px red solid;
-
-}
-
 .track.rating {
     display: block;
 }
+.track.map :hover {
+    cursor: pointer;
+}
+
+.footer {
+    font-size: smaller;
+}
+
+.footer a{
+    text-decoration: none;
+    color: black;
+}
+
+.footer a:hover {
+	text-decoration:underline;
+}
+
+
+
+.editable_title :hover {
+    cursor: pointer;
+
+}
+
+.editable_description {
+    font-size: small;
+    font-style: italic;
+}
+
+
+.editable_description :hover {
+    cursor: pointer;
+
+}
+

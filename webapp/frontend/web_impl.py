@@ -49,14 +49,25 @@ def tracks_list():
     tracks = current_app.manager.db_get_tracks_info()
     return render_template('list.html', tracks=tracks)
 
-@web_impl.route('/tracks/show', methods=['GET', 'POST'])
+@web_impl.route('/tracks/show3d', methods=['GET', 'POST'])
 def tracks_show():
     id = request.args.get("id",None)
     if not id:
         return redirect(url_for('web_impl.error', msg="Invalid id"))
     track = current_app.manager.db_get_track(id)
 
-    return render_template('show.html',track=track, TOKENS=current_app.manager.config.tokens)
+    return render_template('show3d.html',track=track, TOKENS=current_app.manager.config.tokens)
+
+
+@web_impl.route('/tracks/view', methods=['GET', 'POST'])
+def tracks_view():
+    id = request.args.get("id",None)
+    if not id:
+        return redirect(url_for('web_impl.error', msg="Invalid id"))
+    track = current_app.manager.db_get_track(id)
+
+    return render_template('view.html',track=track, TOKENS=current_app.manager.config.tokens)
+
 
 # json handlers
 

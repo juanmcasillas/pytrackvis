@@ -1,0 +1,53 @@
+{% from "bootstrap5/utils.html" import render_messages %}
+{%- extends "base.html" %}
+
+
+{% block title %}{% include 'title.html' %}{%- endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                {{ render_messages() }}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="mt-2 p-2">
+                    <h1 class="display-5">PyTrack Visualizer</h1>
+                    <h5 class="">List Available tracks</h5>
+                    <hr>
+                </div>
+            </div>
+        </div>
+        <div class="row"> 
+            <div class="col-md-2">
+                <div class="d-flex mx-auto" style="height: 100%">
+                    <h5 class="mx-2 mx-auto w-100">Some commands here</h5>
+                    <div class="vr"></div>
+                  </div>
+                    
+                
+            </div>
+            <div class="col-md-8 mx-auto">
+                {% block page %}{%- endblock %}
+            </div>  
+            <div class="col-md-2">
+            </div>
+        </div>
+        <!---footer -->
+        <hr>
+        <div class="row">
+            <div class="col-md-4 footer">
+                <p class="text-start"><a href="https://github.com/juanmcasillas/pytrackvis">PyTrackVis on Github</a></p>
+            </div>
+            <div class="col-md-4 ">
+                <p class="text-center "></p>
+            </div>
+            <div class="col-md-4 footer">
+                <p class="text-end ">&copy some rights reserved Juan M. Casillas 2024</p>
+            </div>
+        </div>
+    </div>
+{%- endblock %}
+

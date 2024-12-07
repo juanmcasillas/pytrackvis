@@ -28,21 +28,64 @@ track_impl = Blueprint('track_impl', __name__)
 def track_edit_rating():
     data = request.get_json(silent=True)
     if not data:
-        return JsonResultError(404, "invalid json")
+        return JsonResultError(500, "invalid json").response()
 
     if not 'id' in data.keys() or not 'rating' in data.keys():
-        return JsonResultError(404, "invalid json - no keys")
+        return JsonResultError(500, "invalid json - no keys").response()
     
     id = data['id']
     rating = data['rating']
     if id is None or rating is None:
-        return JsonResultError(404, "invalid json - bad values")
+        return JsonResultError(500, "invalid json - bad values").response()
     
     trk = current_app.manager.db_track_exists_id(id)
     if not trk:
-        return JsonResultError(404, "invalid json - bad track id")
+        return JsonResultError(500, "invalid json - bad track id").response()
     
     current_app.manager.db_update_track_field('rating', id, rating)
     
     return jsonify(JsonResultOK(message="rating update successfully").response()) 
+    # default stuff to test things here.
+
+
+@track_impl.route('/track/edit/name', methods=['POST'])
+def track_edit_name():
+    
+    if not 'id' in request.form.keys() or not 'name' in request.form.keys():
+        return JsonResultError(500, "invalid form - no keys").response()
+      
+    id = request.form['id']
+    name = request.form['name']
+    if id is None or name is None:
+        return JsonResultError(500, "invalid form - bad values").response()
+    
+    trk = current_app.manager.db_track_exists_id(id)
+    if not trk:
+        return JsonResultError(500, "invalid form - bad track id").response()
+    
+    current_app.manager.db_update_track_field('name', id, name)
+    
+    return name,200
+    # default stuff to test things here.
+
+
+
+
+@track_impl.route('/track/edit/description', methods=['POST'])
+def track_edit_description():
+    if not 'id' in request.form.keys() or not 'description' in request.form.keys():
+        return JsonResultError(500, "invalid form - no keys").response()
+      
+    id = request.form['id']
+    description = request.form['description']
+    if id is None or description is None:
+        return JsonResultError(500, "invalid form - bad values").response()
+    
+    trk = current_app.manager.db_track_exists_id(id)
+    if not trk:
+        return JsonResultError(500, "invalid form - bad track id").response()
+    
+    current_app.manager.db_update_track_field('description', id, description)
+    
+    return description,200
     # default stuff to test things here.

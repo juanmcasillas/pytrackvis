@@ -1,24 +1,16 @@
 {% from "bootstrap5/utils.html" import render_messages %}
-{%- extends "page.html" %}
+{%- extends "page3col.html" %}
 
 
 {% block title %}{% include 'title.html' %}{%- endblock %}
 {% block page %}
 
 {% for track in tracks %}
-<div class="card m-1 ">
+<div class="card m-2 border-0">
     <div class="row g-0">
-        <div class="col-md-2"
-              onclick="show_big('{{url_for('static', filename='img/track_previews')}}/{{track.preview}}',
-                                   '{{url_for('static', filename='img/track_previews')}}/{{track.preview_elevation}}')"
-                        class="">
-            <img src="{{url_for('static', filename='img/track_previews')}}/{{track.preview|as_thumb}}" class="img-fluid" ></img>
-            <img src="{{url_for('static', filename='img/track_previews')}}/{{track.preview_elevation|as_thumb}}" class="pt-1 img-fluid"></img>
-
-        </div>
-        <div class="col-md-10">
-            <div class="card-body">
-                <span class="track title">{{track.name}}</span>
+        <div class="col-md-9">
+            <div class="card-body mt-1 pt-1">
+                <span class="track name"><a href="/tracks/view?id={{track.id}}">{{track.name}}</a></span>
                 <div>
                     <span class="track data">Distance: {{track.length_3d|humandistance}} |
                                             Elevation: {{track.uphill_climb|humandistance}} |
@@ -55,30 +47,38 @@
                         Distance: {{track.level_distance|humandistance}} ({{"%.2f"|format(track.level_p_distance)}} %) |
                         Elevation: {{track.level_elevation|humandistance}} 
                     </span>
-                    </div>
+                </div>
                     
-                    <div id="rateYo_{{track.id}}" class="track rating"></div></br>
+                <div id="rateYo_{{track.id}}" class="track rating"></div></br>
+                <div class="track description">{{track.description}}</div></br>
 
             <p class="card-text">
                 <span class="track length"></span>
-                <a href="/tracks/show?id={{track.id}}" class="">3D view</a>
+                <a href="/tracks/show3d?id={{track.id}}" class="">3D view</a>
             </p>
             
             {% if track.similar|length >= 1 %}  
                 <div>
                 <h6>Similar tracks</h6>
                 {% for similar in track.similar %}  
-                        <li><a href="/tracks/show?id={{similar.id}}">{{similar.name}} ({{similar.id}})</a>
+                        <li><a href="/tracks/view?id={{similar.id}}">{{similar.name}} ({{similar.id}})</a>
                 {% endfor %}
                 </div>
             {% endif %}
 
-            
-                
-        
             </div>
-        </div>
+        </div> <!-- end card -->
+        <!-- image div -->
+        <div class="col-md-3 pt-3 track map"
+            onclick="show_big('{{track.name}}',
+                             '{{url_for('static', filename='img/track_previews')}}/{{track.preview}}',
+                             '{{url_for('static', filename='img/track_previews')}}/{{track.preview_elevation}}')"
+                  class="">
+            <img src="{{url_for('static', filename='img/track_previews')}}/{{track.preview|as_thumb}}" class="img-fluid w-100" ></img>
+            <img src="{{url_for('static', filename='img/track_previews')}}/{{track.preview_elevation|as_thumb}}" class="pt-1 img-fluid  w-100"></img>
+         </div>
     </div>
+     <hr>
 </div>
 <script>
     $("#rateYo_{{track.id}}").rateYo({starWidth: "18px",
@@ -96,9 +96,9 @@
 {% endfor %}
 
 <script>
-function show_big(map_img, elev_img) {
+function show_big(title,map_img, elev_img) {
     Swal.fire({
-    title: '',
+    title: `<h2>${title}</h2>`,
     width: '800px',
     html: `
     <div class="" role="alert">

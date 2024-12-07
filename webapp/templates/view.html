@@ -1,0 +1,120 @@
+{% from "bootstrap5/utils.html" import render_messages %}
+{%- extends "page2col.html" %}
+
+
+{% block title %}{% include 'title.html' %}{%- endblock %}
+{% block page %}
+
+
+<div class="border">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="">
+                <span class="track name editable_name" id="{{track.id}}">{{track.name}}</span>
+
+                    <span class="track score">Score: {{'%3.2f'|format(track.score|float)}}</span>
+                    <div id="rateYo_{{track.id}}" class="track rating"></div>
+                    <div class="editable_description" id="{{track.id}}">
+                        {{track.description}}
+                    </div><br>
+            </div>
+        </div> 
+    </div>
+    <!--data-->
+    <div class="row">
+        <div class="col-md-6">
+            data
+        </div>
+        <div class="col-md-6">
+            <div>
+                <span class="track data">Distance: {{track.length_3d|humandistance}} |
+                                        Elevation: {{track.uphill_climb|humandistance}} |
+                                        Duration: {{track.duration|strftimestamp('%H:%M:%S')}} |
+                                        Quality: {{"%.2f"|format(track.quality)}} %
+                </span>
+                <span class="track data">Sport: {{track.kind}} |
+                                        Equipment: {{track.equipment}} |
+                                        Device: {{track.device}} |
+                                        Created: {{track.stamp|strftimestamp}}
+                </span>
+            </div>
+            <div>
+                <img src="{{url_for('static', filename='img/icons/red-up-arrow-icon.png')}}" class="mx-auto track slope-image" >
+                <span class="track slope">
+                    Avg slope: {{"%.2f"|format(track.uphill_avg_slope)}} % |
+                    Distance: {{track.uphill_distance|humandistance}} ({{"%.2f"|format(track.uphill_p_distance)}} %) |
+                    Elevation: {{track.uphill_elevation|humandistance}} 
+                </span><br>
+
+                <img src="{{url_for('static', filename='img/icons/green-down-arrow-icon.png')}}" class="mx-auto track slope-image" >
+                <span class="track slope">
+                    Avg slope: {{"%.2f"|format(track.downhill_avg_slope)}} % |
+                    Distance: {{track.downhill_distance|humandistance}} ({{"%.2f"|format(track.downhill_p_distance)}} %) |
+                    Elevation: {{track.downhill_elevation|humandistance}} 
+                </span><br>
+            
+                <img src="{{url_for('static', filename='img/icons/blue-right-arrow-icon.png')}}" class="mx-auto track slope-image" >
+                <span class="track slope">
+                    Avg slope: {{"%.2f"|format(track.level_avg_slope)}} % |
+                    Distance: {{track.level_distance|humandistance}} ({{"%.2f"|format(track.level_p_distance)}} %) |
+                    Elevation: {{track.level_elevation|humandistance}} 
+                </span>
+            </div>
+        </div>
+    </div>
+    <!--map-->
+    <div class="row">
+        <div class="col-md-12">
+            map
+        </div>
+    </div>
+
+</div>
+
+<script>
+    $("#rateYo_{{track.id}}").rateYo({
+        starWidth: "18px",
+        //readOnly: true,
+        rating: {{track.rating}},
+        userData: {{track.id}}, 
+        fullStar: true,
+        onSet: function (rating, rateYoInstance) {
+            var id = rateYoInstance.option("userData");
+            UpdateTrackRating(id, rating);
+        }
+    });
+
+
+    // see http://www.appelsiini.net/projects/jeditable
+    $(".editable_name").editable("/track/edit/name", {
+        indicator : "<img src='{{url_for('static', filename='img/indicator.gif')}}'>",
+        name : 'name',
+        type   : 'textarea',
+        rows : 4,
+        submitdata: { _method: "put" },
+        select : false,
+        submit : 'Ok',
+        cancel : 'Cancel',
+        //cssclass : "track-description-editable",
+        tooltip : "Click to edit..."
+    });
+
+    $(".editable_description").editable("/track/edit/description", {
+        indicator : "<img src='{{url_for('static', filename='img/indicator.gif')}}'>",
+        name : 'description',
+        type   : 'textarea',
+        rows : 4,
+        submitdata: { _method: "put" },
+        select : false,
+        submit : 'Ok',
+        cancel : 'Cancel',
+        //cssclass : "track-description-editable",
+        tooltip : "Click to edit..."
+    });
+
+
+
+
+</script>
+
+{%- endblock %}
