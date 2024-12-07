@@ -84,6 +84,19 @@ def create_app(configfile=None):
         dt = datetime.datetime.fromtimestamp(stamp)
         return  dt.strftime(fmt)
 
+    @app.template_filter('strftimedelta')
+    def _jinja2_filter_strftimedelta(stamp):
+        
+        hours = stamp // 3600 
+        # remaining seconds
+        stamp = stamp - (hours * 3600)
+        # minutes
+        minutes = stamp // 60
+        # remaining seconds
+        seconds = stamp - (minutes * 60)
+        return "%02d:%02d:%02d" % (hours, minutes, seconds)
+        
+
     @app.template_filter('humandistance')
     def _jinja2_filter_humandistance(distance):
         if distance >= 1000.0:

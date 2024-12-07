@@ -2,6 +2,7 @@
 {%- extends "page3col.html" %}
 
 
+
 {% block title %}{% include 'title.html' %}{%- endblock %}
 {% block page %}
 
@@ -11,9 +12,10 @@
         <div class="col-md-9">
             <div class="card-body mt-1 pt-1">
                 <span class="track name"><a href="/tracks/view?id={{track.id}}">{{track.name}}</a></span>
-                <div>
-                    <span class="track data">Distance: {{track.length_3d|humandistance}} |
-                                            Elevation: {{track.uphill_climb|humandistance}} |
+                <span class="track score">Score: {{'%3.2f'|format(track.score|float)}}</span>
+                <div class="py-1">
+                    <span class="track data">Distance: <b>{{track.length_3d|humandistance}}</b> |
+                                            Elevation: <b>{{track.uphill_climb|humandistance}}</b> |
                                             Duration: {{track.duration|strftimestamp('%H:%M:%S')}} |
                                             Quality: {{"%.2f"|format(track.quality)}} %
                     </span>
@@ -24,10 +26,10 @@
                     </span>
                 </div>
                 
-                <span class="track score">Score: {{'%3.2f'|format(track.score|float)}}</span>
+                
 
                 <div>
-                    <img" src="{{url_for('static', filename='img/icons/red-up-arrow-icon.png')}}" class="mx-auto track slope-image" >
+                    <img src="{{url_for('static', filename='img/icons/red-up-arrow-icon.png')}}" class="mx-auto track slope-image" >
                     <span class="track slope">
                         Avg slope: {{"%.2f"|format(track.uphill_avg_slope)}} % |
                         Distance: {{track.uphill_distance|humandistance}} ({{"%.2f"|format(track.uphill_p_distance)}} %) |
@@ -49,8 +51,8 @@
                     </span>
                 </div>
                     
-                <div id="rateYo_{{track.id}}" class="track rating"></div></br>
-                <div class="track description">{{track.description}}</div></br>
+                <div id="rateYo_{{track.id}}" class="pt-2 track rating"></div>
+                <div class="ps-1 pt-2 track description w-75">{{track.description}}</div></br>
 
             <p class="card-text">
                 <span class="track length"></span>

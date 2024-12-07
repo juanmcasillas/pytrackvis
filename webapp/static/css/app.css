@@ -23,14 +23,19 @@ html, body, #map {
     font-weight: bold;
     display: block;
 }
-.track.name a {
-    text-decoration: none;
+.track.name a  {
     color: black;
 }
 
+.track.name a:link {
+    text-decoration:none;
+}
+
+.track.name a:visited {
+	text-decoration:none;
+}
+
 .track.name a:hover {
-	color:black;
-	background-color:#FFFFFF;
 	text-decoration:underline;
 }
 
@@ -97,6 +102,7 @@ html, body, #map {
 .editable_description {
     font-size: small;
     font-style: italic;
+    
 }
 
 
@@ -105,3 +111,68 @@ html, body, #map {
 
 }
 
+
+table.trackstats  {
+    font-size: small;
+    width: 100%;
+}
+.trackstats td.header   {
+    font-weight: bold;
+    
+}
+
+table.trackslope {
+    font-size: small;
+    width: 90%;
+}
+
+#trackstats_distance {
+    width: 300px;
+    height: 180px;
+    display: inline-block;
+}
+
+#trackstats_time {
+    width: 300px;
+    height: 180px;
+    display: inline-block;
+}
+#trackstats_uphill_range_distance {
+    width: 300px;
+    height: 180px;
+    display: inline-block;
+}
+
+#trackstats_downhill_range_distance {
+    width: 300px;
+    height: 180px;
+    display: inline-block;
+}
+
+/* #trackstats_uphill_range_time {
+    width: 300px;
+    height: 180px;
+    display: inline-block;
+}
+
+#trackstats_downhill_range_time {
+    width: 300px;
+    height: 180px;
+    display: inline-block;
+} */
+
+a.get-track-link:visited  {
+    color: black;
+    font-size: small;
+    text-decoration: none;
+}
+
+ a.get-track-link:link  {
+    color: black;
+    font-size: small;
+    text-decoration: none;
+}
+
+a.get-track-link:hover  {
+	text-decoration:underline;
+}

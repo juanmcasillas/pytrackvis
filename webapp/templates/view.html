@@ -1,64 +1,130 @@
 {% from "bootstrap5/utils.html" import render_messages %}
 {%- extends "page2col.html" %}
 
+{%block head%}
+{{super()}}
+        <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+        <script type="text/javascript" charset="utf8" 
+                 src="{{ url_for('static', filename='js/app/track_stats.js') }}"></script>
+{%endblock%}
 
 {% block title %}{% include 'title.html' %}{%- endblock %}
 {% block page %}
 
 
-<div class="border">
+<div class="">
     <div class="row">
         <div class="col-md-12">
             <div class="">
                 <span class="track name editable_name" id="{{track.id}}">{{track.name}}</span>
-
                     <span class="track score">Score: {{'%3.2f'|format(track.score|float)}}</span>
-                    <div id="rateYo_{{track.id}}" class="track rating"></div>
-                    <div class="editable_description" id="{{track.id}}">
-                        {{track.description}}
-                    </div><br>
+                    
             </div>
         </div> 
     </div>
     <!--data-->
     <div class="row">
         <div class="col-md-6">
-            data
+            <div id="rateYo_{{track.id}}" class="pt-1 track rating"></div>
+            <div class="ps-2 pt-2 editable_description w-50" id="{{track.id}}">
+                {{track.description}}
+            </div>
+ 
+
+            <div class="container pt-2 text-center">
+                <div class="row">
+                    <div class="col">
+                        <div class="" id="trackstats_distance"></div>
+                        <div id="trackstats_time"></div>
+                    </div>
+                </div>
+                <div class="row pt-2">
+                    <div class="col">
+                    <div id="trackstats_uphill_range_distance"></div>
+                    <div id="trackstats_downhill_range_distance"></div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                    <div id="trackstats_uphill_range_time"></div>
+                    <div id="trackstats_downhill_range_time"></div>
+                    </div>
+                </div>                
+            </div>
+
+            <div class="">
+                <a class="get-track-link" href="/track/get/original?id={{track.id}}">Download Original</a> | 
+                <a class="get-track-link" href="/track/get/gpx?id={{track.id}}">Download GPX</a> 
+            </div>
         </div>
         <div class="col-md-6">
             <div>
-                <span class="track data">Distance: {{track.length_3d|humandistance}} |
-                                        Elevation: {{track.uphill_climb|humandistance}} |
-                                        Duration: {{track.duration|strftimestamp('%H:%M:%S')}} |
-                                        Quality: {{"%.2f"|format(track.quality)}} %
-                </span>
-                <span class="track data">Sport: {{track.kind}} |
-                                        Equipment: {{track.equipment}} |
-                                        Device: {{track.device}} |
-                                        Created: {{track.stamp|strftimestamp}}
-                </span>
+                <table class="trackstats">
+                    <tr><td class="header">Distance</td><td><b>{{track.length_3d|humandistance}}</b></td>                        <td class="header">Sport</td><td class=""><b>{{track.kind}}</b></td></tr>
+                    <tr><td class="header">Speed Avg</td><td>{{"%.2f"|format(track.avg_speed_kmh)}} Km/h</td>             <td class="header">Device</td><td class="">{{track.device}}</td></tr>
+                    <tr><td class="header">Duration</td><td>{{track.duration|strftimestamp('%H:%M:%S')}}</td>             <td class="header">Equipment</td><td class="">{{track.equipment}}</td></tr>
+                    <tr><td class="header">Time Moving</td><td>{{track.moving_time|strftimestamp('%H:%M:%S')}}</td>       <td class="header">When</td><td class="">{{track.stamp|strftimestamp}}</td></tr>
+                    <tr><td class="header">Time Stopped</td><td>{{track.stopped_time|strftimedelta}}</td>     <td class="header">Max Altitude</td><td class="">{{track.maximum_elevation|humandistance}}</td></tr>
+                    <tr><td class="header">Elevation</td><td>{{track.uphill_climb|humandistance}}</td>                    <td class="header">Min Altitude</td><td class="">{{track.minimum_elevation|humandistance}}</td></tr>
+                    <tr><td class="header">SCORE</td><td><b>{{'%3.2f'|format(track.score|float)}}</b></td><td></td></tr>
+                    <tr><td class="header">Quality</td><td><b>{{"%.2f"|format(track.quality)}} %</b></td><td></td></tr>
+                    <tr><td>&nbsp;</td><td></td></tr>
+                    <tr><td class="header">Max HR</td><td>{{track.max_heart_rate}} bpm</td>                     <td class="header">Max Power</td><td class="">{{track.max_power}} W</td></tr>
+                    <tr><td class="header">Min HR</td><td>{{track.min_heart_rate}} bpm</td>                            <td class="header">Min Power</td><td class="">{{track.min_power}} W</td></tr>
+                    <tr><td class="header">Avg HR</td><td>{{"%.2f"|format(track.avg_heart_rate)}} bpm</td>             <td class="header">Avg Power</td><td class="">{{"%.2f"|format(track.avg_power)}} W</td></tr>
+                    
+                    <tr><td class="header">Max Cadence</td><td>{{track.max_cadence}} bpm</td>                     <td class="header">Max Temp</td><td class="">{{track.max_temperature}} &deg;C</td></tr>
+                    <tr><td class="header">Min Cadence</td><td>{{track.min_cadence}} bpm</td>                            <td class="header">Min Temp</td><td class="">{{track.min_temperature}} &deg;C</td></tr>
+                    <tr><td class="header">Avg Cadence</td><td>{{"%.2f"|format(track.avg_cadence)}} bpm</td>             <td class="header">Avg Temp</td><td class="">{{"%.2f"|format(track.avg_temperature)}}&deg;C</td></tr>
+                    
+                </table>
+                
             </div>
             <div>
-                <img src="{{url_for('static', filename='img/icons/red-up-arrow-icon.png')}}" class="mx-auto track slope-image" >
-                <span class="track slope">
-                    Avg slope: {{"%.2f"|format(track.uphill_avg_slope)}} % |
-                    Distance: {{track.uphill_distance|humandistance}} ({{"%.2f"|format(track.uphill_p_distance)}} %) |
-                    Elevation: {{track.uphill_elevation|humandistance}} 
-                </span><br>
 
-                <img src="{{url_for('static', filename='img/icons/green-down-arrow-icon.png')}}" class="mx-auto track slope-image" >
-                <span class="track slope">
-                    Avg slope: {{"%.2f"|format(track.downhill_avg_slope)}} % |
-                    Distance: {{track.downhill_distance|humandistance}} ({{"%.2f"|format(track.downhill_p_distance)}} %) |
-                    Elevation: {{track.downhill_elevation|humandistance}} 
-                </span><br>
+                <div class="pt-3">
+                    <img src="{{url_for('static', filename='img/icons/red-up-arrow-icon.png')}}" class="mx-auto track slope-image" ><span class="small">Ascent Avg: <b>{{"%.2f"|format(track.uphill_avg_slope)}} %</b></span>
+                    <table class="trackslope border">
+                    <tr><td>{{"%.2f"|format(track.uphill_p_distance)}} % Distance Total</td>
+                        <td><b>{{track.uphill_distance|humandistance}} Uphill</b></td>
+                        <td><b>{{track.uphill_elevation|humandistance}} Climb</b></td>
+                    </tr>
+                    <tr><td>{{"%.2f"|format(track.uphill_p_time)}} % Time Total</td>
+                        <td>{{"%.2f"|format(track.uphill_speed)}} Km/h</td>
+                        <td>{{track.uphill_time|strftimestamp('%H:%M:%S')}} Uphill</td>
+                    </tr>
+                    </table>
+                </div>
+                    
+                <div class="pt-3">
+                    <img src="{{url_for('static', filename='img/icons/green-down-arrow-icon.png')}}" class="mx-auto track slope-image" ><span class="small">Descend Avg: <b>{{"%.2f"|format(track.uphill_avg_slope)}} %</b></span>                
+                    <table class="trackslope border">
+                        <tr><td>{{"%.2f"|format(track.downhill_p_distance)}} % Distance Total</td>
+                            <td><b>{{track.downhill_distance|humandistance}} Downhill</b></td>
+                            <td><b>{{track.downhill_elevation|humandistance}} Descend</b></td>
+                        </tr>
+                        <tr><td>{{"%.2f"|format(track.downhill_p_time)}} % Time Total</td>
+                            <td>{{"%.2f"|format(track.downhill_speed)}} Km/h</td>
+                            <td>{{track.downhill_time|strftimestamp('%H:%M:%S')}} Downhill</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="pt-3">
+                    <img src="{{url_for('static', filename='img/icons/blue-right-arrow-icon.png')}}" class="mx-auto track slope-image" ><span class="small">Level Avg: <b>{{"%.2f"|format(track.level_avg_slope)}} %</b></span>
+                    <table class="trackslope border">
+                        <tr><td>{{"%.2f"|format(track.level_p_distance)}} % Distance Total</td>
+                            <td><b>{{track.level_distance|humandistance}} Level</b></td>
+                            <td><b>{{track.level_elevation|humandistance}} Climb</b></td>
+                        </tr>
+                        <tr><td>{{"%.2f"|format(track.level_p_time)}} % Time Total</td>
+                            <td>{{"%.2f"|format(track.level_speed)}} Km/h</td>
+                            <td>{{track.level_time|strftimestamp('%H:%M:%S')}} Level</td>
+                        </tr>
+                    </table>
+                </div>
             
-                <img src="{{url_for('static', filename='img/icons/blue-right-arrow-icon.png')}}" class="mx-auto track slope-image" >
-                <span class="track slope">
-                    Avg slope: {{"%.2f"|format(track.level_avg_slope)}} % |
-                    Distance: {{track.level_distance|humandistance}} ({{"%.2f"|format(track.level_p_distance)}} %) |
-                    Elevation: {{track.level_elevation|humandistance}} 
-                </span>
+            
             </div>
         </div>
     </div>
@@ -113,7 +179,49 @@
     });
 
 
+    // create the track stats, and build them
+    track = new Object();
+    track.uphill_p_distance   = {{track.uphill_p_distance}}
+    track.level_p_distance    = {{track.level_p_distance}} 
+    track.downhill_p_distance = {{track.downhill_p_distance}} 
+    track.uphill_p_time       = {{track.uphill_p_time}} 
+    track.level_p_time        = {{track.level_p_time}}
+    track.downhill_p_time     = {{track.downhill_p_time}} 
 
+    track.uphill_slope_range_distance_0 = {{track.uphill_slope_range_distance_0}}
+    track.uphill_slope_range_distance_1 = {{track.uphill_slope_range_distance_1}}
+    track.uphill_slope_range_distance_2 = {{track.uphill_slope_range_distance_2}}
+    track.uphill_slope_range_distance_3 = {{track.uphill_slope_range_distance_3}}
+    track.uphill_slope_range_distance_4 = {{track.uphill_slope_range_distance_4}}
+    track.uphill_slope_range_distance_5 = {{track.uphill_slope_range_distance_5}}
+    track.uphill_slope_range_distance_6 = {{track.uphill_slope_range_distance_6}}
+    
+    track.downhill_slope_range_distance_0 = {{track.downhill_slope_range_distance_0}}
+    track.downhill_slope_range_distance_1 = {{track.downhill_slope_range_distance_1}}
+    track.downhill_slope_range_distance_2 = {{track.downhill_slope_range_distance_2}}
+    track.downhill_slope_range_distance_3 = {{track.downhill_slope_range_distance_3}}
+    track.downhill_slope_range_distance_4 = {{track.downhill_slope_range_distance_4}}
+    track.downhill_slope_range_distance_5 = {{track.downhill_slope_range_distance_5}}
+    track.downhill_slope_range_distance_6 = {{track.downhill_slope_range_distance_6}}    
+
+    // track.uphill_slope_range_time_0 = {{track.uphill_slope_range_time_0}}
+    // track.uphill_slope_range_time_1 = {{track.uphill_slope_range_time_1}}
+    // track.uphill_slope_range_time_2 = {{track.uphill_slope_range_time_2}}
+    // track.uphill_slope_range_time_3 = {{track.uphill_slope_range_time_3}}
+    // track.uphill_slope_range_time_4 = {{track.uphill_slope_range_time_4}}
+    // track.uphill_slope_range_time_5 = {{track.uphill_slope_range_time_5}}
+    // track.uphill_slope_range_time_6 = {{track.uphill_slope_range_time_6}}
+    
+    // track.downhill_slope_range_time_0 = {{track.downhill_slope_range_time_0}}
+    // track.downhill_slope_range_time_1 = {{track.downhill_slope_range_time_1}}
+    // track.downhill_slope_range_time_2 = {{track.downhill_slope_range_time_2}}
+    // track.downhill_slope_range_time_3 = {{track.downhill_slope_range_time_3}}
+    // track.downhill_slope_range_time_4 = {{track.downhill_slope_range_time_4}}
+    // track.downhill_slope_range_time_5 = {{track.downhill_slope_range_time_5}}
+    // track.downhill_slope_range_time_6 = {{track.downhill_slope_range_time_6}}  
+
+    google.load("visualization", "1", {packages:["corechart"]});
+    google.setOnLoadCallback(function(){ drawTrackStats(track) })
 
 </script>
 
