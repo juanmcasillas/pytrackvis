@@ -1,9 +1,10 @@
-var map_mode = {
+var mapManager = {
+    prefix: 'pytrackvis_',         // used to mark our custom layers in the map
     is3D: false,
     terrain: false,
-    MAPTILER_KEY: null,
     track: null,
-    terrain_source: '',
+    terrain_source: null,
+    marker: new maplibregl.Marker(),
 
     change: function() {
         if (this.is3D == false) {
@@ -14,18 +15,6 @@ var map_mode = {
             window.map.touchZoomRotate.enableRotation();
             window.map.setTerrain(this.terrain_source)
             this.terrain = true
-
-            // if (this.terrain == false) {
-            //     window.map.addSource("pytrackvis_terrain", {
-            //         type: "raster-dem",
-            //         url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${this.MAPTILER_KEY}`
-            //     });
-                
-            //     window.map.setTerrain({
-            //         source: "pytrackvis_terrain"
-            //     });
-            //     this.terrain = true;
-            // }
         }
         else {
             this.is3D = false;
@@ -39,6 +28,7 @@ var map_mode = {
     },
     recenter: function() {
         window.map.fitBounds( track.bounds )
+       
         //window.map.setCenter({ lon: track.center.long, lat: track.center.lat })
     },
     update_terrain: function() {
@@ -46,18 +36,28 @@ var map_mode = {
               window.map.setTerrain(this.terrain_source)
         }
     },
+    layer_prefix: function(layer_name) {
+        return this.prefix + layer_name;
+    },
+    track_data: function() {
+        return this.layer_prefix(`track_${track.id}`)
+    },
+    marker_off: function() {
+        this.marker.setOpacity(0)
+    },
+    marker_on: function() {
+        this.marker.setOpacity(1)
+    }
+    
+
 }
 
-function draw_map_2D(track, MAPTILER_KEY, style_id, debug=false) {
+function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
 
-    map_mode.MAPTILER_KEY = MAPTILER_KEY // for map change 2D/3D
-    map_mode.track = track
-    map_mode.terrain_source = { source: 'pytrackvis_terrain' }
 
     var load_terrain = true;
     var hillshading = false;
-    var load_buildings = true;
-
+    var load_buildings = false; // fancy but not too useful
 
     if (debug == true) {
         load_terrain = false;
@@ -84,71 +84,20 @@ function draw_map_2D(track, MAPTILER_KEY, style_id, debug=false) {
     map.keyboard.disable(); 
     map.touchZoomRotate.disableRotation();
     
-    //https://gist.github.com/ryanbaumann/7f9a353d0a1ae898ce4e30f336200483/96bea34be408290c161589dcebe26e8ccfa132d7
-    //https://github.com/maplibre/maplibre-gl-js/issues/2587
-    // var customLayers = [
-    //     {
-    //         source_id: `pytrackvis_track_${track.id}`,
-    //         source: {
-    //             type: "geojson",
-    //             data: `/tracks/as_geojson?id=${track.id}`
-    //         },
-    //         layer: {
-    //             'id': `pytrackvis_track_${track.id}_layer`,
-    //             'type': 'line',
-    //             'source': `pytrackvis_track_${track.id}`,
-    //             'layout': { 
-    //                 'line-join': "round", 
-    //                 'line-cap': "round"
-    //             },
-    //             'paint': {
-    //                 'line-color': '#FFFF50', 
-    //                 'line-width': 4
-    //             }
-    //         }
-    //     },
-    //     {
-    //         source_id: 'pytrackvis_openmaptiles',
-    //         source: {
-    //             url: `https://api.maptiler.com/tiles/v3/tiles.json?key=${MAPTILER_KEY}`,
-    //             type: 'vector',
-    //         },
-    //         layer: {
-    //             'id': 'pytrackvis_3d-buildings',
-    //             'source': 'pytrackvis_openmaptiles',
-    //             'source-layer': 'building',
-    //             'type': 'fill-extrusion',
-    //             'minzoom': 16,
-    //             'filter': ['!=', ['get', 'hide_3d'], true],
-    //             'paint': {
-    //                 'fill-extrusion-color': [
-    //                     'interpolate',
-    //                     ['linear'],
-    //                     ['get', 'render_height'], 0, 'lightgray', 200, 'royalblue', 400, 'lightblue'
-    //                 ],
-    //                 'fill-extrusion-height': [
-    //                     'interpolate',
-    //                     ['linear'],
-    //                     ['zoom'],
-    //                     15,
-    //                     0,
-    //                     16,
-    //                     ['get', 'render_height']
-    //                 ],
-    //                 'fill-extrusion-base': ['case',
-    //                     ['>=', ['get', 'zoom'], 16],
-    //                     ['get', 'render_min_height'], 0
-    //                 ]
-    //             }
-    //         }
-    //     }
-    // ]
+    mapManager.track = track
+    mapManager.terrain_source = { source: 'pytrackvis_terrain' }
+    mapManager.marker.setLngLat([track.begin.long, track.begin.lat, track.begin.elev]).addTo(map);
+    mapManager.marker.setOpacity(0)
+    
+    
+    
+    // used when change the map style (topo, stellite, etc)
     map.on('style.load', () => {
-        map_mode.update_terrain();
+        mapManager.update_terrain();
     });
 
+    // main callback
     map.on('load', () => {
-
         map.addControl(new maplibregl.FullscreenControl({container: document.querySelector('body')}),  'top-right');
         map.addControl(
             new maplibregl.NavigationControl({
@@ -160,32 +109,23 @@ function draw_map_2D(track, MAPTILER_KEY, style_id, debug=false) {
         );
         map.addControl(new maplibregl.ScaleControl({ unit: 'metric'}), 'bottom-right');
         map.addControl(new maplibreGLMeasures.default({ units: 'metric'}), 'top-right');
-        //
-        // not needed
-        //map.addControl(new maplibregl.TerrainControl({ source: 'pytrackvis_terrain' }));
-        
-        // load our custom layers. This will be moved again inside the call.
-        // for (var i = 0; i < customLayers.length; i++) {
-        //     var me = customLayers[i]
-        //     map.addSource(me.source_id, me.source);
-        //     map.addLayer(me.layer)
-        // }
 
-        map.addSource(`pytrackvis_track_${track.id}`, {
+
+        map.addSource(mapManager.layer_prefix(`track_${track.id}`), {
             type: "geojson",
             data: `/track/as_geojson?id=${track.id}`
         });
         map.addLayer({
-            'id': `pytrackvis_track_${track.id}_layer`,
+            'id': mapManager.layer_prefix(`track_${track.id}_layer`),
             'type': 'line',
-            'source': `pytrackvis_track_${track.id}`,
+            'source': mapManager.layer_prefix(`track_${track.id}`),
             'layout': { 
                 'line-join': "round", 
                 'line-cap': "round"
             },
             'paint': {
-                'line-color': '#FFFF50', 
-                //'line-color': '#880ED4', 
+                'line-color': '#FFFF50',    // high contrast
+                //'line-color': '#880ED4',  // low contrast
                 'line-width': 5
             }
         });
@@ -197,24 +137,25 @@ function draw_map_2D(track, MAPTILER_KEY, style_id, debug=false) {
         
         if (load_terrain) {
 
-            map.addSource("pytrackvis_terrain", {
+            map.addSource(mapManager.layer_prefix("terrain"), {
                 type: "raster-dem",
                 url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${MAPTILER_KEY}`
             });
 
             map.setTerrain({
-                source: "pytrackvis_terrain"
+                source: mapManager.layer_prefix("terrain")
             });
 
             if (hillshading) {
                 // this doesn't produce any effect for now.
-                map.addSource("pytrackvis_terrain_hs", {
+                // keep it disabled.
+                map.addSource(mapManager.layer_prefix("terrain_hs"), {
                     type: "raster-dem",
                     url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${MAPTILER_KEY}`
                 });
                 map.addLayer({
-                    'id': 'pytrackvis_hillshading',
-                    'source': 'pytrackvis_terrain_hs',
+                    'id': mapManager.layer_prefix('hillshading'),
+                    'source': mapManager.layer_prefix('terrain_hs'),
                     'type': 'hillshade'
                     }
                 );
@@ -234,16 +175,16 @@ function draw_map_2D(track, MAPTILER_KEY, style_id, debug=false) {
                     break;
                 }
             }
-            map.addSource('pytrackvis_openmaptiles', {
+            map.addSource(mapManager.layer_prefix('openmaptiles'), {
                     url: `https://api.maptiler.com/tiles/v3/tiles.json?key=${MAPTILER_KEY}`,
                     type: 'vector',
             });
             map.addLayer({
-                'id': 'pytrackvis_3d-buildings',
-                'source': 'pytrackvis_openmaptiles',
+                'id': mapManager.layer_prefix('3d-buildings'),
+                'source': mapManager.layer_prefix('openmaptiles'),
                 'source-layer': 'building',
                 'type': 'fill-extrusion',
-                'minzoom': 12,
+                'minzoom': 14,
                 'filter': ['!=', ['get', 'hide_3d'], true],
                 'paint': {
                     'fill-extrusion-color': [
@@ -255,13 +196,13 @@ function draw_map_2D(track, MAPTILER_KEY, style_id, debug=false) {
                         'interpolate',
                         ['linear'],
                         ['zoom'],
-                        15,
+                        14,
                         0,
                         18,
                         ['get', 'render_height']
                     ],
                     'fill-extrusion-base': ['case',
-                        ['>=', ['get', 'zoom'], 18],
+                        ['>=', ['get', 'zoom'], 16],
                         ['get', 'render_min_height'], 0
                     ]
                 }
@@ -286,21 +227,21 @@ function draw_map_2D(track, MAPTILER_KEY, style_id, debug=false) {
             // layers.
             if (['satellite', 'hybrid'].includes(styleId)) {
                 // use high-contrast color.
-                map.setPaintProperty(`pytrackvis_track_${track.id}_layer`, 'line-color', '#FFFF50');
+                map.setPaintProperty(mapManager.layer_prefix(`track_${track.id}_layer`), 'line-color', '#FFFF50');
             } else {
-                map.setPaintProperty(`pytrackvis_track_${track.id}_layer`, 'line-color', '#880ED4');
+                map.setPaintProperty(mapManager.layer_prefix(`track_${track.id}_layer`), 'line-color', '#880ED4');
             }
 
             map.setStyle(`https://api.maptiler.com/maps/${styleId}/style.json?key=${MAPTILER_KEY}`, {
                 transformStyle: (previousStyle, nextStyle) => {
                   var custom_layers = previousStyle.layers.filter(layer => {
-                    return layer.id.startsWith('pytrackvis_')
+                    return layer.id.startsWith(mapManager.layer_prefix(''))
                   });
                   var layers = nextStyle.layers.concat(custom_layers);
               
                   var sources = nextStyle.sources;
                   for (const [key, value] of Object.entries(previousStyle.sources)) {
-                    if (key.startsWith('pytrackvis_')) {
+                    if (key.startsWith(mapManager.layer_prefix(''))) {
                       sources[key] = value;
                     }
                   }
@@ -316,8 +257,15 @@ function draw_map_2D(track, MAPTILER_KEY, style_id, debug=false) {
         });
 
         // end of map onLoad
+        // call the rest of things here after map loading.
+          // its a promise
+        let track_data = map.getSource(mapManager.track_data())
+        track_data.getData().then( function(results) {
+            plotElevation(results,map,mapManager)
+        });
     })
 
+    // show lat/long if needed
     // map.on('mousemove', (e) => {
     //     document.getElementById('map-info').innerHTML =
     //         // e.point is the x, y coordinates of the mousemove event relative

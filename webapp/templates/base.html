@@ -55,7 +55,13 @@
         -->
             
         <script src='https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js'></script>
-        <script src="https://unpkg.com/maplibre-gl-measures@latest/dist/maplibre-gl-measures.js"></script>
+        
+        <script type="text/javascript" charset="utf8" 
+            src="{{ url_for('static', filename='js/maplibre-gl-measures.js') }}"></script>
+
+        <!-- stop working
+            <script src="https://unpkg.com/maplibre-gl-measures@latest/dist/maplibre-gl-measures.js"></script> 
+            --->
         
         <script type="text/javascript" charset="utf8" 
             src="{{ url_for('static', filename='js/jquery-3.7.1.min.js') }}"></script>

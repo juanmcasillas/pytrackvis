@@ -184,6 +184,13 @@ a.get-track-link:hover  {
 
 .map-container {
     height: 800px;
+   
+}
+
+.map-heatmap {
+    width: 100%;
+    font-size: small;
+    color: white;
 }
 
 .map-styles  {
@@ -210,5 +217,4 @@ a.get-track-link:hover  {
     position: absolute;
     bottom: 10px;
     left: 10px;
-
 }

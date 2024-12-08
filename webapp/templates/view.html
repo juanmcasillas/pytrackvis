@@ -8,6 +8,8 @@
                  src="{{ url_for('static', filename='js/app/track_stats.js') }}"></script>
         <script type="text/javascript" charset="utf8" 
                  src="{{ url_for('static', filename='js/app/map.js') }}"></script>
+        <script type="text/javascript" charset="utf8" 
+                 src="{{ url_for('static', filename='js/rainbowvis.js') }}"></script>                 
 {%endblock%}
 
 {% block title %}{% include 'title.html' %}{%- endblock %}
@@ -133,6 +135,7 @@
     <!--map-->
     <div class="row">
         <div class="col-md-12 map-container mt-4">
+            <h3>Map</h3>
             <div id="map" class="track-map-2d h-100 d-inline-block">
                 <select id="map-styles" class="map-styles dropdownSelect m-2">
                     <option selected value="hybrid">Hybrid</option>
@@ -141,18 +144,21 @@
                     <option value="topo">OpenStreetMap (topo)</option>
                     <option value="streets-v2">OpenStreetMap</option>
                   </select>
-                <button type="button" class="btn btn-light map-mode" onclick="map_mode.change()" >2D/3D</button>
-                <button type="button" class="btn btn-light map-recenter" onclick="map_mode.recenter()" >Recenter</button>
+                <button type="button" class="btn btn-light map-mode" onclick="mapManager.change()" >2D/3D</button>
+                <button type="button" class="btn btn-light map-recenter" onclick="mapManager.recenter()" >Recenter</button>
                 <pre id="map-info" class="map-info"></pre>
             </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12 series-container mt-4">
+            <div id="elevation_chart"  onmouseleave="mapManager.marker_off()"></div>
         </div>
     </div>
 
 </div>
 
 <script>
-
-
     $("#rateYo_{{track.id}}").rateYo({
         starWidth: "18px",
         //readOnly: true,
@@ -222,9 +228,20 @@
     
     track.bounds = [ [ {{track.min_long}}, {{track.min_lat}} ],[ {{track.max_long}}, {{track.max_lat}} ]  ]
     track.center = new Object();
+    track.begin = new Object();
+    track.end = new Object();
+
     track.center.long = {{track.middle_long}} 
     track.center.lat = {{track.middle_lat}} 
     track.center.elev = {{track.middle_elev}} 
+    
+    track.begin.long = {{track.begin_long}} 
+    track.begin.lat = {{track.begin_lat}} 
+    track.begin.elev = {{track.begin_elev}} 
+    
+    track.end.long = {{track.end_long}} 
+    track.end.lat = {{track.end_lat}} 
+    track.end.elev = {{track.end_elev}}     
 
     // track.uphill_slope_range_time_0 = {{track.uphill_slope_range_time_0}}
     // track.uphill_slope_range_time_1 = {{track.uphill_slope_range_time_1}}
@@ -243,10 +260,13 @@
     // track.downhill_slope_range_time_6 = {{track.downhill_slope_range_time_6}}  
 
     google.load("visualization", "1", {packages:["corechart"]});
-    google.setOnLoadCallback(function(){ drawTrackStats(track) })
-
-    //draw_map_2D(track, '{{TOKENS.MAPTILER_KEY}}', "map-styles")
-    draw_map_2D(track, '{{TOKENS.MAPTILER_KEY}}', "map-styles", debug=false)
+    google.setOnLoadCallback(function(){ 
+        drawTrackStats(track) 
+        // called from map in order to work plotElevation(window.map)
+    })
+    draw_map(track, '{{TOKENS.MAPTILER_KEY}}', "map-styles")
+    
+    
 </script>
 
 {%- endblock %}

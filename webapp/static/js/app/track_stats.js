@@ -1,3 +1,6 @@
+
+
+
 function drawTrackStats(track) {
 
     //
@@ -86,7 +89,7 @@ function drawTrackStats(track) {
                     pieHole: 0.3,
                     legend: 'right',
                     //sliceVisibilityThreshold: .2,
-                    slices: [ { color: '#ee8080' }, {color: '#ee6060'}, {color: '#ee4040'},  {color: '#ee2020'}, {color: '#ee0000'}, {color: '#dd2020'}, {color: '#cc2020'} ]
+                    slices: [ { color: '#dd7070' }, {color: '#dd5050'}, {color: '#dd3030'},  {color: '#dd1010'}, {color: '#dd0000'}, {color: '#cc1010'}, {color: '#bb1010'} ]
                      };
 
     // Instantiate and draw our chart, passing in some options.
@@ -114,67 +117,165 @@ function drawTrackStats(track) {
                     chartArea: {left: 10, 'width': '100%', 'height': '82%' },
                     pieHole: 0.3,
                     legend: 'right',
-                    slices: [ { color: '#40cc40' }, {color: '#20bb20'}, {color: '#20aa20'},  {color: '#209920'}, {color: '#208820'}, {color: '#207720'}, {color: '#206620'} ]
+                    slices: [ { color: '#20ac20' }, {color: '#109910'}, {color: '#109910'},  {color: '#108810'}, {color: '#107710'}, {color: '#106610'}, {color: '#105510'} ]
                     };
 
     // Instantiate and draw our chart, passing in some options.
     var chart = new google.visualization.PieChart(document.getElementById('trackstats_downhill_range_distance'));
     chart.draw(data, options);
 
-    // // time based series here.
-    // var data = new google.visualization.DataTable();
-    // data.addColumn('string', 'Slope');
-    // data.addColumn('number', 'Time');
-
-    // // 0-5, 5-10, 10-15, 15-20, 20-25, >30
-    // data.addRow( [ "0.5% - 3% ", track.uphill_slope_range_time_0 ]);
-    // data.addRow( [ "3%   - 5% ", track.uphill_slope_range_time_1 ]);
-    // data.addRow( [ "5%   - 7% ", track.uphill_slope_range_time_2 ]);
-    // data.addRow( [ "7%  - 10% ", track.uphill_slope_range_time_3 ]);
-    // data.addRow( [ "10% - 14% ", track.uphill_slope_range_time_4 ]);
-    // data.addRow( [ "14% - 20% ", track.uphill_slope_range_time_5 ]);
-    // data.addRow( [ ">20% ",      track.uphill_slope_range_time_6 ]);
-
-    // // Set chart options
-    // var options = {title:'Uphill Slope Time Distribution (s)',
-    //                 // titlePosition: 'center',
-    //                 titleTextStyle: { fontSize: 12 },
-    //                 chartArea: {left: 10, 'width': '100%', 'height': '82%' },
-    //                 pieHole: 0.3,
-    //                 legend: 'right',
-    //                 //sliceVisibilityThreshold: .2,
-    //                 slices: [ { color: '#ee8080' }, {color: '#ee6060'}, {color: '#ee4040'},  {color: '#ee2020'}, {color: '#ee0000'}, {color: '#dd2020'}, {color: '#cc2020'} ]
-    //                  };
-
-    // // Instantiate and draw our chart, passing in some options.
-    // var chart = new google.visualization.PieChart(document.getElementById('trackstats_uphill_range_time'));
-    // chart.draw(data, options);
-
-    // var data = new google.visualization.DataTable();
-    // data.addColumn('string', 'Slope');
-    // data.addColumn('number', 'Time');
-
-    // // 0-5, 5-10, 10-15, 15-20, 20-25, >30
-
-    // data.addRow( [ "-3% - -0.5% ", track.downhill_slope_range_time_0] );
-    // data.addRow( [ "-5%  -  -3% ", track.downhill_slope_range_time_1] );
-    // data.addRow( [ "-7%  -  -5% ", track.downhill_slope_range_time_2] );
-    // data.addRow( [ "-10% -  -7% ", track.downhill_slope_range_time_3] );
-    // data.addRow( [ "-14% - -10% ", track.downhill_slope_range_time_4] );
-    // data.addRow( [ "-20% - -14% ", track.downhill_slope_range_time_5] );
-    // data.addRow( [ "<-20% ",       track.downhill_slope_range_time_6] );
-
-    // // Set chart options
-    // var options = {title:'Downhill Slope Time Distribution (s)',
-    //                 // titlePosition: 'center',
-    //                 titleTextStyle: { fontSize: 12 },
-    //                 chartArea: {left: 10, 'width': '100%', 'height': '82%' },
-    //                 pieHole: 0.3,
-    //                 legend: 'right',
-    //                 slices: [ { color: '#40cc40' }, {color: '#20bb20'}, {color: '#20aa20'},  {color: '#209920'}, {color: '#208820'}, {color: '#207720'}, {color: '#206620'} ]
-    //                 };
-
-    // // Instantiate and draw our chart, passing in some options.
-    // var chart = new google.visualization.PieChart(document.getElementById('trackstats_downhill_range_time'));
-    // chart.draw(data, options);
+ 
 }
+
+function gradeslope(distance, elevation) {
+    
+    if (distance == 0.0 || elevation == 0.0) {
+        return 0.0
+    }
+    
+    r = Math.pow(distance, 2) - Math.pow(elevation, 2)
+
+    d = distance    
+    if (r > 0.0) {
+        d = Math.sqrt( r )
+    }
+
+    s = (elevation / d) * 100.0             // projected distance (horizontal)
+    s = (elevation / distance) * 100.0      // aproximation
+    
+    return s
+}
+
+
+function plotElevation(data,map,mapManager) {
+
+    // array of (lon, lat, elev)
+    // console.log(data.geometry.coordinates)
+    
+    //elevations = results;
+    results = []
+    elevations = [];
+    chart_data = new google.visualization.DataTable();
+
+    chart_data.addColumn('number', 'Distance');
+    chart_data.addColumn('number', ''); // bars
+    chart_data.addColumn('number', ''); // lines
+   
+    chart_data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
+    chart_data.addColumn({type: 'string', role: 'style' });
+
+    var rainbow = new Rainbow(); // for colors
+    rainbow.setSpectrum('#030057','#0300B7','#0095B8', '#00D0A0', '#79E600','#D83000', '#582010');
+    rainbow.setNumberRange(-20, 20); 
+    
+    // create heatmap
+    // var heatmap =document.getElementById('heatmap');
+    // var content = "";
+    // for (var i=-20; i<= 20; i++) {
+    //     content += "<span style='background-color: #" + rainbow.colourAt(i) + "'>"+i+"</span>";
+    // } 
+    // heatmap.innerHTML = content;
+
+    
+    var dist = 0.0;
+    var dindex = 0;
+    
+    for (var i = 0; i < data.geometry.coordinates.length; i++) {
+
+        var ddelta = 0.0;
+        var elevation = 0.0;
+        var slope_avg = 0.0;
+
+        x_long = x_lat = x_elev = 0.0
+        y_long = y_lat = y_elev = 0.0
+         
+        if (i>0) {
+            //x_long = data.geometry.coordinates[i][0]
+            //x_lat = data.geometry.coordinates[i][1]
+            x_elev = data.geometry.coordinates[i][2]
+
+            //y_long = data.geometry.coordinates[i-1][0]
+            //y_lat = data.geometry.coordinates[i-1][1]
+            y_elev = data.geometry.coordinates[i-1][2]
+
+            //var PA = new maplibregl.Marker().setLngLat([x_long, x_lat, x_elev]); 
+            //var PB = new maplibregl.Marker().setLngLat([y_long, y_lat, y_elev]); 
+            // elevation = x_elev - y_elev;
+            // slope_avg = (elevation == 0 ? 0 : ddelta / elevation)
+            var PA = new maplibregl.Marker().setLngLat(data.geometry.coordinates[i]); 
+            var PB = new maplibregl.Marker().setLngLat(data.geometry.coordinates[i-1]); 
+            
+            elevation = x_elev - y_elev;
+            ddelta = PA.getLngLat().distanceTo(PB.getLngLat())
+            slope_avg = gradeslope(ddelta, elevation)
+        }
+        
+        dist += ddelta; 
+        
+        var legend = "Distance: "+(dist /1000.0).toFixed(2)+ " Km\n";
+        legend += "Elevation: "+ x_elev.toFixed(2)+ " m\n";
+        legend += "Slope: "+ slope_avg.toFixed(2)+ " %\n";
+        
+        var color = rainbow.colourAt(slope_avg);
+        
+        // instead of dist, add i to ensure tigh bars (no spaces)
+        
+        if (ddelta > 0.3) {
+            chart_data.addRow([ dindex, x_elev, x_elev  ,legend, "color: "+ color ]);
+            pos = PA.getLngLat()
+            elevations.push([pos.lng, pos.lat, x_elev]);
+            dindex++;
+        }
+        
+    }
+
+    //document.getElementById('elevation_chart').style.display = 'block';
+    chart = new google.visualization.ComboChart(document.getElementById('elevation_chart'));
+    //chart = new google.visualization.ColumnChart(document.getElementById('elevation_chart'));
+    chart_options = {
+        //tooltip: { trigger: 'selection' },
+        // LINE OPTIONS
+
+        //width: 300,
+        //height: 150,
+        legend: 'none',
+
+        tooltip: { textStyle: { fontSize: 10 } },
+        //legend: {'position': 'bottom'},
+        titleY: 'Elevation (m)',
+        titleX: 'Distance (Km)',
+        seriesType: 'bars',
+        series: {1: {type: 'bars'}, 0: {type: 'line'}},
+        
+        focusBorderColor: '#00ff00',
+        bar: {groupWidth: '100%' },
+        explorer: { actions: ['dragToZoom', 'rightClickToReset'] , 
+                    axis: 'horizontal',
+                        keepInBounds: true,
+                        maxZoomOut:1,
+                },
+        focusTarget: 'category',
+        // colors: [ '#00aa00', '#aa0000' ],
+        
+        // max with text chartArea: {'width': '95%', 'height': '73%', 'align': 'center' }
+        // use 100% in height for ColumnChart, if desired (better line)
+        chartArea: {'width': '100%', 'height': '90%' }
+    }
+
+    chart.draw(chart_data, chart_options);
+    window.onresize = function(){
+        if (document.getElementById("elevation_chart") != null) {
+            var container = document.getElementById("elevation_chart").firstChild.firstChild;
+            container.style.width = "100%";
+            chart.draw(chart_data, chart_options);
+        }
+    };
+
+    google.visualization.events.addListener(chart, 'onmouseover', function(e) {
+        mapManager.marker_on()
+        var point = elevations[e.row]
+        mapManager.marker.setLngLat(point)
+        map.setCenter(point);
+      });
+}
+
