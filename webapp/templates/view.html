@@ -6,7 +6,10 @@
         <script type="text/javascript" src="https://www.google.com/jsapi"></script>
         <script type="text/javascript" charset="utf8" 
                  src="{{ url_for('static', filename='js/app/track_stats.js') }}"></script>
-{%endblock%}
+        <script type="text/javascript" charset="utf8" 
+                 src="{{ url_for('static', filename='js/app/map2d.js') }}"></script>
+
+                 {%endblock%}
 
 {% block title %}{% include 'title.html' %}{%- endblock %}
 {% block page %}
@@ -130,8 +133,15 @@
     </div>
     <!--map-->
     <div class="row">
-        <div class="col-md-12">
-            map
+        <div class="col-md-12 map-container mt-4">
+            <div id="map" class="track-map-2d h-100 d-inline-block">
+                <select id="map-styles" class="map-styles dropdownSelect m-2">
+                    <option selected value="hybrid">Hybrid</option>
+                    <option value="satellite">Satellite</option>
+                    <option value="streets-v2">OpenStreetMap</option>
+                  </select>
+
+            </div>
         </div>
     </div>
 
@@ -181,6 +191,7 @@
 
     // create the track stats, and build them
     track = new Object();
+    track.id                  = {{track.id}}
     track.uphill_p_distance   = {{track.uphill_p_distance}}
     track.level_p_distance    = {{track.level_p_distance}} 
     track.downhill_p_distance = {{track.downhill_p_distance}} 
@@ -203,6 +214,12 @@
     track.downhill_slope_range_distance_4 = {{track.downhill_slope_range_distance_4}}
     track.downhill_slope_range_distance_5 = {{track.downhill_slope_range_distance_5}}
     track.downhill_slope_range_distance_6 = {{track.downhill_slope_range_distance_6}}    
+    
+    track.bounds = [ [ {{track.min_long}}, {{track.min_lat}} ],[ {{track.max_long}}, {{track.max_lat}} ]  ]
+    track.center = new Object();
+    track.center.long = {{track.middle_long}} 
+    track.center.lat = {{track.middle_lat}} 
+    track.center.elev = {{track.middle_elev}} 
 
     // track.uphill_slope_range_time_0 = {{track.uphill_slope_range_time_0}}
     // track.uphill_slope_range_time_1 = {{track.uphill_slope_range_time_1}}
@@ -223,6 +240,7 @@
     google.load("visualization", "1", {packages:["corechart"]});
     google.setOnLoadCallback(function(){ drawTrackStats(track) })
 
+    draw_map_2D(track, '{{TOKENS.MAPTILER_KEY}}', "map-styles")
 </script>
 
 {%- endblock %}

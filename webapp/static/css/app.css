@@ -176,3 +176,17 @@ a.get-track-link:visited  {
 a.get-track-link:hover  {
 	text-decoration:underline;
 }
+
+.track-map-2d {
+    width: 100%; 
+    border: 2px red solid;
+}
+
+.map-container {
+    height: 600px;
+}
+
+.map-styles  {
+    z-index: 1;
+    position: absolute;
+}
