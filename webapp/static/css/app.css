@@ -179,14 +179,36 @@ a.get-track-link:hover  {
 
 .track-map-2d {
     width: 100%; 
-    border: 2px red solid;
+   
 }
 
 .map-container {
-    height: 600px;
+    height: 800px;
 }
 
 .map-styles  {
     z-index: 1;
     position: absolute;
+}
+
+.map-mode  {
+    z-index: 1;
+    position: absolute;
+    font-size: small;
+    top: 40px;
+    left: 10px;
+}
+.map-recenter  {
+    z-index: 1;
+    position: absolute;
+    font-size: small;
+    top: 80px;
+    left: 10px;
+}
+.map-info {
+    z-index: 1;
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+
 }

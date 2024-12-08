@@ -26,8 +26,9 @@ from webapp.caching import cache
 
 web_impl = Blueprint('web_impl', __name__)
 
-@web_impl.route('/static/<path>')
-@cache.cached(timeout=60*60*24)  # Cache for 24 hours
+#remove after touch the JS files (in static path)
+#@web_impl.route('/static/<path>')
+#@cache.cached(timeout=60*60*24)  # Cache for 24 hours
 def static_files(path):
     return send_from_directory('static', path)
 
@@ -70,50 +71,3 @@ def tracks_view():
 
 
 # json handlers
-
-@web_impl.route('/tracks/as_geojson', methods=['GET', 'POST'])
-@cache.cached(timeout=50,query_string=True)
-def tracks_as_geojson():
-    id = request.args.get("id",None)
-    if not id:
-        return redirect(url_for('web_impl.error', msg="Invalid id"))
-    trk = current_app.manager.get_track(id)
-    if trk is None:
-        return redirect(url_for('web_impl.error', msg="Invalid track id"))
-    
-    return jsonify(trk.as_geojson_line()["data"]) 
-    # default stuff to test things here.
-
-@web_impl.route('/tracks/get_track_info', methods=['GET', 'POST'])
-@cache.cached(timeout=50,query_string=True)
-def tracks_get_track_info():
-    id = request.args.get("id",None)
-    if not id:
-        return redirect(url_for('web_impl.error', msg="Invalid id"))
-
-    trk = current_app.manager.db_get_track(id)
-    #center_lat, center_lon, center_alt = trk.track_center()
-    # use the data stored in db:
-
-    obj = { 
-        'id': id,
-        'start': { 
-            'long': trk['begin_long'], 
-            'lat': trk['begin_lat'],
-            'altitude': trk['begin_elev'] 
-        },
-        'end': { 
-            'long': trk['end_long'], 
-            'lat': trk['end_lat'],
-            'altitude': trk['end_elev'] 
-        },
-        'center': { 
-            'long': trk["middle_long"], 
-            'lat': trk["middle_lat"],
-            'altitude': trk["middle_elev"] 
-        },
-        'bounds': [[trk['min_long'], trk['min_lat']], [trk['max_long'], trk['max_lat']]]
-    }
-
-    return jsonify(obj) 
-    # default stuff to test things here.

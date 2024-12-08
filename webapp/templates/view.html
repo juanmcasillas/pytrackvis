@@ -7,9 +7,8 @@
         <script type="text/javascript" charset="utf8" 
                  src="{{ url_for('static', filename='js/app/track_stats.js') }}"></script>
         <script type="text/javascript" charset="utf8" 
-                 src="{{ url_for('static', filename='js/app/map2d.js') }}"></script>
-
-                 {%endblock%}
+                 src="{{ url_for('static', filename='js/app/map.js') }}"></script>
+{%endblock%}
 
 {% block title %}{% include 'title.html' %}{%- endblock %}
 {% block page %}
@@ -138,9 +137,13 @@
                 <select id="map-styles" class="map-styles dropdownSelect m-2">
                     <option selected value="hybrid">Hybrid</option>
                     <option value="satellite">Satellite</option>
+                    <option value="outdoor">OpenStreetMap (outdoor)</option>
+                    <option value="topo">OpenStreetMap (topo)</option>
                     <option value="streets-v2">OpenStreetMap</option>
                   </select>
-                <input type="button" class="btn btn-primary map-mode" value="2D/3D"></input>
+                <button type="button" class="btn btn-light map-mode" onclick="map_mode.change()" >2D/3D</button>
+                <button type="button" class="btn btn-light map-recenter" onclick="map_mode.recenter()" >Recenter</button>
+                <pre id="map-info" class="map-info"></pre>
             </div>
         </div>
     </div>
@@ -148,6 +151,8 @@
 </div>
 
 <script>
+
+
     $("#rateYo_{{track.id}}").rateYo({
         starWidth: "18px",
         //readOnly: true,
@@ -240,7 +245,8 @@
     google.load("visualization", "1", {packages:["corechart"]});
     google.setOnLoadCallback(function(){ drawTrackStats(track) })
 
-    draw_map_2D(track, '{{TOKENS.MAPTILER_KEY}}', "map-styles")
+    //draw_map_2D(track, '{{TOKENS.MAPTILER_KEY}}', "map-styles")
+    draw_map_2D(track, '{{TOKENS.MAPTILER_KEY}}', "map-styles", debug=false)
 </script>
 
 {%- endblock %}

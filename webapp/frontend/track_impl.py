@@ -21,8 +21,82 @@ import logging
 import os
 import sys
 import time
+from webapp.caching import cache
 
 track_impl = Blueprint('track_impl', __name__)
+
+
+
+@track_impl.route('/track/as_geojson', methods=['GET', 'POST'])
+@cache.cached(timeout=100000,query_string=True)
+def track_as_geojson():
+    id = request.args.get("id",None)
+    if not id:
+        return redirect(url_for('web_impl.error', msg="Invalid id"))
+    trk = current_app.manager.get_track(id)
+    if trk is None:
+        return redirect(url_for('web_impl.error', msg="Invalid track id"))
+    
+    return jsonify(trk.as_geojson_line()["data"]) 
+    # default stuff to test things here.
+
+# @web_impl.route('/tracks/get_track_info', methods=['GET', 'POST'])
+# @cache.cached(timeout=50,query_string=True)
+# def tracks_get_track_info():
+#     id = request.args.get("id",None)
+#     if not id:
+#         return redirect(url_for('web_impl.error', msg="Invalid id"))
+
+#     trk = current_app.manager.db_get_track(id)
+#     #center_lat, center_lon, center_alt = trk.track_center()
+#     # use the data stored in db:
+
+#     obj = { 
+#         'id': id,
+#         'start': { 
+#             'long': trk['begin_long'], 
+#             'lat': trk['begin_lat'],
+#             'altitude': trk['begin_elev'] 
+#         },
+#         'end': { 
+#             'long': trk['end_long'], 
+#             'lat': trk['end_lat'],
+#             'altitude': trk['end_elev'] 
+#         },
+#         'center': { 
+#             'long': trk["middle_long"], 
+#             'lat': trk["middle_lat"],
+#             'altitude': trk["middle_elev"] 
+#         },
+#         'bounds': [[trk['min_long'], trk['min_lat']], [trk['max_long'], trk['max_lat']]]
+#     }
+
+#     return jsonify(obj) 
+#     # default stuff to test things here.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 @track_impl.route('/track/edit/rating', methods=['POST'])
 def track_edit_rating():
