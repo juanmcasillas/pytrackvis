@@ -18,7 +18,7 @@ import datetime
 import os
 import time
 import datetime
-
+import copy
 
 from .helpers import bearing, distancePoints, module, C
 from .stats import Stats, get_fval
@@ -466,7 +466,7 @@ class Track:
         o["type"] = "geojson"
         o["data"] = {
                 "type": "Feature",
-                "properties": {},
+                "properties": { 'series': {} },
                 "geometry": {
                     "type": "LineString",
                     "coordinates": [ ]
@@ -474,12 +474,18 @@ class Track:
         }
         #
         # use the processed data, no the raw one loaded
+        
         for p in self.points:
             o["data"]["geometry"]["coordinates"].append([
                 p.longitude,
                 p.latitude,
                 p.elevation]
             )
+        # copy extensions, if found
+        for ext in self._gpx_extensions.keys():
+            o["data"]["properties"]["series"][ext] = copy.copy(self._gpx_extensions[ext])
+            
+            
         return o
 
     def as_geojson_points(self, points):

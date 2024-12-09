@@ -134,8 +134,12 @@
     </div>
     <!--map-->
     <div class="row">
-        <div class="col-md-12 map-container mt-4">
-            <h3>Map</h3>
+        <div class="row">
+            <div class="col-md-12">
+                <h3>Map</h3>
+            </div>
+        </div>
+        <div class="col-md-12 map-container">
             <div id="map" class="track-map-2d h-100 d-inline-block">
                 <select id="map-styles" class="map-styles dropdownSelect m-2">
                     <option selected value="hybrid">Hybrid</option>
@@ -150,12 +154,44 @@
             </div>
         </div>
     </div>
+
     <div class="row">
         <div class="col-md-12 series-container mt-4">
-            <div id="elevation_chart"  onmouseleave="mapManager.marker_off()"></div>
-        </div>
+            <ul class="nav nav-tabs" id="" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="elevation-button-id" data-bs-toggle="tab" data-bs-target="#elevation-tab-id" type="button" role="tab" aria-controls="elevation" aria-selected="true">Elevation</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="heart_rate-button-id" data-bs-toggle="tab" data-bs-target="#heart_rate-tab-id" type="button" role="tab" aria-controls="heart_rate" aria-selected="false">Heart Rate</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="power-button-id" data-bs-toggle="tab" data-bs-target="#power-tab-id" type="button" role="tab" aria-controls="power" aria-selected="false">Power</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="cadence-button-id" data-bs-toggle="tab" data-bs-target="#cadence-tab-id" type="button" role="tab" aria-controls="cadence" aria-selected="false">Cadence</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="temperature-button-id" data-bs-toggle="tab" data-bs-target="#temperature-tab-id" type="button" role="tab" aria-controls="temperature" aria-selected="false">Temperature</button>
+                </li>
+            </ul>
+            <div class="tab-content" id="myTabContent">
+                <div class="tab-pane fade show active" id="elevation-tab-id" role="tabpanel" aria-labelledby="elevation-tab">
+                    <div id="elevation_chart"  onmouseleave="mapManager.marker_off()"></div>
+                </div>
+                <div class="tab-pane fade" id="heart_rate-tab-id" role="tabpanel" aria-labelledby="heart_rate-tab">
+                    <div id="heart_rate_chart"  onmouseleave="mapManager.marker_off()"></div>
+                </div>
+                <div class="tab-pane fade" id="power-tab-id" role="tabpanel" aria-labelledby="power-tab">
+                    <div id="power_chart"  onmouseleave="mapManager.marker_off()"></div>
+                </div>
+                <div class="tab-pane fade" id="cadence-tab-id" role="tabpanel" aria-labelledby="cadence-tab">
+                    <div id="cadence_chart"  onmouseleave="mapManager.marker_off()"></div>
+                </div>
+                <div class="tab-pane fade" id="temperature-tab-id" role="tabpanel" aria-labelledby="temperature-tab">
+                    <div id="temperature_chart"  onmouseleave="mapManager.marker_off()"></div>
+                </div>
+            </div>
     </div>
-
 </div>
 
 <script>

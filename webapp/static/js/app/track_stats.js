@@ -154,15 +154,38 @@ function plotElevation(data,map,mapManager) {
     
     //elevations = results;
     results = []
-    elevations = [];
-    chart_data = new google.visualization.DataTable();
+    positions = [];
+    chart_data_elevation = new google.visualization.DataTable();
 
-    chart_data.addColumn('number', 'Distance');
-    chart_data.addColumn('number', ''); // bars
-    chart_data.addColumn('number', ''); // lines
+    chart_series = {}
+  
+    for (serie in data.properties.series) {
+        chart_series[serie] = new Object()
+        chart_series[serie].data = {}
+        chart_series[serie].chart = {}
+        chart_series[serie].options = {}
+        
+        chart_series[serie].max = Math.max(...data.properties.series[serie])
+        chart_series[serie].min = Math.min(...data.properties.series[serie])
+        chart_series[serie].data = new google.visualization.DataTable();
+        chart_series[serie].data.addColumn('number', serie);
+        chart_series[serie].data.addColumn('number', ''); // bars
+        chart_series[serie].data.addColumn('number', ''); // lines
+        chart_series[serie].data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
+        chart_series[serie].data.addColumn({type: 'string', role: 'style' });
+
+        chart_series[serie].rainbow = new Rainbow();
+        chart_series[serie].rainbow.setSpectrum('#030057','#0300B7','#0095B8', '#00D0A0', '#79E600','#D83000', '#582010');
+        chart_series[serie].rainbow.setNumberRange(chart_series[serie].min, chart_series[serie].max);
+    }
+  
+    // elevation goes alone
+    chart_data_elevation.addColumn('number', 'Distance');
+    chart_data_elevation.addColumn('number', ''); // bars
+    chart_data_elevation.addColumn('number', ''); // lines
    
-    chart_data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
-    chart_data.addColumn({type: 'string', role: 'style' });
+    chart_data_elevation.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
+    chart_data_elevation.addColumn({type: 'string', role: 'style' });
 
     var rainbow = new Rainbow(); // for colors
     rainbow.setSpectrum('#030057','#0300B7','#0095B8', '#00D0A0', '#79E600','#D83000', '#582010');
@@ -180,6 +203,13 @@ function plotElevation(data,map,mapManager) {
     var dist = 0.0;
     var dindex = 0;
     
+    // have the data of the series
+    // data.properties.series
+    //   "heart_rate":  [],
+    //   "power":       [],
+    //   "cadence":     [],
+    //   "temperature": []
+    
     for (var i = 0; i < data.geometry.coordinates.length; i++) {
 
         var ddelta = 0.0;
@@ -188,7 +218,7 @@ function plotElevation(data,map,mapManager) {
 
         x_long = x_lat = x_elev = 0.0
         y_long = y_lat = y_elev = 0.0
-         
+
         if (i>0) {
             //x_long = data.geometry.coordinates[i][0]
             //x_lat = data.geometry.coordinates[i][1]
@@ -221,10 +251,19 @@ function plotElevation(data,map,mapManager) {
         // instead of dist, add i to ensure tigh bars (no spaces)
         
         if (ddelta > 0.3) {
-            chart_data.addRow([ dindex, x_elev, x_elev  ,legend, "color: "+ color ]);
+            chart_data_elevation.addRow([ dindex, x_elev, x_elev  ,legend, "color: "+ color ]);
             pos = PA.getLngLat()
-            elevations.push([pos.lng, pos.lat, x_elev]);
+            positions.push([pos.lng, pos.lat, x_elev]);
             dindex++;
+
+            // add the series here.
+            for (serie in data.properties.series) {
+                val = data.properties.series[serie][i]
+                var serie_legend = "Distance: "+(dist /1000.0).toFixed(2)+ " Km\n";
+                serie_legend += `${serie}: `+ val.toFixed(2)+ "\n";
+                color = chart_series[serie].rainbow.colourAt(val);
+                chart_series[serie].data.addRow([ dindex, val, val  ,serie_legend, "color: "+ color ]);
+            }
         }
         
     }
@@ -256,26 +295,91 @@ function plotElevation(data,map,mapManager) {
                 },
         focusTarget: 'category',
         // colors: [ '#00aa00', '#aa0000' ],
-        
         // max with text chartArea: {'width': '95%', 'height': '73%', 'align': 'center' }
         // use 100% in height for ColumnChart, if desired (better line)
         chartArea: {'width': '100%', 'height': '90%' }
     }
 
-    chart.draw(chart_data, chart_options);
+    chart.draw(chart_data_elevation, chart_options);
+    
+    for (serie in data.properties.series) {
+
+        chart_series[serie].chart = new google.visualization.ComboChart(document.getElementById(`${serie}_chart`));
+        chart_series[serie].options = {
+            legend: 'none',
+            tooltip: { textStyle: { fontSize: 10 } },
+            titleY: serie,
+            titleX: 'Distance (Km)',
+            seriesType: 'bars',
+            series: {1: {type: 'bars'}, 0: {type: 'line'}},
+            
+            focusBorderColor: '#00ff00',
+            bar: {groupWidth: '100%' },
+            explorer: { actions: ['dragToZoom', 'rightClickToReset'] , 
+                        axis: 'horizontal',
+                            keepInBounds: true,
+                            maxZoomOut:1,
+                    },
+            focusTarget: 'category',
+            chartArea: {'width': '100%', 'height': '90%' }
+        }
+
+        chart_series[serie].chart.draw(chart_series[serie].data, chart_series[serie].options);
+    }
+    
     window.onresize = function(){
         if (document.getElementById("elevation_chart") != null) {
             var container = document.getElementById("elevation_chart").firstChild.firstChild;
             container.style.width = "100%";
-            chart.draw(chart_data, chart_options);
+            chart.draw(chart_data_elevation, chart_options);
+        }
+        for (serie in data.properties.series) {
+            if (document.getElementById(`${serie}_chart`) != null) {
+                var container = document.getElementById(`${serie}_chart`).firstChild.firstChild;
+                container.style.width = "100%";
+                chart_series[serie].chart.draw(chart_series[serie].data, chart_series[serie].options);
+            }
         }
     };
 
+    // the tabs
+    
+    if (document.getElementById(`elevation-button-id`) != null) {
+        tabEl = document.getElementById(`elevation-button-id`)
+
+        tabEl.addEventListener('shown.bs.tab', function (event) {
+            event.target // newly activated tab
+            event.relatedTarget // previous active tab
+            $(window).trigger('resize');
+        })
+    }
+
+    for (serie in data.properties.series) {
+        if (document.getElementById(`${serie}-button-id`) != null) {
+            tabEl = document.getElementById(`${serie}-button-id`)
+            tabEl.addEventListener('shown.bs.tab', function (event) {
+                event.target // newly activated tab
+                event.relatedTarget // previous active tab
+                $(window).trigger('resize');
+            })
+        }
+    }
+   
+
     google.visualization.events.addListener(chart, 'onmouseover', function(e) {
         mapManager.marker_on()
-        var point = elevations[e.row]
+        var point = positions[e.row]
         mapManager.marker.setLngLat(point)
         map.setCenter(point);
       });
+
+    for (serie in data.properties.series) {
+        google.visualization.events.addListener(chart_series[serie].chart, 'onmouseover', function(e) {
+            mapManager.marker_on()
+            var point = positions[e.row]
+            mapManager.marker.setLngLat(point)
+            map.setCenter(point);
+        });
+    }
 }
 

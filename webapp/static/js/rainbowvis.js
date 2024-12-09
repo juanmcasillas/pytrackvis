@@ -15,7 +15,11 @@ function Rainbow()
 	function setColours (spectrum) 
 	{
 		if (spectrum.length < 2) {
-			throw new Error('Rainbow must have two or more colours.');
+			var colourGradient = new ColourGradient();
+			colourGradient.setGradient(colours[0], colours[1]);
+			colourGradient.setNumberRange(0,1)
+			gradients[i] = colourGradient
+			//throw new Error('Rainbow must have two or more colours.');
 		} else {
 			var increment = (maxNum - minNum)/(spectrum.length - 1);
 			var firstGradient = new ColourGradient();
@@ -68,7 +72,8 @@ function Rainbow()
 			maxNum = maxNumber;
 			setColours(colours);
 		} else {
-			throw new RangeError('maxNumber (' + maxNumber + ') is not greater than minNumber (' + minNumber + ')');
+			setColours([colours[0]]);
+			//throw new RangeError('maxNumber (' + maxNumber + ') is not greater than minNumber (' + minNumber + ')');
 		}
 		return this;
 	}

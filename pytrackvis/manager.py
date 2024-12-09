@@ -145,6 +145,12 @@ class Manager:
         shutil.rmtree(self.config.map_preview["track_previews_dir"], ignore_errors=True)
         os.makedirs(self.config.map_preview["track_previews_dir"],exist_ok=True)
 
+        shutil.rmtree(self.config.sim_preview["sim_previews_dir"], ignore_errors=True)
+        os.makedirs(self.config.sim_preview["sim_previews_dir"],exist_ok=True)
+
+        shutil.rmtree(self.config.geojson_preview["geojson_previews_dir"], ignore_errors=True)
+        os.makedirs(self.config.geojson_preview["geojson_previews_dir"],exist_ok=True)
+
 
     def import_files(self, files):
         "load files from directory, or one by one. Check if track exists."
