@@ -15,14 +15,15 @@
                 <i class="fa-solid fa-rectangle-list"></i> Tracks
             </a>
             <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-              <li><a class="dropdown-item" href="/tracks/list"><i class="fa-solid fa-network-wired"></i>List</a></li>
+              <li><a class="dropdown-item" href="/tracks/list"><i class="fa-solid fa-network-wired me-1"></i>List</a></li>
+              <li><a class="dropdown-item" href="/dashboard.html"><i class="fa-solid fa-chart-simple me-1"></i>Stats</a></li>
               <!--<li><hr class="dropdown-divider"></li>-->
               <!--<li><a target="_blank" class="dropdown-item" href="/xx"><i class="fa-solid fa-file-waveform"></i> xxx</a></li>-->
             </ul>
           </li>
         </ul>
-        <form class="d-flex w-50">
-          <input class="form-control me-2 " type="search" placeholder="Search" aria-label="Search">
+        <form class="d-flex w-50" method="GET" action="/tracks/list">
+          <input class="form-control me-2 " type="search" placeholder="Search" aria-label="Search" name="query">
           <button class="btn btn-outline-success" type="submit">Search</button>
         </form>
       </div>

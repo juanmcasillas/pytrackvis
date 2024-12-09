@@ -11,10 +11,6 @@ function drawAppStats() {
 
      function drawChart() {
 
-       
-        
-
-        
         /*
              s['by_kind'] = []
         for row in self.conn.execute("select sum(elevation),sum(distance),count(*),kind from tracks group by kind"):
@@ -212,10 +208,18 @@ function drawAppStats() {
        
         
         var newdiv = document.createElement('div');
-        newdiv.setAttribute('class','gstatsitem')
+        newdiv.setAttribute('class','appstats_item_big')
         parentdiv.append(newdiv);
         var newchart = new google.charts.Bar(newdiv);
         newchart.draw(data, options);
+        window.onresize = function(){
+            if (document.getElementById("year_tendency_chart_div") != null) {
+                var container = document.getElementById("year_tendency_chart_div").firstChild.firstChild;
+                container.style.width = "100%";
+                newchart.draw(data, options);
+            }
+        };
+        
       
         // load the filtered boxes
         draw_by_year(null);
@@ -263,8 +267,8 @@ function draw_elevation_by_year(year) {
     }
 
 
-    var parentdiv = document.getElementById('gstatscontainerelevation');
-    $("#gstatscontainerelevation").empty();
+    var parentdiv = document.getElementById('elevation_by_sport_by_year_container_div');
+    $("#elevation_by_sport_by_year_container_div").empty();
 
     // if null, use the collection with all the data: by_equipment
     // else, use the other.      
@@ -278,8 +282,7 @@ function draw_elevation_by_year(year) {
     
     
     for (var kind in stats.kinds) {
-        console.log(kind)
-        console.log(item_collection)
+
         var data = new google.visualization.DataTable();
         data.addColumn('string', 'Sport');
         data.addColumn('number', 'Elevation (Km)');
@@ -312,7 +315,7 @@ function draw_elevation_by_year(year) {
             options.title = stats.kinds[kind] + ' ('+(total.getValue(0, 1)*1000).toFixed(2)+' m)'
         
             var newdiv = document.createElement('div');
-            newdiv.setAttribute('class','gstatsitem')
+            newdiv.setAttribute('class','appstats_item')
             parentdiv.append(newdiv);
             var newchart = new google.visualization.PieChart(newdiv);
             newchart.draw(data, options);
@@ -329,10 +332,8 @@ function draw_distance_by_year(year) {
         localyear =  (year.value == 'all' ? null : year.value);
     }
     
-    var parentdiv = document.getElementById('gstatscontainerdistance');
-    $("#gstatscontainerdistance").empty();
-    
-    
+    var parentdiv = document.getElementById('distance_by_sport_by_year_container_div');
+    $("#distance_by_sport_by_year_container_div").empty();
     // if null, use the collection with all the data: by_equipment
     // else, use the other.      
 
@@ -373,13 +374,15 @@ function draw_distance_by_year(year) {
                     legend: 'bottom'
                     };
             options.title = stats.kinds[kind] + ' ('+(total.getValue(0, 1)).toFixed(2)+' Km)'
-        
+
             var newdiv = document.createElement('div');
-            newdiv.setAttribute('class','gstatsitem')
+            newdiv.setAttribute('class','appstats_item')
             parentdiv.append(newdiv);
             var newchart = new google.visualization.PieChart(newdiv);
             newchart.draw(data, options);
-        }                
-    }      
+
+            
+        }
+    }
 }
 

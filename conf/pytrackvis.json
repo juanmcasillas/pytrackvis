@@ -1,6 +1,9 @@
 {
     "verbose": true,
-    
+    "queries": {
+        "default": "select id from tracks order by stamp desc limit 20",
+        "get_tracks": "select * from tracks where id in (%s)"
+    },
     "points": {
         "optimize": true,
         "filter": true

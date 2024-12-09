@@ -24,6 +24,8 @@ import time
 import json
 from webapp.caching import cache
 
+
+
 web_impl = Blueprint('web_impl', __name__)
 
 #remove after touch the JS files (in static path)
@@ -52,9 +54,15 @@ def tracks_dashboard():
     return render_template('dashboard.html',stats=stats, stats_json=json.dumps(stats))
 
 
-@web_impl.route('/tracks/list')
+@web_impl.route('/tracks/list', methods=['GET'])
 def tracks_list():
-    tracks = current_app.manager.db_get_tracks_info()
+    
+    query = request.args.get("query",None)
+    if query:
+        query = current_app.manager.parse_query(query)
+       
+        print(query)
+    tracks = current_app.manager.db_get_tracks_info(query)
     return render_template('list.html', tracks=tracks)
 
 @web_impl.route('/tracks/view', methods=['GET', 'POST'])

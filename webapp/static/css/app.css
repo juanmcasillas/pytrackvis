@@ -218,3 +218,15 @@ a.get-track-link:hover  {
     bottom: 10px;
     left: 10px;
 }
+
+.appstats_item_big {
+    border: 2px red solid;
+
+
+}
+
+.appstats_item {
+    width: 350px;
+    height: 200px;
+    display: inline-block;
+}

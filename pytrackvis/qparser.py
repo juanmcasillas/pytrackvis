@@ -29,7 +29,7 @@ import re
 #         * PASSES by PLACE
 #
 #         rules
-#             by default, is parsed as text in the title of the TRACK. (select * where title like '%q%')
+#             by default, is parsed as text in the name of the TRACK. (select id where name like '%q%')
 #             you need to specify class.attribute when generating things like filters.
 #             things grouped by " " goes together.
 #
@@ -381,7 +381,7 @@ class QueryParser:
                 
                 if t == TokenLiteral and i+2<len(e) and e[i+1] == TokenScope and e[i+2] == TokenLiteral:
                     
-                    fname = 'title'
+                    fname = 'name'
                     if t.literal.upper() == 'PLACES': 
                         fname = 'name'
                         self.is_places = True
@@ -390,7 +390,7 @@ class QueryParser:
                     
                         
                     if t.literal.upper() == 'TRACKS': 
-                        fname = 'title'
+                        fname = 'name'
                         return [], LIMIT, ORDER
 
                     i += 3
@@ -473,7 +473,8 @@ class QueryParser:
                 
                 
                 if t == TokenLiteral and len(e)==1:
-                    q= "select tracks.id from tracks where title like '%%%s%%'" % (t.literal)
+                    #tracks.id, title
+                    q= "select id from tracks where name like '%%%s%%'" % (t.literal)
                     
                     r.append( TokenLiteral(q))
                     i+=1
@@ -502,6 +503,7 @@ class QueryParser:
             
                     
             if conditions:
+                #q =   "SELECT id from TRACKS where " + ",".join(attrs)  
                 q =   "SELECT id from TRACKS where " + ",".join(attrs)  
                 q +=  " ".join(conditions)
                     

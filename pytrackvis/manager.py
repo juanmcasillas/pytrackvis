@@ -34,6 +34,7 @@ from pytrackvis.track import Track
 from pytrackvis.filemanager import FileManager
 from pytrackvis.mapreview import MapPreviewManager
 from pytrackvis.dbstats import GetStatsFromDB
+from pytrackvis.qparser import QueryParser
 
 class Manager:
     LOG_NAME = "PyTrackVis"
@@ -119,6 +120,11 @@ class Manager:
     def getstats_from_db(self):
         return GetStatsFromDB(self.db)
     
+    def parse_query(self, query):
+        qparser = QueryParser()
+        result = qparser.Parse(query)
+        return result['query']
+
     def create_database(self):
         """create the database. Removes the directories in the preview
         """
@@ -486,12 +492,22 @@ class Manager:
         data['similar'] = self.db_get_track_similarity(data['id'])
         return data
     
-    def db_get_tracks_info(self):
-        sql = "select * from tracks"
+    def db_get_tracks_info(self, query=None):
+        
+        # this query return the IDS.
+        sql = query if query else self.config.queries["default"]
+
         cursor = self.db.cursor()
         cursor.execute(sql)
         data = cursor.fetchall()
+        data = list(map(lambda x: str(x['id']), data))
+        
+        sql = self.config.queries["get_tracks"] % ",".join(data)
+
+        cursor.execute(sql)
+        data = cursor.fetchall()
         data = list(map(lambda x: dict(x), data))
+        
         cursor.close()
         for i in data:
             i['similar'] = self.db_get_track_similarity(i['id'])
