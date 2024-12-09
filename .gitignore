@@ -18,7 +18,8 @@ webapp/static/img/track_previews/**
 sim/**
 ssim/**
 run.sh
-
+webapp/static/geojson/**
+webapp/static/gpx/**
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

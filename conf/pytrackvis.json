@@ -35,12 +35,17 @@
         "draw_center": false,
         "track_size": [250, 250],
         "track_width": 2
-
-    },
+   },
     "elevation_profile": {
         "border": false,
         "size": [800, 100],
         "thumb_size": [200, 40]
+    },
+    "geojson_preview": {
+        "geojson_previews_dir": "webapp/static/geojson"
+    },
+    "gpx_preview": {
+        "gpx_previews_dir": "webapp/static/gpx"
     },
     "map_preview": {
         "track_previews_dir": "webapp/static/img/track_previews",

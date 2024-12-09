@@ -325,10 +325,10 @@ class Track:
         self._gpx = None
         self._stats = None
         self._optimizer = None
-        self.kind = "kind_ph"
-        self.device = "device_ph"
-        self.equipment = "equipment_ph"
-        self.description = "description_ph"
+        self.kind = ""
+        self.device = ""
+        self.equipment = ""
+        self.description = ""
         self.stamp = time.time()
         self.preview = None
         self.preview_elevation = None
@@ -374,7 +374,8 @@ class Track:
         #calculate the stats,
         #optimize the track,
         #calculate the "hash"
-        self.fname = fname
+        # store the full path to the object
+        self.fname = os.path.realpath(fname)
         
 
         self.set_metadata()
@@ -454,6 +455,11 @@ class Track:
                 l.append((p.latitude, p.longitude))
         return l
 
+    def as_gpx(self):
+        self._gpx.name = self.name
+        self._gpx.description = self.description
+        return self._gpx.to_xml()
+    
     def as_geojson_line(self):
 
         o = {}

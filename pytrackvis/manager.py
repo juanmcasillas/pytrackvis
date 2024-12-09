@@ -44,6 +44,8 @@ class Manager:
         self.logger = logging.getLogger()
         self.track_previews = CacheManager(self.config.map_preview["track_previews_dir"])
         self.sim_previews = CacheManager(self.config.sim_preview["sim_previews_dir"])
+        self.geojson_previews = CacheManager(self.config.geojson_preview["geojson_previews_dir"])
+        self.gpx_previews = CacheManager(self.config.gpx_preview["gpx_previews_dir"])
 
     def db_connect(self):
         self.db = sqlite3.connect(self.config.database["file"], check_same_thread=False)
@@ -216,8 +218,18 @@ class Manager:
         map_sim = map_sim.convert('L').point(lambda x : 255 if x > 1 else 0, mode='1')
         map_sim.save("%s.png" % target_sim, 'png')
 
+        # precache geojson objects
+        geojson_fname_abs = self.geojson_previews.map_object(track.hash,create_dirs=True)
+        geojson_fname = "%s.geojson" % geojson_fname_abs
+        with open(geojson_fname,"w+") as geojson_fd:
+            geojson_fd.write(json.dumps(track.as_geojson_line()["data"]))
 
-
+        # precache gpx objects
+        # don't do this .. because we need generate them from the app.
+        # gpx_fname_abs = self.gpx_previews.map_object(track.hash,create_dirs=True)
+        # gpx_fname = "%s.gpx" % gpx_fname_abs
+        # with open(gpx_fname,"w+") as gpx_fd:
+        #     gpx_fd.write(track.as_gpx())
 
     # def check_similarity_points(self):
     #     # shows the similarity values of the tracks, and create matches.
