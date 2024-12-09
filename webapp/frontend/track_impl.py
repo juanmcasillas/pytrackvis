@@ -69,6 +69,7 @@ def track_as_original():
 
     return send_file(trk['fname'],as_attachment=True,download_name= os.path.basename(trk['fname']))
 
+
 @track_impl.route('/track/as_gpx', methods=['GET', 'POST'])
 @cache.cached(timeout=100000,query_string=True)
 def track_as_gpx():

@@ -22,6 +22,8 @@ import re
 import os
 import time
 import datetime
+import json
+import decimal
 
 class C:
     def __init__(self, **kargs):
@@ -33,6 +35,33 @@ class C:
         for i in self.__dict__.keys():
             s += "<%s: %s>, " % (i, self.__dict__[i])
         return s
+    
+    def __iter__(self):
+        for attr, value in self.__dict__.items():
+            if isinstance(value, datetime.datetime):
+                iso = value.isoformat()
+                yield attr, iso
+            elif isinstance(value, decimal.Decimal):
+                yield attr, str(value)
+            elif isinstance(value, C):
+                yield attr, dict(value)
+            elif(hasattr(value, '__iter__')):
+                if(hasattr(value, 'pop')):
+                    a = []
+                    for subval in value:
+                        if(hasattr(subval, '__iter__')):
+                            print(subval)
+                            a.append(dict(subval))
+                        else:
+                            a.append(subval)
+                    yield attr, a
+                else:
+                    yield attr, value
+            else:
+                yield attr, value
+
+    def json(self):
+        return json.dumps(dict(self))
 
 class CacheManager:
     def __init__(self, cachedir):
@@ -354,4 +383,10 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     return np.convolve( m[::-1], y, mode='valid')
 
 if __name__ == "__main__":
-    test_cache()
+    #test_cache()
+    # a = C()
+    # a.name = "name_value"
+    # a.data = C()
+    # a.data.subname = "subname_value"
+    # print(a.json())
+    pass

@@ -1,0 +1,36 @@
+{% from "bootstrap5/utils.html" import render_messages %}
+{%- extends "page2col.html" %}
+
+{%block head%}
+{{super()}}
+        <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+        <script type="text/javascript" charset="utf8" 
+                 src="{{ url_for('static', filename='js/app/track_stats.js') }}"></script>
+        <script type="text/javascript" charset="utf8" 
+                 src="{{ url_for('static', filename='js/app/map.js') }}"></script>
+        <script type="text/javascript" charset="utf8" 
+                 src="{{ url_for('static', filename='js/rainbowvis.js') }}"></script>                 
+{%endblock%}
+
+{% block title %}{% include 'title.html' %}{%- endblock %}
+{% block page %}
+
+
+<div class="">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="">
+                <h1>Title standalone</H1>
+            </div>
+        </div> 
+    </div>
+    <!--data-->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="">
+                <h1>Title standalone</H1>
+            </div>
+        </div> 
+    </div>
+</div>
+{%- endblock %}

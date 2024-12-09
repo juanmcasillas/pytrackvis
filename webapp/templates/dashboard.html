@@ -1,177 +1,70 @@
 {% from "bootstrap5/utils.html" import render_messages %}
-{% from "bootstrap5/form.html" import render_form %}
+{%- extends "page2col.html" %}
 
-{%- extends "base.html" %}
+{%block head%}
+{{super()}}
+        <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+        <script type="text/javascript" charset="utf8" 
+                 src="{{ url_for('static', filename='js/app/app_stats.js') }}"></script>
+
+
+{%endblock%}
 
 {% block title %}{% include 'title.html' %}{%- endblock %}
+{% block page %}
 
-{% block content %}
-<div class="container-fuid">
+
+<div class="">
     <div class="row">
         <div class="col-md-12">
-            {{ render_messages() }}
-        </div>
+            <div class="">
+                <h1>Dashboard</H1>
+            </div>
+        </div> 
     </div>
+    <!--data-->
     <div class="row">
-      <div class="col-md-12">
-        <div class="bg-light mt-2 p-2">
-            <h1 class="display-2"><img class="app-logo" src="{{ url_for('static', filename='img/banana-icon.png') }}"></img>Samuel 2.0 Inventory Dashboard</h1>
-        </div>
-      </div>
-
-      <div class="col-md-12 auto m-2 p-2">
-        
-        <div class="card-group">
-        <div class="card-columns w-50">
-            <div class="card">
-                <div class="card-body">
-                <h5 class="card-title text-center">Hosts por Fuente</h5>
-                    <div id="chart_host_by_source"></div>
+        <div class="col-md-12">
+            <div class="">
+                <div id="">
+                    <span>Total tracks: </span><span>{{stats.number_of_tracks}}</span><br>
+                    <span>Total Distance: </span><span>{{stats.total_length_2d|humandistance}}</span><br>
+                    <span>Total Ascent: </span><span>{{stats.total_uphill_climb|humandistance}}</span><br>
                 </div>
-            </div>
 
-            <div class="card">
-                <div class="card-body  text-center">
-                <h5 class="card-title">Hosts por status</h5>
-                    <div id="chart_host_by_status"></div>
+                <br/><br/><H2>Year Tendency</H2>
+                <div id="year_tendency_chart_div"></div>
+                <br/><br/><H2>Stats by Sport</H2>
+                <div id="">
+                    <div id="distance_by_kind_chart_div" class="gstatsitem"></div>
+                    <div id="elevation_by_kind_chart_div" class="gstatsitem"></div>
+                    <div id="number_by_kind_chart_div" class="gstatsitem"></div>
                 </div>
-            </div>
-        </div>
-        
-        <div class="card-columns w-50">
-            <div class="card">
-                <div class="card-body">
-                <h5 class="card-title text-center">Hosts por Versiones Windows</h5>
-                    <div id="chart_host_by_windows_version"></div>
+            
+                <br/><br/><H2>Stats by Equipment</H2>
+                <div id="">
+                    <div id="distance_by_equipment_chart_div" class="gstatsitem"></div>
+                    <div id="elevation_by_equipment_chart_div" class="gstatsitem"></div>
+                    <div id="number_by_equipment_chart_div" class="gstatsitem"></div>
                 </div>
-            </div>
 
-            <div class="card">
-                <div class="card-body  text-center">
-                <h5 class="card-title">Hosts por versiones de Trendmicro</h5>
-                    <div id="chart_host_by_trendmicro_version"></div>
-                </div>
-            </div>
-        </div>
-
-        </div>
-
-        
-      </div>
-   </div>
-</div>
-{%- endblock %}
-
-
-{% block scripts %}
-    {{super()}}
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-    <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
-    <script>
-   
-    google.charts.load('current', {'packages':['corechart']});
-    google.charts.setOnLoadCallback(draw_charts);
-
-    $(document).ready(function () {
-
+                <br/><br/><H2>Choose By Year <select id="comboelevation" onChange="draw_by_year(this);"></select></H2>
     
+                <br/><br/><H2>Elevation by Sport/Equipment</H2>
+                <div id="gstatscontainerelevation"> 
+                </div>
+            
+                <br/><br/><H2>Distance by Sport/Equipment</H2>
+                <div id="gstatscontainerdistance">
+                </div>
 
-      
-    });
+            </div>
+        </div> 
+    </div>
+</div>
 
-
-
-    function draw_chart_host_by_source() {
-      var jsonData = $.ajax({
-          url: "/stats/data/source",
-          dataType: "json",
-          async: false
-          }).responseText;
-          
-      // Create our data table out of JSON data loaded from server.
-      var data = new google.visualization.DataTable(jsonData);
-      var options = {
-          is3D: true,
-          chartArea:{left:00,top:10,width:'100%',height:'100%'},
-          legend: {position: 'labeled', textStyle: {fontSize: 16}}
-          
-        };
-
-      // Instantiate and draw our chart, passing in some options.
-      var chart = new google.visualization.PieChart(document.getElementById('chart_host_by_source'));
-      chart.draw(data, options);
-    }
-
-    function draw_chart_host_by_status() {
-      var jsonData = $.ajax({
-          url: "/stats/data/status",
-          dataType: "json",
-          async: false
-          }).responseText;
-          
-      // Create our data table out of JSON data loaded from server.
-      var data = new google.visualization.DataTable(jsonData);
-      var options = {
-          is3D: true,
-          chartArea:{left:00,top:10,width:'100%',height:'100%'},
-          legend: {position: 'labeled', textStyle: {fontSize: 16}}
-          
-        };
-
-      // Instantiate and draw our chart, passing in some options.
-      var chart = new google.visualization.PieChart(document.getElementById('chart_host_by_status'));
-      chart.draw(data, options);
-    }
-
-    function draw_chart_host_by_windows_version() {
-      var jsonData = $.ajax({
-          url: "/stats/data/windowsver",
-          dataType: "json",
-          async: false
-          }).responseText;
-          
-      // Create our data table out of JSON data loaded from server.
-      var data = new google.visualization.DataTable(jsonData);
-      var options = {
-          is3D: true,
-          chartArea:{left:00,top:10,width:'100%',height:'100%'},
-          legend: {position: 'labeled', textStyle: {fontSize: 16}}
-          
-        };
-
-      // Instantiate and draw our chart, passing in some options.
-      var chart = new google.visualization.PieChart(document.getElementById('chart_host_by_windows_version'));
-      chart.draw(data, options);
-    }
-
-    function draw_chart_host_by_trendmicro_version() {
-      var jsonData = $.ajax({
-          url: "/stats/data/trendmicrover",
-          dataType: "json",
-          async: false
-          }).responseText;
-          
-      // Create our data table out of JSON data loaded from server.
-      var data = new google.visualization.DataTable(jsonData);
-      var options = {
-          is3D: true,
-          chartArea:{left:00,top:10,width:'100%',height:'100%'},
-          legend: {position: 'labeled', textStyle: {fontSize: 16}}
-          
-        };
-
-      // Instantiate and draw our chart, passing in some options.
-      var chart = new google.visualization.PieChart(document.getElementById('chart_host_by_trendmicro_version'));
-      chart.draw(data, options);
-    }    
-
-    function draw_charts() {
-        draw_chart_host_by_source()
-        draw_chart_host_by_status()
-        draw_chart_host_by_windows_version()
-        draw_chart_host_by_trendmicro_version()
-    }
-
-
-  </script>
-{% endblock %}
+<script>
+    stats = {{stats_json|safe}}
+    drawAppStats()
+</script>
+{%- endblock %}

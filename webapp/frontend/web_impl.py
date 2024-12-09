@@ -21,7 +21,7 @@ import logging
 import os
 import sys
 import time
-
+import json
 from webapp.caching import cache
 
 web_impl = Blueprint('web_impl', __name__)
@@ -45,20 +45,17 @@ def error():
 
 # page handlers
 
+@web_impl.route('/dashboard.html', methods=['GET'])
+def tracks_dashboard():
+
+    stats = current_app.manager.getstats_from_db()
+    return render_template('dashboard.html',stats=stats, stats_json=json.dumps(stats))
+
+
 @web_impl.route('/tracks/list')
 def tracks_list():
     tracks = current_app.manager.db_get_tracks_info()
     return render_template('list.html', tracks=tracks)
-
-@web_impl.route('/tracks/show3d', methods=['GET', 'POST'])
-def tracks_show():
-    id = request.args.get("id",None)
-    if not id:
-        return redirect(url_for('web_impl.error', msg="Invalid id"))
-    track = current_app.manager.db_get_track(id)
-
-    return render_template('show3d.html',track=track, TOKENS=current_app.manager.config.tokens)
-
 
 @web_impl.route('/tracks/view', methods=['GET', 'POST'])
 def tracks_view():
@@ -68,6 +65,7 @@ def tracks_view():
     track = current_app.manager.db_get_track(id)
 
     return render_template('view.html',track=track, TOKENS=current_app.manager.config.tokens)
+
 
 
 # json handlers

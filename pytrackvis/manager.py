@@ -33,6 +33,7 @@ from pytrackvis.helpers import CacheManager, distancePoints
 from pytrackvis.track import Track
 from pytrackvis.filemanager import FileManager
 from pytrackvis.mapreview import MapPreviewManager
+from pytrackvis.dbstats import GetStatsFromDB
 
 class Manager:
     LOG_NAME = "PyTrackVis"
@@ -115,8 +116,12 @@ class Manager:
         #self.logger.addHandler(consoleHandler)
 
     ## some commands
-
+    def getstats_from_db(self):
+        return GetStatsFromDB(self.db)
+    
     def create_database(self):
+        """create the database. Removes the directories in the preview
+        """
         if self.db:
             self.db.close()
 
@@ -153,7 +158,15 @@ class Manager:
 
 
     def import_files(self, files):
-        "load files from directory, or one by one. Check if track exists."
+        """import the files into the database if they are not inserted. Use the hash value
+           as discriminator (id)
+
+
+        Args:
+            files (array): an array with glob paths, or files. Example:
+            ['.\data\Cartography\**\*.fit', '.\data\fit\*.fit', 'file.gpx'] 
+        """
+
         #  .\app.py import_files .\data\Cartography\**\*.fit # All files
         #  .\app.py import_files .\data\fit\*.fit # ony files in this dir
 
@@ -369,7 +382,7 @@ class Manager:
             #data = cv2.imread( target, cv2.IMREAD_GRAYSCALE )
             print("loaded: %s" % target_png)
             # create the elements for fast comparation.
-            tracks[str(hash)] = C(similar_tracks=[], img=data, points=points, hash=hash, fname=fname, 
+            tracks[str(hash)] = C(similar_tracks=[],  points=points, hash=hash, fname=fname, 
                                   target=target_png, metadata=metadata)
         
         print("done:",len(tracks))
@@ -384,39 +397,37 @@ class Manager:
             # create a point cache
             for ty_key in tracks:
                 ty = tracks[ty_key]
-                if tx.hash == ty.hash:
-                    # same track, skip
-                    # pass for tests continue
-                    pass
                 
+                # this skip the same track, due they have 
+                # the same hash.
                 if not ty.hash in tx.similar_tracks:
                     #mse_val = mse(tx.img, ty.img)
                     #is_sim = is_similar(tx.img, ty.img)
 
                     geo_d = distancePoints(tx.metadata.center, ty.metadata.center)
                     length_d = math.fabs(tx.metadata.length - ty.metadata.length)
-                    hausdor_d = 9999999.0
+                    hausdor_d = 0.0
 
                     # fix the treshold here based on empirically works.
-                    if geo_d < 1000.0 and length_d < 2000.0:
+                    if geo_d < 500.0 and length_d < 500.0:
                         hausdor_d = distance_manager.computeDistance(tx.points, ty.points)
                     
-                    # print("\t-> %s %s" % (tx.target,tx.fname))
-                    # print("\t*  %s %s" % (ty.target,ty.fname))
-                    # print("\t: hau_d %3.2f" % hausdor_d)
-                    # print("\t: geo_d %3.2f" % geo_d)
-                    # print("\t: len_d %3.2f" % length_d)
+                        # print("\t-> %s %s" % (tx.target,tx.fname))
+                        # print("\t*  %s %s" % (ty.target,ty.fname))
+                        # print("\t: hau_d %3.2f" % hausdor_d)
+                        # print("\t: geo_d %3.2f" % geo_d)
+                        # print("\t: len_d %3.2f" % length_d)
 
-                    # use < 2 approx with thigh values
-                    # maybe must be proportional on length of track...
-                    if hausdor_d < 10.0:
-                    #if hausdor_d <2.0 and geo_d < 100.0 and math.fabs(length_d) <= 100:
-                        tx.similar_tracks.append(ty.hash)
-                        print("\t-> %s %s" % (tx.target,tx.fname))
-                        print("\t*  %s %s" % (ty.target,ty.fname))
-                        print("\t: hau_d %3.2f" % hausdor_d)
-                        print("\t: geo_d %3.2f" % geo_d)
-                        print("\t: len_d %3.2f" % length_d)
+                        # use < 2 approx with thigh values
+                        # maybe must be proportional on length of track...
+                        if hausdor_d < 5.0:
+                        #if hausdor_d <2.0 and geo_d < 100.0 and math.fabs(length_d) <= 100:
+                            tx.similar_tracks.append(ty.hash)
+                            print("\t-> %s %s" % (tx.target,tx.fname))
+                            print("\t*  %s %s" % (ty.target,ty.fname))
+                            print("\t: hau_d %3.2f" % hausdor_d)
+                            print("\t: geo_d %3.2f" % geo_d)
+                            print("\t: len_d %3.2f" % length_d)
         
         ## done. Check all the data.
         ## filter similar groups by matching then.
@@ -470,9 +481,10 @@ class Manager:
         sql = "select * from tracks where id = ?"
         cursor = self.db.cursor()
         cursor.execute(sql, (id,))
-        data = cursor.fetchone()
+        data = dict(cursor.fetchone())
         cursor.close()
-        return dict(data)
+        data['similar'] = self.db_get_track_similarity(data['id'])
+        return data
     
     def db_get_tracks_info(self):
         sql = "select * from tracks"
