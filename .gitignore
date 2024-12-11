@@ -20,6 +20,8 @@ ssim/**
 run.sh
 webapp/static/geojson/**
 webapp/static/gpx/**
+dev/ln2sql
+dev/ln2sql/**
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

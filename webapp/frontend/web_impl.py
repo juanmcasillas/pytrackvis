@@ -23,6 +23,7 @@ import sys
 import time
 import json
 from webapp.caching import cache
+from pytrackvis.helpers import remove_accents
 
 
 
@@ -59,9 +60,13 @@ def tracks_list():
     
     query = request.args.get("query",None)
     if query:
-        query = current_app.manager.parse_query(query)
-       
+        query = remove_accents(query)
         print(query)
+        result, query = current_app.manager.query_parser.run(query)
+        if not result:
+            return redirect(url_for('web_impl.error', msg="Invalid query %s" % query))
+        
+    print("Parsed", query)
     tracks = current_app.manager.db_get_tracks_info(query)
     return render_template('list.html', tracks=tracks)
 

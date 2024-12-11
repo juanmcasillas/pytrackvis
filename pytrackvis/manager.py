@@ -49,6 +49,9 @@ class Manager:
         self.geojson_previews = CacheManager(self.config.geojson_preview["geojson_previews_dir"])
         self.gpx_previews = CacheManager(self.config.gpx_preview["gpx_previews_dir"])
 
+        #self.query_parser = QueryParser(get_attr="id", limit=10, offset=0)
+        self.query_parser = QueryParser()
+
     def db_connect(self):
         self.db = sqlite3.connect(self.config.database["file"], check_same_thread=False)
         self.db.row_factory = sqlite3.Row
@@ -120,10 +123,7 @@ class Manager:
     def getstats_from_db(self):
         return GetStatsFromDB(self.db)
     
-    def parse_query(self, query):
-        qparser = QueryParser()
-        result = qparser.Parse(query)
-        return result['query']
+
 
     def create_database(self):
         """create the database. Removes the directories in the preview
@@ -639,7 +639,7 @@ class Manager:
                            uphill_climb,downhill_climb,
                            minimum_elevation,maximum_elevation,
                            
-                           name,kind,device,equipment,
+                           name,searchname,kind,device,equipment,
                            description,
                            is_clockwise,score,rating,
                            
@@ -711,7 +711,7 @@ class Manager:
                  ?, ?,
                  ?, ?,
 
-                 ?, ?, ?, ?, 
+                 ?, ?, ?, ?, ?, 
                  ?,  
                  ?, ?,?,
 

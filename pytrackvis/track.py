@@ -20,7 +20,7 @@ import time
 import datetime
 import copy
 
-from .helpers import bearing, distancePoints, module, C
+from .helpers import bearing, distancePoints, module, C, remove_accents
 from .stats import Stats, get_fval
 from .optimizer import GPXOptimizer
 
@@ -319,6 +319,7 @@ class Track:
     def __init__(self, name="Track", id=None):
         self.fname = None #see set_internal_data() for details
         self.name = name
+        self.searchname = remove_accents(self.name)
         self.points = []
         self.hash = None #see set_internal_data() for details
         self.id = id if id is not None else str(uuid.uuid4())
@@ -336,6 +337,7 @@ class Track:
     def set_metadata(self):
         metadata = self.parse_fname(self.fname)
         self.name = metadata.name
+        self.searchname = remove_accents(self.name)
         self.kind = metadata.kind
         self.device = metadata.device
         self.equipment = metadata.equipment
@@ -546,7 +548,7 @@ class Track:
                 self._stats.uphill_climb,self._stats.downhill_climb,
                 self._stats.minimum_elevation,self._stats.maximum_elevation,
 
-                self.name, self.kind, self.device, self.equipment,
+                self.name, self.searchname, self.kind, self.device, self.equipment,
                 self.description,
                 self._stats.is_clockwise, self._stats.score,self._stats.rating,
      

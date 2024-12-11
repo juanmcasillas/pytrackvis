@@ -1,618 +1,473 @@
-import sys
-import argparse
+
+from lark import Lark, tree, Token
+from lark import Transformer
 import re
 
 
+class SQLQueryTransformer(Transformer):
+    def __init__(self, get="id", limit=None, offset=None, xlate_table=[]):
+        self.get = get
+        self.limit = limit
+        self.offset = offset
+        self.xlate_table = xlate_table
 
+    def _xlate(self, attr):
+        """translate the table names if found, else none.
 
+        Args:
+            attr (_type_): _description_
 
-
-
-
-# Try to parse simple queries, to map then into selects from SQL. No so much
-# complicated, but try to create it well.
-#
-# - three SQL ENTRIES.
-#     TRACKS
-#     PLACES
-#     TRACK_IN_PLACES
-#
-#     examples
-#
-#         * navas del rey
-#         * KANADIA
-#         * MTB
-#         * "this text goes together"
-#         * DISTANCE>20Km
-#         * ELEVATION<30m
-#         * MTB and ELEVATION<30m or DISTANCE>10Km
-#         * PASSES by PLACE
-#
-#         rules
-#             by default, is parsed as text in the name of the TRACK. (select id where name like '%q%')
-#             you need to specify class.attribute when generating things like filters.
-#             things grouped by " " goes together.
-#
-#         if error, fails silently and don't return anything
-#
-
-# nested queries based on ID.
-# places goes in another way
-# 
-# select id from tracks where id in (
-# 
-#     select id from tracks where distance< 20000 or id in (
-#         select id from tracks where elevation > 1000
-#         )
-# 
-# )
-
-
-class TokenBase:
-    def __init__(self, literal, opcode):
-        self.literal = literal
-        self.opcode = opcode
-        
-    def __repr__(self):
-        return "T[%s]" % (self.literal)
-        #return "TOKEN[%s,%s]" % (self.literal, self.opcode)
-
-    def repr(self):
-        return self.__repr__()
-
-    def __str__(self):
-        return self.repr()
+        Returns:
+            _type_: _description_
+        """
+        if attr.lower() in self.xlate_table:
+            r = self.xlate_table[attr.lower()]
+        else:
+            r = attr
+        return r
     
-    def __eq__(self, obj):
-        return self.__class__ == obj
+    def title_expression(self, items):
+        
+        data = re.sub(r"[\"']",'',items[0])
+        return("searchname like '%%%s%%'"  % data)
+
+    def sport_expression(self, items):
+        return("kind = %s" % items[0])
     
+    def equipment_expression(self, items):
+        return("equipment = %s" % items[0])
 
-class TokenGE(TokenBase):
-    def __init__(self):
-        TokenBase.__init__(self,">=", '__GE__')
-        
-class TokenLE(TokenBase):
-    def __init__(self):
-        TokenBase.__init__(self,"<=", '__LE__')        
-        
-class TokenNE(TokenBase):
-    def __init__(self):
-        TokenBase.__init__(self,"!=", '__NE__')           
-
-class TokenScope(TokenBase):
-    def __init__(self):
-        TokenBase.__init__(self,":", '__SCOPE__')           
-
-class TokenSelector(TokenBase):
-    def __init__(self):
-        TokenBase.__init__(self,".", '__SELECTOR__')           
-
-
-class TokenLT(TokenBase):
-    def __init__(self):
-        TokenBase.__init__(self,"<", '__LT__')  
-
-class TokenGT(TokenBase):
-    def __init__(self):
-        TokenBase.__init__(self,">", '__GT__')  
-
-class TokenEQ(TokenBase):
-    def __init__(self):
-        TokenBase.__init__(self,"=", '__EQ__')  
-
-class TokenLP(TokenBase):
-    def __init__(self):
-        TokenBase.__init__(self,"(", '__LP__')  
-
-class TokenRP(TokenBase):
-    def __init__(self):
-        TokenBase.__init__(self,")", '__RP__')  
-
-
-class TokenLiteral(TokenBase):
-    
-    def __repr__(self):
-        return "Tl[%s]" % (self.literal)
-        
-    def __init__(self, literal):
-        TokenBase.__init__(self,literal, '__LITERAL__')
-
-class TokenAND(TokenBase):
-    def __init__(self):
-        TokenBase.__init__(self,"AND", '__AND__')    
-
-class TokenOR(TokenBase):
-    def __init__(self):
-        TokenBase.__init__(self,"OR", '__OR__')    
-    
-class TokenPLACE(TokenBase):
-    def __init__(self):
-        TokenBase.__init__(self,"PLACE", '__PLACE__')    
-
-class TokenLIMIT(TokenBase):
-    def __init__(self, literal):
-        TokenBase.__init__(self, literal, '__LIMIT__')    
-
-class TokenASC(TokenBase):
-    def __init__(self):
-        TokenBase.__init__(self, "ASC", '__ASC__')    
-
-class TokenDESC(TokenBase):
-    def __init__(self):
-        TokenBase.__init__(self, "DESC", '__DESC__')    
-
-
-########## syntax parsing (rules)
-
-
-
-
-class ExpresionBase:
-        def __init__(self):
-            pass
-        
-        
-
+    def device_expression(self, items):
+        return("device = %s" % items[0])
             
-            
+    def custom_expression(self, items):
+        return("%s" % items[0])
+
+    def bool_expression(self, items):
+        return items[0]
+
+    def timestamp_expression(self, items):
+        return items[0]
+
+    def date_func(self, items):
+        
+        if len(items) >= 2:
+            args = " ,".join(items[1:])
+            return "date(%s,%s)" % (items[0],args)
+     
+        return "date('%s')" % items[0]
+
+    def datetime_func(self, items):
+        
+        if len(items) >= 3:
+            args = " ,".join(items[2:])
+            return "datetime('%s %s',%s)" % (items[0],items[1], args)
+     
+        return "datetime('%s %s')" % (items[0],items[1])
+
+
+    def trackdate_func(self, items):
+        
+        if len(items) > 0:
+            args = " ,".join(items)
+            return "date(stamp,'unixepoch',%s)" % args
+        return "date(stamp,'unixepoch')" 
+    
+    def tracktime_func(self, items):
+        
+        if len(items) > 0:
+            args = " ,".join(items)
+            return "time(stamp,'unixepoch',%s)" % args
+        return "time(stamp,'unixepoch')" 
+
+    def trackdatetime_func(self, items):
+        
+        if len(items) > 0:
+            args = " ,".join(items)
+            return "datetime(stamp,'unixepoch',%s)" % args
+        return "datetime(stamp,'unixepoch')" 
+
+    def time_func(self, items):
+        if len(items) >= 2:
+            args = " ,".join(items[1:])
+            return "time(%s,%s)" % (items[0],args)
+         
+        return "time(%s)" % items[0]
+
+
+     
+
+
+    def date_today(self, items):
+        if len(items):
+            args = " ,".join(items)
+            return "date('now', %s)" % args
+
+        return "date('now')"
+
+
+    def NUMBER(self, items):
+        return "%3.2f" % float(items)
+
+    def number(self, items):
+        return items[0]
+
+    def name(self, items):
+        return items[0]
+    
+    def date(self, items):
+        # YYYY-DD-MM
+        return "%s-%s-%s" % (items[0],items[1],items[2])
+    
+    def time(self, items):
+        # HH:MM;SS
+        return "%s:%s:%s" % (items[0],items[1],items[2])
+
+    def equals(self, items):
+        return "%s = %s" % (items[0], items[1])
+    
+    def not_equals(self, items):
+        return "%s != %s" % (items[0], items[1])
+
+    def greater_than(self, items):
+        return "%s > %s" % (items[0], items[1])
+
+    def less_than(self, items):
+        return "%s < %s" % (items[0], items[1])
+    
+    def greater_than_or_equal(self, items):
+        return "%s >= %s" % (items[0], items[1])
+
+    def less_than_or_equal(self, items):
+        return "%s <= %s" % (items[0], items[1])
+
+    def between(self, items):
+        return "%s between %s and %s" % (items[0], items[1], items[2])
+
+    def is_null(self, items):
+        return "%s is null" % (items[0])
+
+    def is_not_null(self, items):
+        return "%s is not null" % (items[0])
+
+    def comparison_type(self, items):
+        return items[0]
+    
+    def number_with_prefix(self, items):
+        if len(items) == 1:
+            return items[0]
+        return float(items[0])*items[1]
+    
+    def km_prefix(self, items):
+        return 1000.0
+    
+    def order_asc(self, items):
+        return "%s ASC" % self._xlate(items[0])
+
+    def order_desc(self, items):
+        return "%s DESC" % self._xlate(items[0])
+
+    def order_by_expression(self, items):
+        return "".join(items)
+
+    def m_prefix(self, items):
+        return 1
+
+    def integer_(self, items):
+        return int(items[0].value)
+
+    def comparison_type(self, items):
+        return items[0]
+    
+    def bool_parentheses(self, items):
+        return items[0]
+
+    def bool_or(self, items):
+        return "%s or %s" % (items[0], items[1])
+
+    def bool_and(self, items):
+        return "%s and %s" % (items[0], items[1])    
+
+    def column_name(self, items):
+        # do some translations.
+
+        r = self._xlate(items[0])
+        return "%s" % r
+
+    def CNAME(self, items):
+        return items.value
+
+    def string(self, items):
+        return items[0].value
+
+    def limit_count(self, items):
+        if len(items) == 1:
+            return "limit %d" % int(items[0])
+
+    def skip_rows(self, items):
+        if len(items) == 1:
+            return "offset %d" % int(items[0])
+
+    def custom_sport(self, items):
+        return "'%s'" % re.sub(r"[\"']",'',items[0].value)
+        
+    def custom_device(self, items):
+        return "'%s'" % re.sub(r"[\"']",'',items[0].value)
+
+    def custom_equipment(self, items):
+        return "'%s'" % re.sub(r"[\"']",'',items[0].value)        
+    
+
+    def select(self, items):
+        
+        s = "select %s from tracks where %s" % (self.get, items[0])
+        items.pop(0)
+        if items[0] is None:
+            items.pop(0)
+            order = ""
+        else:
+            # asc or desc
+            order = []
+            while True:
+                if items[0].lower().endswith(" desc") or items[0].lower().endswith(" asc"):
+                    order.append(items[0])
+                    items.pop(0)
+                    if items[0] is None: 
+                        break
+                else:
+                    break
+            order = "order by " + ", ".join(order)
+        
+        s = "%s %s" % (s, order)
+
+        # limit and offset
+        if self.limit or self.offset:
+            if self.limit:
+                s += " limit %d" % self.limit
+            if self.offset:
+                s += " offset %d" % self.offset
+        else:
+            # don't override the query if found
+            for i in items:
+                if i is not None:
+                    s += " %s" % i
+
+        return s
+
 
 
 class QueryParser:
-    def __init__(self):
-        self.is_places = False
-        self.orderby = []
+    # https://github.com/zbrookle/sql_to_ibis/blob/main/sql_to_ibis/grammar/sql.lark
+    #regex_lit             : /\/((?:.(?!(?<![\\\\])\/))*.?)\//
+    #string_lit            : /'((?:.(?!(?<![\\\\])'))*.?)'/
+    #QUOTED_IDENTIFIER     : /"((?:.(?!(?<![\\\\])"))*.?)"/
+
+    grammar = """
+
+    select                  : bool_expression [ "ORDER"i "BY"i (order_by_expr ",")*  order_by_expr] [ "LIMIT"i limit_count [ "OFFSET"i skip_rows ] ]
+
+    order_by_expr           : order -> order_by_expression
+
+    order                   : (name) ["ASC"i] -> order_asc
+                            | (name) "DESC"i -> order_desc
+
+    limit_count             : integer_ -> limit_count
+    skip_rows               : integer_
+
+    custom_expression       : title_expression 
+                            | sport_expression
+                            | equipment_expression
+                            | device_expression
+
+    title_expression        : "TITLE"i string_term
+    sport_expression        : "SPORT"i custom_sports
+    equipment_expression    : "EQUIPMENT"i custom_equipment
+    device_expression       : "DEVICE"i custom_device
+
+    bool_expression         : bool_parentheses
+                            | custom_expression
+                            | bool_expression "AND"i bool_parentheses -> bool_and
+                            | bool_expression "OR"i bool_parentheses -> bool_or
+
+    bool_parentheses        : comparison_type
+                            | "(" bool_expression "AND"i comparison_type ")" -> bool_and
+                            | "(" bool_expression "OR"i comparison_type ")" -> bool_or
+
+    comparison_type         : equals 
+                            | not_equals 
+                            | greater_than 
+                            | less_than 
+                            | greater_than_or_equal
+                            | less_than_or_equal 
+                            | between 
+                            | is_null 
+                            | is_not_null
+
+    equals                  : expression "=" expression
+    not_equals              : expression ("<>" | "!=") expression
+    greater_than            : expression ">" expression
+    less_than               : expression "<" expression
+    greater_than_or_equal   : expression ">=" expression
+    less_than_or_equal      : expression "<=" expression
+    between                 : expression "BETWEEN"i expression "AND"i expression
+    is_null                 : expression "is"i "null"i
+    is_not_null             : expression "is"i "not"i "null"i
+
+    string_term             : ESCAPED_STRING -> string
+                            | /'((?:.(?!(?<![\\\\])'))*.?)'/ -> string
+
+    ?expression             : (name) -> column_name
+                            | literal
+                            | "TRACK_DATETIME"i "("  ( date_param ",")*  date_param? ")" -> trackdatetime_func
+                            | "TRACK_DATE"i "("  ( date_param ",")*  date_param? ")" -> trackdate_func
+                            | "TRACK_TIME"i "("  ( date_param ",")*  date_param? ")" -> tracktime_func
+                            | "DATE"i "(" (name| "'" date "'") ("," date_param )*  ")" -> date_func
+                            | "TIME"i "(" (name| "'" time "'") ("," date_param )*  ")" -> time_func
+                            | "DATETIME"i "(" (name| "'" date time "'") ("," date_param )*  ")" -> datetime_func
+                            
+    ?literal                : boolean -> bool
+                            | number_expr -> number
+                            | /'([^']|\s)+'|''/ -> string
+                            | ESCAPED_STRING -> string
+                            | timestamp_expression -> timestamp_expression
+
+    date_param              : /'([^']|\s)+'|''/ -> string
+                            | ESCAPED_STRING -> string
+
+    custom_sports           : /['"]?BIKE['"]?/i -> custom_sport
+                            | /['"]?RUN['"]?/i -> custom_sport
+                            | /['"]?MTB['"]?/i -> custom_sport
+                            | /['"]?ROAD['"]?/i -> custom_sport
+                            | /['"]?TREKKING['"]?/i -> custom_sport
+                            | /['"]?KAYAK['"]?/i -> custom_sport
+
+    custom_equipment        : /['"]?RASE23['"]?/i  -> custom_equipment
+                            | /['"]?RASE24['"]?/i -> custom_equipment
+
+    custom_device           : /['"]?FENIX3['"]?/i  -> custom_device
+                            | /['"]?EDGE1000['"]?/i  -> custom_device
+
+
+
+    boolean                 : "true"i -> true
+                            | "false"i -> false
+
+    ?number_expr            : product
+
+    ?product                : number_with_prefix
+
+    number_with_prefix      : NUMBER
+                            | NUMBER number_prefix
+
+    integer_                : /[1-9][0-9]*/
+    number_prefix           : "km"i -> km_prefix
+                            | "m"i -> m_prefix
+
+    timestamp_expression    : "NOW"i "(" ( date_param ",")*  date_param? ")" -> date_today
+                            | "TODAY"i "(" ( date_param ",")*  date_param? ")" -> date_today
+
+    date                    : YEAR "-" MONTH "-" DAY
+    YEAR                    : /[0-9]{4}/
+    MONTH                   : /[0-9]{2}/
+    DAY                     : /[0-9]{2}/
+    time                    : HOURS ":" MINUTES ":" SECONDS
+    HOURS                   : /[0-9]{2}/
+    MINUTES                 : /[0-9]{2}/
+    SECONDS                 : /[0-9]{2}/
+    name                    : CNAME 
+                           
+
+    %import common.ESCAPED_STRING
+    %import common.CNAME
+    %import common.NUMBER
+    %import common.WS
+    %ignore WS
+    """
+
+    def __init__(self, get_attr="id", limit=None, offset=None, verbose=False):
         
-    def _tokenize(self, q):
-        tokens = []
-        intoken = False
-        curtoken = ""
-        j=0
+        self.get_attr = get_attr
+        self.limit = limit
+        self.offset = offset
+        self.verbose = verbose
+
+        self.xlate_table = {
+            'length': 'length_2d',
+            'distance': 'length_2d',
+            'altitude': 'uphill_climb',
+            'elevation': 'uphill_climb',
+            'title': 'searchname',
+            'name': 'searchname',
+            'sport': 'kind',
+        }
         
-        def _reserved_word(token):
-        
-         
-            if token == TokenLiteral and token.literal.upper() == 'AND':
-                return TokenAND()
-    
-            if token == TokenLiteral and token.literal.upper() == 'OR':
-                return TokenOR()
-
-            if token == TokenLiteral and token.literal.upper() == 'PLACE':
-                return TokenPLACE()
-
-            if token == TokenLiteral and token.literal.upper() == 'LIMIT':
-                return TokenLIMIT("")
-            
-            if token == TokenLiteral and token.literal.upper() == 'ASC':
-                return TokenASC()
-            
-            if token == TokenLiteral and token.literal.upper() == 'DESC':
-                return TokenDESC()
-
-            return token
-        
-        while j < len(q):
-            i = q[j]
-            
-            if i.isspace() and not intoken:
-                if curtoken != "":
-                    tokens.append( _reserved_word(TokenLiteral(curtoken)))
-                    curtoken = ""
-                j += 1
-                continue
-
-            if i == '"' and not intoken:
-                intoken = True
-                j += 1
-                continue
-
-            if i == '"' and intoken:
-                intoken = False
-                tokens.append( _reserved_word(TokenLiteral(curtoken)))
-                curtoken = ""
-                j += 1
-                continue
-
-            # operators and some mandanga.
-            
-            if i == '>' and j<len(q) and q[j+1] == '=':
-                if curtoken != "":
-                    tokens.append( _reserved_word(TokenLiteral(curtoken))) 
-                tokens.append( TokenGE() )
-                curtoken = ""
-                j += 2
-                continue
-            
-            if i == '<' and j<len(q) and q[j+1] == '=':
-                if curtoken != "":
-                    tokens.append( _reserved_word(TokenLiteral(curtoken))) 
-                tokens.append( TokenLE() )
-                curtoken = ""
-                j += 2
-                continue
-            
-            if i == '!' and j<len(q) and q[j+1] == '=':
-                if curtoken != "":
-                    tokens.append( _reserved_word(TokenLiteral(curtoken))) 
-                tokens.append( TokenNE() )
-                curtoken = ""
-                j += 2
-                continue
-
-            if i == ':':
-                if curtoken != "":
-                    tokens.append( _reserved_word(TokenLiteral(curtoken)))
-                tokens.append( TokenScope() )
-                curtoken = ""
-                j = j+1
-                continue
-
-            if i == '.':
-                if curtoken != "":
-                    tokens.append( _reserved_word(TokenLiteral(curtoken)))
-                tokens.append( TokenSelector() )
-                curtoken = ""
-                j = j+1
-                continue
-
-            if i == '<':
-                if curtoken != "":
-                    tokens.append( _reserved_word(TokenLiteral(curtoken)))
-                tokens.append( TokenLT() )
-                curtoken = ""
-                j = j+1
-                continue
-
-            if i == '>':
-                if curtoken != "":
-                    tokens.append( _reserved_word(TokenLiteral(curtoken)))
-                tokens.append( TokenGT() )
-                curtoken = ""
-                j = j+1
-                continue
-
-            if i == '=':
-                if curtoken != "":
-                    tokens.append( _reserved_word(TokenLiteral(curtoken)))
-                tokens.append( TokenEQ() )
-                curtoken = ""
-                j = j+1
-                continue
-
-            if i == '(':
-                if curtoken != "":
-                    tokens.append( _reserved_word(TokenLiteral(curtoken)))
-                tokens.append( TokenLP() )
-                curtoken = ""
-                j = j+1
-                continue
-
-            if i == ')':
-                if curtoken != "":
-                    tokens.append( _reserved_word(TokenLiteral(curtoken)))
-                tokens.append( TokenRP() )
-                curtoken = ""
-                j = j+1
-                continue            
-            
-            
-            curtoken += i
-            j += 1
-
-        # trailing one
-
-        if curtoken != "":
-            tokens.append( _reserved_word(TokenLiteral(curtoken) ))
-
-        return tokens
-
-
-            
-            
-            
-        
-        
-
-    def _expressions(self, tokenlist):
-        
-        r = []
-        
-        #
-        # expressions are joined with AND, OR, ( and )
-        # build the expressions, as [ TOKENLIST ] JOIN [ TOKENLIST ] ...
-        # when JOIN is one of the AND, OR, (, )
-        #
-        expr = []
-        for t in tokenlist:
-            if t == TokenAND or t == TokenOR:
-                r.append(expr)
-                r.append([t])
-                expr = []
-            else:
-                expr.append(t)
-        
-        if len(expr) > 0:
-            r.append(expr)
-            
-        return r
-    
-
-            
-        
-    
- 
-                
-    def _code(self, expressionlist):
-        
-        self.orderby = []
-        LIMIT = None
-        ORDER = None # ASC = 0, DESC = 1
-        
-        code = "select id from tracks where "
-        r = []
-        for e in expressionlist:
-            attrs = []
-            tables = []
-            conditions = []
-            orderby = []
-            
-            
-            i = 0
-            while i < len(e):
-                t = e[i]
-                if t == TokenAND:
-                    r.append( TokenAND() )
-                    break
-                
-                if t == TokenOR:
-                    r.append( TokenOR() )
-                    break
-                
-                if t == TokenLP:
-                    r.append( TokenLP() )
-                    break
-                
-                if t == TokenRP:
-                    r.append( TokenRP() )
-                    break
-                
-                # Literal:QueryString (check the tables)
-                # for now just work for places.
-                
-                if t == TokenLiteral and i+2<len(e) and e[i+1] == TokenScope and e[i+2] == TokenLiteral:
-                    
-                    fname = 'name'
-                    if t.literal.upper() == 'PLACES': 
-                        fname = 'name'
-                        self.is_places = True
-                        r = "select id from PLACES where name like '%%%s%%'" % e[i+2].literal
-                        return r, LIMIT, ORDER
-                    
-                        
-                    if t.literal.upper() == 'TRACKS': 
-                        fname = 'name'
-                        return [], LIMIT, ORDER
-
-                    i += 3
-                    continue
-                
-                # Literal.attribute (add required table, t)
-                if t == TokenLiteral and i+2<len(e) and e[i+1] == TokenSelector and e[i+2] == TokenLiteral:
-                    
-                    # mangle some attributes.
-                    attr = e[i+2].literal
-                    if attr.lower() == 'sport': attr = 'kind' 
-                    if attr.lower() == 'with': attr = 'equipment'
-                    
-                    conditions.append( "%s.%s" % (t.literal, attr))
-                    
-                    
-                    #self.orderby.append("%s.%s desc" % (t.literal, attr ))
-                    self.orderby.append("%s.%s" % (t.literal, attr ))
-                    
-                    i += 3
-                    continue
-                
-                if t in [ TokenGT, TokenLT, TokenEQ, TokenNE, TokenGE, TokenLE ] and i+1<len(e) and e[i+1] == TokenLiteral:
-                    
-                    # mangle some comparators
-                    attr = e[i+1].literal
-                    attrmap = [ 'run', 'mtb', 'road', 'trekking', 'duatlon', 'kayak', 'rodillo', 'trav' ]
-                    
-                    if attr.lower() in attrmap:
-                        attr = "'%s'" % attr.upper()
-                    
-                    # map Km elements to the value.
-                    if attr.lower().find('km') != -1:
-                        tmpattr = attr.lower().replace('km','')
-                        try:
-                            tmpattr_f = float(tmpattr)
-                            tmpattr_f *= 1000
-                            tmpattr = "%3.3f" % tmpattr_f
-                            attr = tmpattr
-                        except:
-                            pass
-                    if attr.lower() in [ 'yes', 'true' ]: attr = "1"
-                    if attr.lower() in [ 'no', 'false' ]: attr = "0"
-                    
-                    
-                    conditions.append("%s %s" % (t.literal, attr))
-                    i += 2
-                    continue
-                
-                
-                # LIMIT
-                if t == TokenLIMIT and i+1<len(e) and e[i+1] == TokenLiteral:
-                    
-                    # mangle some comparators
-                   
-                    val = e[i+1].literal
-                    
-                    LIMIT = TokenLIMIT("%s" % val)
-                    
-                    i += 2
-                    continue
-
-                # ASC
-                if t == TokenASC:
-                    ORDER = TokenASC()
-                    i+=1 
-
-                # DESC
-                if t == TokenDESC:
-                    ORDER = TokenDESC()
-                    i+=1 
-
-                # PLACE xxx
-                if t == TokenPLACE and i+1<len(e) and e[i+1] == TokenLiteral:
-                    
-                    q = "select track_in_places.id_track from track_in_places, places where track_in_places.id_place = places.id and places.name like '%%%s%%'" % (e[i+1].literal)
-                    r.append( TokenLiteral(q))
-                    i += 3
-                    continue
-                
-                
-                if t == TokenLiteral and len(e)==1:
-                    #tracks.id, title
-                    q= "select id from tracks where name like '%%%s%%'" % (t.literal)
-                    
-                    r.append( TokenLiteral(q))
-                    i+=1
-                    continue
-                
-                if t == TokenLiteral and len(e)>1:
-                    
-                    attr = t.literal
-                    if attr.lower() == 'sport': attr = 'kind' 
-                    if attr.lower() == 'with': attr = 'equipment'
-                    
-                    conditions.append("tracks.%s" % attr)
-                    i+=1
-                    continue
-                
-                i += 1
-                
-            # build the query, add it to r.
-            #if len(attrs) == 0: attrs = [ 'tracks.id' ]
-            #if len(tables) == 0: tables = [ 'tracks' ]
-
-                       
-            attrs = list(set(attrs))
-            tables = list(set(tables))
-           
-            
-                    
-            if conditions:
-                #q =   "SELECT id from TRACKS where " + ",".join(attrs)  
-                q =   "SELECT id from TRACKS where " + ",".join(attrs)  
-                q +=  " ".join(conditions)
-                    
-                r.append(TokenLiteral(q))
-            
-        
-        return r, LIMIT, ORDER
-        
-        
-        
-    def _run_r(self,code):
-        
-        head,tail = code[0],code[1:]
-        #print "head ", head
-        #print "tail ", tail
-        if tail == []:
-            return head.literal
-
-        msg = ""
-        trail = ""
-        if head in [ TokenAND, TokenOR, TokenLP, TokenRP ]:
-            msg = " %s id in (" % head.literal
-            trail = ')'
-        else:
-            msg = head.literal
-
-
-        return msg + "" + self._run_r(tail) + trail
-        
-        
-        
-    def _runtracks(self ,code, limit, order):
-     
-        q = self._run_r(code);
-        
-        # do some adjusts here to force the cloned tracks.
-        # by default, get only "original" tracks in search
-        
-           
-        # order elements.
-        self.orderby = list(set(self.orderby))        
-
-        
-        if order:
-            self.orderby = map(lambda x: "%s %s" % (x, order.literal), self.orderby)
-        
-        if self.orderby:
-            o = " order by " + ",".join(self.orderby)
-            q += o
-
-        if limit:
-            q += " LIMIT %s" % limit.literal       
-        
-        #print q
-        return { 'type': 'tracks', 'query': q }
-            
-    def _runplaces(self, code, limit, order):
-   
-        if limit:
-            code += "LIMIT %s" % limit.literal
-        
-        if order:
-            code += "%s" % order.literal
-            
-        return { 'type': 'places', 'query': code }
-      
-
-        
-
-                 
-        
-
-    def Parse(self,query):
-        #print "Query: [%s]" % query
-        tokens = self._tokenize(query)
-
-        #print "DEBUG_TOKENS: ", tokens
-        expressions = self._expressions(tokens)
-        #print "DEBUG EXPRESSIONS: "
-        #for e in expressions: print e
-        #print "-" * 80    
-        # with the expressions, generate "code"
-        
-        code, limit,order = self._code(expressions)
-
+        self.parser = Lark(self.grammar, strict=True, start='select', ambiguity='explicit')
+        self.transformer = SQLQueryTransformer(get=self.get_attr, 
+                                               limit=self.limit, 
+                                               offset=offset, 
+                                               xlate_table=self.xlate_table)
        
-        if self.is_places:
-            retval = self._runplaces(code, limit, order)
-        else:
-            retval = self._runtracks(code, limit, order)
 
-        return retval
+    def run(self, query):
+        try:
+           
+            data = self.parser.parse(query)
+            if self.verbose:
+                print(data.pretty())
+            result = self.transformer.transform(data)
+        except Exception as e:
+            return ( False, e)
     
+        return (True, result)
+
+
+
+
 
 if __name__ == "__main__":
+    import sqlite3
+    parser = QueryParser(get_attr="id", limit=10, offset=0)
 
+    sentences = []
 
+    # sentences.append('title "navas del rey"')
+    # sentences.append("title 'navas del rey'")
+    sentences.append('sport \'BIKE\'')
+    sentences.append('sport "BIKE"')
+    sentences.append('sport BIKE')
+    sentences.append('sport RUN order by length')
+    sentences.append('device FENIX3 order by length')
     
-    parser = argparse.ArgumentParser()
+    sentences.append('distance > 100 or kind = "run"')
+    sentences.append('distance between 100 and 200')
+    sentences.append('distance >= 100 or length_2d <= 100 or elevation is null')
+    sentences.append('(length_2d > 20000.0 and distance < 1000 KM) or stamp = NOW()')
+    sentences.append('(length_2d > 20000.0 and distance < 1000 KM) or DATE(stamp) = TODAY()')
+    sentences.append('sport "BIKE"')
+    sentences.append('title "navas del rey" and elevation > 30')
+    sentences.append('(kind = "xxx" or kind = "run")')
+    sentences.append('sport BIKE and ELEVATION<30m or DISTANCE>10Km')
+    sentences.append('sport BIKE and ELEVATION<30m or DISTANCE>10Km limit 10 offset 5')
+    sentences.append('sport BIKE and ELEVATION<30m or DISTANCE>10Km order by stamp, length_2d desc, stamp asc limit 10 offset 5')
+    sentences.append('this is an error')
 
-    #parser.add_argument("-v", "--verbose", help="Show data about file and processing", action="count")
-    #parser.add_argument("-c", "--create", help="Create the database", action="store_true")
-    #parser.add_argument("-a", "--altitude", help="Create Altitude PNG")
-    parser.add_argument("query", help="Query to parse")
-    #parser.add_argument("dbfile", help="DatabaseFile")
-    args = parser.parse_args()
-
-
-    qparser = QueryParser()
-    result = qparser.Parse(args.query)
-    print(result)
+    for s in sentences:
     
+        db = sqlite3.connect("../db/trackdb.db", check_same_thread=False)
+        db.row_factory = sqlite3.Row
+    
+        result, sql = parser.run(s)
+        print("-" * 80)
+        print(s)
+        print(sql)
+        if result:
+            cursor = db.cursor()
+            cursor.execute(sql)
+            data = cursor.fetchall()
+            cursor.close()
+            data = map(lambda x: dict(x), data)
+            for i in data:
+                pprint(i)
+        print("-" * 80)
+        # make_png(sys.argv[1])
+        # make_dot(sys.argv[1])

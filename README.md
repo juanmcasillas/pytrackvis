@@ -81,3 +81,6 @@ On mac, python3.9 works flawless with cv2, flask and so on.
 /usr/local/bin/flask --app=webapp.py run  --debug
 
 
+## query natural model 
+
+* [ln2sql](https://github.com/FerreroJeremy/ln2sql?tab=readme-ov-file)
