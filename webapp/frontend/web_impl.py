@@ -24,7 +24,7 @@ import time
 import json
 from webapp.caching import cache
 from pytrackvis.helpers import remove_accents
-
+from .webhelpers import *
 
 
 web_impl = Blueprint('web_impl', __name__)
@@ -54,10 +54,65 @@ def tracks_dashboard():
     stats = current_app.manager.getstats_from_db()
     return render_template('dashboard.html',stats=stats, stats_json=json.dumps(stats))
 
-
-@web_impl.route('/tracks/list', methods=['GET'])
-def tracks_list():
+@web_impl.route('/tracks/query', methods=['POST'])
+def tracks_query():
     
+    data = request.get_json(silent=True)
+    if not data:
+        return JsonResultError(500, "invalid json").response()
+
+    if not 'query' in data.keys():
+        return JsonResultError(500, "invalid json - no keys").response()
+    
+    query = data['query']
+    if query is None:
+        query = current_app.manager.config.queries['default']
+    else:
+        query = remove_accents(query)
+        result, query = current_app.manager.query_parser.run(query)
+        if not result:
+            return jsonify(error = True,
+                          text = 'malformed query: %s' % query,
+                          code = 1,
+                          tracks = [])
+                
+    current_app.logger.info("Parsed query: <%s>" % query)
+    
+    try:
+        tracks = current_app.manager.db_get_tracks_info(query)
+    except Exception as e:
+        return jsonify(error = True,
+                        text = 'bad query: %s' % e,
+                        code = 2,
+                        tracks = [])
+      
+    
+    return jsonify(error = False,
+                   text = 'success',
+                   code = 0,
+                   tracks = tracks)
+
+
+    trk = current_app.manager.db_track_exists_id(id)
+    if not trk:
+        return JsonResultError(500, "invalid json - bad track id").response()
+    
+    current_app.manager.db_update_track_field('rating', id, rating)
+    
+    return jsonify(JsonResultOK(message="rating update successfully").response()) 
+    # default stuff to test things here.
+
+
+
+
+
+
+
+
+
+
+
+
     query = request.args.get("query",None)
     if query:
         query = remove_accents(query)
@@ -69,6 +124,24 @@ def tracks_list():
     print("Parsed", query)
     tracks = current_app.manager.db_get_tracks_info(query)
     return render_template('list.html', tracks=tracks)
+
+@web_impl.route('/tracks/list', methods=['GET'])
+def tracks_list():
+
+    return render_template('list_json.html')
+
+    # query = request.args.get("query",None)
+    # if query:
+    #     query = remove_accents(query)
+    #     print(query)
+    #     result, query = current_app.manager.query_parser.run(query)
+    #     if not result:
+    #         return redirect(url_for('web_impl.error', msg="Invalid query %s" % query))
+        
+    # print("Parsed", query)
+    # tracks = current_app.manager.db_get_tracks_info(query)
+    # return render_template('list.html', tracks=tracks)
+
 
 @web_impl.route('/tracks/view', methods=['GET', 'POST'])
 def tracks_view():

@@ -389,6 +389,8 @@ class QueryParser:
         self.get_attr = get_attr
         self.limit = limit
         self.offset = offset
+        self.limit = None if self.limit == 0 else self.limit
+        self.offset = None if self.offset == 0 else self.offset
         self.verbose = verbose
 
         self.xlate_table = {

@@ -50,7 +50,9 @@ class Manager:
         self.gpx_previews = CacheManager(self.config.gpx_preview["gpx_previews_dir"])
 
         #self.query_parser = QueryParser(get_attr="id", limit=10, offset=0)
-        self.query_parser = QueryParser()
+        self.query_parser = QueryParser(get_attr=self.config.query_parser['attrs'],
+                                        limit=self.config.query_parser['limit'],
+                                        offset=self.config.query_parser['offset'])
 
     def db_connect(self):
         self.db = sqlite3.connect(self.config.database["file"], check_same_thread=False)
@@ -498,12 +500,6 @@ class Manager:
         sql = query if query else self.config.queries["default"]
 
         cursor = self.db.cursor()
-        cursor.execute(sql)
-        data = cursor.fetchall()
-        data = list(map(lambda x: str(x['id']), data))
-        
-        sql = self.config.queries["get_tracks"] % ",".join(data)
-
         cursor.execute(sql)
         data = cursor.fetchall()
         data = list(map(lambda x: dict(x), data))

@@ -1,8 +1,12 @@
 {
     "verbose": true,
+    "query_parser": {
+        "attrs": "*",
+        "limit": 0,
+        "offset": 0
+    },
     "queries": {
-        "default": "select id from tracks order by stamp desc limit 20",
-        "get_tracks": "select * from tracks where id in (%s)"
+        "default": "select * from tracks order by stamp desc limit 10"
     },
     "points": {
         "optimize": true,

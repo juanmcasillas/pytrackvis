@@ -1,0 +1,87 @@
+{% for track in tracks %}
+<div class="card m-2 border-0">
+    <div class="row g-0">
+        <div class="col-md-9">
+            <div class="card-body mt-1 pt-1">
+                <span class="track name"><a href="/tracks/view?id={{track.id}}">{{track.name}}</a></span>
+                <span class="track score">Score: {{'%3.2f'|format_float(track.score|float)}}</span>
+                <div class="py-1">
+                    <span class="track data">Distance: <b>{{track.length_3d|humandistance}}</b> |
+                                            Elevation: <b>{{track.uphill_climb|humandistance}}</b> |
+                                            Duration: {{track.duration|duration_format('HH:mm:ss')}} |
+                                            Quality: {{"%.2f"|format_float(track.quality)}} %
+                    </span>
+                    <span class="track data">Sport: {{track.kind}} |
+                                            Equipment: {{track.equipment}} |
+                                            Device: {{track.device}} |
+                                            Created: {{track.stamp|strftimestamp}}
+                    </span>
+                </div>
+
+                <div>
+                    <img src="/static/img/icons/red-up-arrow-icon.png" class="mx-auto track slope-image" >
+                    <span class="track slope">
+                        Avg slope: {{"%.2f"|format_float(track.uphill_avg_slope)}} % |
+                        Distance: {{track.uphill_distance|humandistance}} ({{"%.2f"|format_float(track.uphill_p_distance)}} %) |
+                        Elevation: {{track.uphill_elevation|humandistance}} 
+                    </span><br>
+
+                    <img src="/static//img/icons/green-down-arrow-icon.png" class="mx-auto track slope-image" >
+                    <span class="track slope">
+                        Avg slope: {{"%.2f"|format_float(track.downhill_avg_slope)}} % |
+                        Distance: {{track.downhill_distance|humandistance}} ({{"%.2f"|format_float(track.downhill_p_distance)}} %) |
+                        Elevation: {{track.downhill_elevation|humandistance}} 
+                    </span><br>
+                    
+                    <img src="/static//img/icons/blue-right-arrow-icon.png" class="mx-auto track slope-image" >
+                    <span class="track slope">
+                        Avg slope: {{"%.2f"|format_float(track.level_avg_slope)}} % |
+                        Distance: {{track.level_distance|humandistance}} ({{"%.2f"|format_float(track.level_p_distance)}} %) |
+                        Elevation: {{track.level_elevation|humandistance}} 
+                    </span>
+                </div>
+                    
+                <div id="rateYo_{{track.id}}" class="pt-2 track rating"></div>
+                <div class="ps-1 pt-2 track description w-75">{{track.description}}</div></br>
+
+            <p class="card-text">
+                <span class="track length"></span>
+                <a href="/tracks/show3d?id={{track.id}}" class="">3D view</a>
+            </p>
+            
+            {% if track.similar|length >= 1 %}  
+                <div>
+                <h6>Similar tracks</h6>
+                {% for similar in track.similar %}  
+                        <li><a href="/tracks/view?id={{similar.id}}">{{similar.name}} (id:{{similar.id}})</a>
+                {% endfor %}
+                </div>
+            {% endif %}
+
+        </div>
+    </div> <!-- end card -->
+    <!-- image div -->
+    <div class="col-md-3 pt-3 track map"
+        onclick="show_big('{{track.name}}',
+                         '/static/img/track_previews/{{track.preview}}',
+                         '/static/img/track_previews/{{track.preview_elevation}}')
+              class="">
+        <img src="/static/img/track_previews/{{track.preview|as_thumb}}" class="img-fluid w-100" ></img>
+        <img src="/static/img/track_previews/{{track.preview_elevation|as_thumb}}" class="pt-1 img-fluid  w-100"></img>
+     </div>
+</div>
+ <hr>
+</div>
+<script>
+$("#rateYo_{{track.id}}").rateYo({starWidth: "18px",
+                        //readOnly: true,
+                        rating: {{track.rating}},
+                        userData: {{track.id}}, 
+                        fullStar: true,
+                        onSet: function (rating, rateYoInstance) {
+                            var id = rateYoInstance.option("userData");
+                            UpdateTrackRating(id, rating);
+                        }
+                    });
+</script>
+{% endfor %}
