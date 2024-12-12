@@ -1,101 +1,21 @@
 {% from "bootstrap5/utils.html" import render_messages %}
 {%- extends "page3col.html" %}
 
-
+{%block head%}
+{{super()}}
+        
+        <script type="text/javascript" charset="utf8" 
+                 src="{{ url_for('static', filename='js/nunjucks.min.js') }}"></script>
+        <script type="text/javascript" charset="utf8" 
+                 src="{{ url_for('static', filename='js/moment.min.js') }}"></script>
+{%endblock%}
 
 {% block title %}{% include 'title.html' %}{%- endblock %}
 {% block page %}
 
-{% for track in tracks %}
-<div class="card m-2 border-0">
-    <div class="row g-0">
-        <div class="col-md-9">
-            <div class="card-body mt-1 pt-1">
-                <span class="track name"><a href="/tracks/view?id={{track.id}}">{{track.name}}</a></span>
-                <span class="track score">Score: {{'%3.2f'|format(track.score|float)}}</span>
-                <div class="py-1">
-                    <span class="track data">Distance: <b>{{track.length_3d|humandistance}}</b> |
-                                            Elevation: <b>{{track.uphill_climb|humandistance}}</b> |
-                                            Duration: {{track.duration|strftimestamp('%H:%M:%S')}} |
-                                            Quality: {{"%.2f"|format(track.quality)}} %
-                    </span>
-                    <span class="track data">Sport: {{track.kind}} |
-                                            Equipment: {{track.equipment}} |
-                                            Device: {{track.device}} |
-                                            Created: {{track.stamp|strftimestamp}}
-                    </span>
-                </div>
-                
-                
-
-                <div>
-                    <img src="{{url_for('static', filename='img/icons/red-up-arrow-icon.png')}}" class="mx-auto track slope-image" >
-                    <span class="track slope">
-                        Avg slope: {{"%.2f"|format(track.uphill_avg_slope)}} % |
-                        Distance: {{track.uphill_distance|humandistance}} ({{"%.2f"|format(track.uphill_p_distance)}} %) |
-                        Elevation: {{track.uphill_elevation|humandistance}} 
-                    </span><br>
-
-                    <img src="{{url_for('static', filename='img/icons/green-down-arrow-icon.png')}}" class="mx-auto track slope-image" >
-                    <span class="track slope">
-                        Avg slope: {{"%.2f"|format(track.downhill_avg_slope)}} % |
-                        Distance: {{track.downhill_distance|humandistance}} ({{"%.2f"|format(track.downhill_p_distance)}} %) |
-                        Elevation: {{track.downhill_elevation|humandistance}} 
-                    </span><br>
-                    
-                    <img src="{{url_for('static', filename='img/icons/blue-right-arrow-icon.png')}}" class="mx-auto track slope-image" >
-                    <span class="track slope">
-                        Avg slope: {{"%.2f"|format(track.level_avg_slope)}} % |
-                        Distance: {{track.level_distance|humandistance}} ({{"%.2f"|format(track.level_p_distance)}} %) |
-                        Elevation: {{track.level_elevation|humandistance}} 
-                    </span>
-                </div>
-                    
-                <div id="rateYo_{{track.id}}" class="pt-2 track rating"></div>
-                <div class="ps-1 pt-2 track description w-75">{{track.description}}</div></br>
-
-            <p class="card-text">
-                <span class="track length"></span>
-                <a href="/tracks/show3d?id={{track.id}}" class="">3D view</a>
-            </p>
-            
-            {% if track.similar|length >= 1 %}  
-                <div>
-                <h6>Similar tracks</h6>
-                {% for similar in track.similar %}  
-                        <li><a href="/tracks/view?id={{similar.id}}">{{similar.name}} (id:{{similar.id}})</a>
-                {% endfor %}
-                </div>
-            {% endif %}
-
-            </div>
-        </div> <!-- end card -->
-        <!-- image div -->
-        <div class="col-md-3 pt-3 track map"
-            onclick="show_big('{{track.name}}',
-                             '{{url_for('static', filename='img/track_previews')}}/{{track.preview}}',
-                             '{{url_for('static', filename='img/track_previews')}}/{{track.preview_elevation}}')"
-                  class="">
-            <img src="{{url_for('static', filename='img/track_previews')}}/{{track.preview|as_thumb}}" class="img-fluid w-100" ></img>
-            <img src="{{url_for('static', filename='img/track_previews')}}/{{track.preview_elevation|as_thumb}}" class="pt-1 img-fluid  w-100"></img>
-         </div>
-    </div>
-     <hr>
-</div>
-<script>
-    $("#rateYo_{{track.id}}").rateYo({starWidth: "18px",
-                            //readOnly: true,
-                            rating: {{track.rating}},
-                            userData: {{track.id}}, 
-                            fullStar: true,
-                            onSet: function (rating, rateYoInstance) {
-                                var id = rateYoInstance.option("userData");
-                                UpdateTrackRating(id, rating);
-                            }
-                        });
-</script>
-
-{% endfor %}
+<!-- for -->
+<!--no data here -->
+<!--end for -->
 
 <script>
 function show_big(title,map_img, elev_img) {
@@ -114,6 +34,79 @@ function show_big(title,map_img, elev_img) {
     confirmButtonText: 'Close',
     })
 }
+
+function json_error(title,message) {
+    Swal.fire({
+        title: `<h2>${title}</h2>`,
+        width: '800px',
+        html: `
+        <div class="" role="alert">
+            <div class="w-80">
+                <p>${message}</p>
+            </div>
+        </div>
+        `,
+        showCloseButton: false,
+        confirmButtonText: 'Close',
+        })
+}
+
+
+
+
+function load_tracks(query) {
+        
+        if (query === undefined || query === '') {
+            // console.log("using default query")
+            query = null
+            
+        }
+        
+        var postData = { 
+                query: query,
+            }; 
+        //console.log(postData)
+            // see @web_impl.route('/tracks/query', methods=['POST'])
+        $.ajax({
+            url: '/tracks/query',
+            type: 'POST',
+            dataType: 'json',
+            data: JSON.stringify(postData),
+            contentType: 'application/json',
+            success: function (data) {
+                if (data.error > 0) {
+                    json_error("Error getting tracks", data.text)
+                    return;
+                }
+                // use here the container to process the tracks and save them
+                // console.log(data.tracks)
+                //var block = document.getElementById('block-page')
+                $('#block-page').empty()
+                $('#track-counter').html(`${data.tracks.length} tracks found`)
+                var page = nunjucks.render('track.html', { tracks: data.tracks })
+                $('#block-page').html(page);
+            },
+            fail: function (data) {
+                json_error("Error getting tracks", data)
+                //console.error(data);
+            }
+        });
+    }
+
+$( document ).ready(function() {
+
+
+    configure_nunjucks();
+    load_tracks('{{query}}');
+})
+
+
+
+
 </script>
 
+
+
 {%- endblock %}
+
+

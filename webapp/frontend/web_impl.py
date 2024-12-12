@@ -85,62 +85,21 @@ def tracks_query():
                         text = 'bad query: %s' % e,
                         code = 2,
                         tracks = [])
-      
-    
+
     return jsonify(error = False,
                    text = 'success',
                    code = 0,
                    tracks = tracks)
 
-
-    trk = current_app.manager.db_track_exists_id(id)
-    if not trk:
-        return JsonResultError(500, "invalid json - bad track id").response()
-    
-    current_app.manager.db_update_track_field('rating', id, rating)
-    
-    return jsonify(JsonResultOK(message="rating update successfully").response()) 
-    # default stuff to test things here.
-
-
-
-
-
-
-
-
-
-
-
-
-    query = request.args.get("query",None)
-    if query:
-        query = remove_accents(query)
-        print(query)
-        result, query = current_app.manager.query_parser.run(query)
-        if not result:
-            return redirect(url_for('web_impl.error', msg="Invalid query %s" % query))
-        
-    print("Parsed", query)
-    tracks = current_app.manager.db_get_tracks_info(query)
-    return render_template('list.html', tracks=tracks)
-
 @web_impl.route('/tracks/list', methods=['GET'])
 def tracks_list():
 
-    return render_template('list_json.html')
+    query = request.args.get("query",None)
+    if query is None:
+        query = ""
+    return render_template('list.html', query=query)
 
-    # query = request.args.get("query",None)
-    # if query:
-    #     query = remove_accents(query)
-    #     print(query)
-    #     result, query = current_app.manager.query_parser.run(query)
-    #     if not result:
-    #         return redirect(url_for('web_impl.error', msg="Invalid query %s" % query))
-        
-    # print("Parsed", query)
-    # tracks = current_app.manager.db_get_tracks_info(query)
-    # return render_template('list.html', tracks=tracks)
+
 
 
 @web_impl.route('/tracks/view', methods=['GET', 'POST'])

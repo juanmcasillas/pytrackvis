@@ -250,7 +250,8 @@ function plotElevation(data,map,mapManager) {
         
         // instead of dist, add i to ensure tigh bars (no spaces)
         
-        if (ddelta > 0.3) {
+        // 25 is fine for big tracks
+        if (ddelta > 15) {
             chart_data_elevation.addRow([ dindex, x_elev, x_elev  ,legend, "color: "+ color ]);
             pos = PA.getLngLat()
             positions.push([pos.lng, pos.lat, x_elev]);

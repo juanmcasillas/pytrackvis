@@ -42,13 +42,13 @@
                 </div>
                     
                 <div id="rateYo_{{track.id}}" class="pt-2 track rating"></div>
-                <div class="ps-1 pt-2 track description w-75">{{track.description}}</div></br>
+                <div class="ps-1 pt-2 track description w-75">
+                {% if track.description|length > 0 %}
+                    {{track.description}}
+                {% else %}    
+                {% endif %}
+                </div></br>
 
-            <p class="card-text">
-                <span class="track length"></span>
-                <a href="/tracks/show3d?id={{track.id}}" class="">3D view</a>
-            </p>
-            
             {% if track.similar|length >= 1 %}  
                 <div>
                 <h6>Similar tracks</h6>
@@ -64,7 +64,7 @@
     <div class="col-md-3 pt-3 track map"
         onclick="show_big('{{track.name}}',
                          '/static/img/track_previews/{{track.preview}}',
-                         '/static/img/track_previews/{{track.preview_elevation}}')
+                         '/static/img/track_previews/{{track.preview_elevation}}')"
               class="">
         <img src="/static/img/track_previews/{{track.preview|as_thumb}}" class="img-fluid w-100" ></img>
         <img src="/static/img/track_previews/{{track.preview_elevation|as_thumb}}" class="pt-1 img-fluid  w-100"></img>

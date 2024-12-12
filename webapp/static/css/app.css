@@ -230,3 +230,24 @@ a.get-track-link:hover  {
     height: 200px;
     display: inline-block;
 }
+
+
+.tool-item {
+    display: block;
+}
+
+a.tool-item:visited {
+    color: black;
+    font-size: small;
+    text-decoration: none;
+}
+
+a.tool-item:link  {
+    color: black;
+    font-size: small;
+    text-decoration: none;
+}
+
+a.tool-item:hover  {
+	text-decoration:underline;
+}

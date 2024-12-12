@@ -30,9 +30,9 @@
     <div class="row">
         <div class="col-md-6">
             <div id="rateYo_{{track.id}}" class="pt-1 track rating"></div>
-            <div class="ps-2 pt-2 editable_description w-50" id="{{track.id}}">
-                {{track.description}}
-            </div>
+            <div class="ps-2 pt-2 editable_description w-50" 
+                 id="{{track.id}}"
+                 >{% if track.description|length == 0 %}no description yet{% else %}{{track.description}}{% endif %}</div>
  
 
             <div class="container pt-2 text-center">

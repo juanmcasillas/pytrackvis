@@ -217,9 +217,12 @@ class SQLQueryTransformer(Transformer):
     def custom_equipment(self, items):
         return "'%s'" % re.sub(r"[\"']",'',items[0].value)        
     
+    def all_expression(self, items):
+        return "1=1"
 
     def select(self, items):
-        
+
+
         s = "select %s from tracks where %s" % (self.get, items[0])
         items.pop(0)
         if items[0] is None:
@@ -264,8 +267,12 @@ class QueryParser:
 
     grammar = """
 
-    select                  : bool_expression [ "ORDER"i "BY"i (order_by_expr ",")*  order_by_expr] [ "LIMIT"i limit_count [ "OFFSET"i skip_rows ] ]
+    select                  : all_sentence [ "ORDER"i "BY"i (order_by_expr ",")*  order_by_expr] [ "LIMIT"i limit_count [ "OFFSET"i skip_rows ] ]
+                            | bool_expression [ "ORDER"i "BY"i (order_by_expr ",")*  order_by_expr] [ "LIMIT"i limit_count [ "OFFSET"i skip_rows ] ]
 
+    all_sentence            : "ALL"i -> all_expression
+                            | "*" -> all_expression
+    
     order_by_expr           : order -> order_by_expression
 
     order                   : (name) ["ASC"i] -> order_asc
@@ -432,26 +439,28 @@ if __name__ == "__main__":
 
     sentences = []
 
+
+    sentences.append('all')
     # sentences.append('title "navas del rey"')
     # sentences.append("title 'navas del rey'")
-    sentences.append('sport \'BIKE\'')
-    sentences.append('sport "BIKE"')
-    sentences.append('sport BIKE')
-    sentences.append('sport RUN order by length')
-    sentences.append('device FENIX3 order by length')
+    # sentences.append('sport \'BIKE\'')
+    # sentences.append('sport "BIKE"')
+    # sentences.append('sport BIKE')
+    # sentences.append('sport RUN order by length')
+    # sentences.append('device FENIX3 order by length')
     
-    sentences.append('distance > 100 or kind = "run"')
-    sentences.append('distance between 100 and 200')
-    sentences.append('distance >= 100 or length_2d <= 100 or elevation is null')
-    sentences.append('(length_2d > 20000.0 and distance < 1000 KM) or stamp = NOW()')
-    sentences.append('(length_2d > 20000.0 and distance < 1000 KM) or DATE(stamp) = TODAY()')
-    sentences.append('sport "BIKE"')
-    sentences.append('title "navas del rey" and elevation > 30')
-    sentences.append('(kind = "xxx" or kind = "run")')
-    sentences.append('sport BIKE and ELEVATION<30m or DISTANCE>10Km')
-    sentences.append('sport BIKE and ELEVATION<30m or DISTANCE>10Km limit 10 offset 5')
-    sentences.append('sport BIKE and ELEVATION<30m or DISTANCE>10Km order by stamp, length_2d desc, stamp asc limit 10 offset 5')
-    sentences.append('this is an error')
+    # sentences.append('distance > 100 or kind = "run"')
+    # sentences.append('distance between 100 and 200')
+    # sentences.append('distance >= 100 or length_2d <= 100 or elevation is null')
+    # sentences.append('(length_2d > 20000.0 and distance < 1000 KM) or stamp = NOW()')
+    # sentences.append('(length_2d > 20000.0 and distance < 1000 KM) or DATE(stamp) = TODAY()')
+    # sentences.append('sport "BIKE"')
+    # sentences.append('title "navas del rey" and elevation > 30')
+    # sentences.append('(kind = "xxx" or kind = "run")')
+    # sentences.append('sport BIKE and ELEVATION<30m or DISTANCE>10Km')
+    # sentences.append('sport BIKE and ELEVATION<30m or DISTANCE>10Km limit 10 offset 5')
+    # sentences.append('sport BIKE and ELEVATION<30m or DISTANCE>10Km order by stamp, length_2d desc, stamp asc limit 10 offset 5')
+    # sentences.append('this is an error')
 
     for s in sentences:
     

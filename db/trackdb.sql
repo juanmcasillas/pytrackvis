@@ -160,7 +160,7 @@ CREATE TABLE if NOT exists  `TRACK_IN_PLACES` (
 );
 
 CREATE TABLE if NOT exists  `SIMILAR_TRACKS` (
-    `id`          INTEGER PRIMARY KEY AUTOINCREMENT,
+    `id`          INTEGER PRIMARY KEY,
     `hash_track`  INTEGER,
     `id_track`    INTEGER,
     FOREIGN KEY(`id_track`) REFERENCES TRACKS(`id`) 
