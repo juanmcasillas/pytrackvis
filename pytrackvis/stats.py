@@ -215,12 +215,14 @@ class Stats:
         values = range(0, int(math.ceil(d)), int(distance))
         ret = np.interp( values, xs, ys)
         tret = np.interp( values, xs, ts)
-        
+      
         
         slope = 0.0
         distance_delta = 0.0
         elevation_delta = 0.0
         time_delta = 0.0
+
+   
 
         for i in range(1, len(values)):
             
@@ -230,10 +232,11 @@ class Stats:
             # points can be in reverse order, so check that this is absolute.
             time_delta = math.fabs(tret[i]-tret[i-1])
             
+            
             # use the new hypotenuse calc
             #slope = 100.0 * (float(elevation_delta)/distance_delta)
             slope = gradeslope(distance_delta, elevation_delta)
-    
+            
             #if time_delta > 0.0:
             #    speed = float(distance_delta) / float(time_delta) 
 
@@ -314,6 +317,7 @@ class Stats:
         self.level_slope.elevation = math.fabs(self.level_slope.elevation)
         self.down_slope.elevation = math.fabs(self.down_slope.elevation)
 
+
         # compute slope average
     
         if self.up_slope.count != 0:
@@ -373,7 +377,7 @@ class Stats:
                             (self.down_slope.speed * self.down_slope.p_distance/100.0) 
 
 
-    
+      
         if self.duration == 0 or self.length_2d == 0.0:
             self.score = 0
             self.up_slope.score = 0
@@ -449,7 +453,7 @@ class Stats:
 
         # what about extensions ?
         # use the self._gpx_extensions arrays to manage the max, min and so.
-
+    
         self.max_heart_rate,self.min_heart_rate, self.avg_heart_rate  = \
             max_min_avg_from_list(self.track._gpx_extensions['heart_rate'])
       

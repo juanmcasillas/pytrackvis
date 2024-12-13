@@ -61,7 +61,7 @@ class GPXOptimizer:
         return p
 
     def _optimize_stopped_points(self, points,keep_points=False):
-
+        
         # for "stopped" points, create an average, and remove those points that are in the same place.
         # if not, replicate the same point various times.
         
@@ -80,7 +80,7 @@ class GPXOptimizer:
            
             if i > 0:
                 q = points[i-1]
-                
+
                 p.time_d      = p.time - q.time
                 p.distance_d  = gpxpy.geo.length_2d([p, q]) #distance_2d #gpxpy.geo.distancePoints3D
                 p.elevation_d = p.elevation - q.elevation

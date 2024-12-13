@@ -39,7 +39,7 @@ def static_files(path):
 # "templates/index.html" documentation for more details.
 @web_impl.route('/')
 def index():
-    return render_template('index.html')
+    return redirect(url_for('web_impl.tracks_list'))
 
 @web_impl.route('/error', methods=['GET', 'POST'])
 def error():

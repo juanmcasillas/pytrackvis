@@ -32,7 +32,7 @@
     "osm_cache": {
         "enabled": true,
         "directory": "osm_cache",
-        "debug": true
+        "debug": false
     },
     "sim_preview": {
         "sim_previews_dir": "sim",
@@ -46,7 +46,7 @@
     "elevation_profile": {
         "border": false,
         "size": [800, 100],
-        "thumb_size": [200, 40]
+        "thumb_size": [400, 80]
     },
     "geojson_preview": {
         "geojson_previews_dir": "webapp/static/geojson"
@@ -98,7 +98,7 @@
 
         "use_gradient": true,
         "gradient_value": "elevation",
-        "track_size": [200, 100],
+        "track_size": [400, 200],
         "track_color": [255, 255, 80],
         "track_width": 3,
 

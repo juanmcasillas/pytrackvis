@@ -55,20 +55,23 @@ class Rainbow:
 
     def colourAt(self, number):
  
-    
+        
         if math.isnan(number):
             raise Exception("%d is not a number" % number)
         elif len(self.gradients) == 1:
             return self.gradients[0].colourAt(number)
         else:
-            
+            if self.minNum == self.maxNum:
+                return self.gradients[0].colourAt(0)
+                
+
             segment = (self.maxNum - self.minNum)/float(len(self.gradients))
             index = min(math.floor((max(number, self.minNum) - self.minNum)/segment), len(self.gradients) - 1)
             
 
             
             index = int(index)
-            return self.gradients[index].colourAt(number);
+            return self.gradients[index].colourAt(number)
         
     
     def colorAt(self, number): return self.colourAt(number)
@@ -79,7 +82,10 @@ class Rainbow:
             self.maxNum = maxNumber
             self.setColours(self.colours)
         else:
-            raise Exception("maxNumber ('%d') is not greater than minNumber ('%d')" % ( maxNumber, minNumber) )
+            self.minNum = minNumber
+            self.maxNum = maxNumber
+            print("Warning: maxNumber (%d) is not greater than minNumber (%d)" % ( maxNumber, minNumber) )
+            #raise Exception("maxNumber (%d) is not greater than minNumber (%d)" % ( maxNumber, minNumber) )
         return self
 
 
@@ -253,7 +259,10 @@ class ColourGradient:
             self.minNum = minNumber
             self.maxNum = maxNumber
         else:
-            raise Exception("maxNumber ('%d') is not greater than minNumber ('%d')" % ( maxNumber, minNumber) )
+            self.minNum = minNumber
+            self.maxNum = maxNumber
+            print("Warning: maxNumber (%d) is not greater than minNumber (%d)" % ( maxNumber, minNumber) )
+            #raise Exception("maxNumber ('%d') is not greater than minNumber ('%d')" % ( maxNumber, minNumber) )
         
     
     def colourAt(self, number):

@@ -23,6 +23,9 @@ from PIL import Image, ImageChops
 import cv2 
 import json
 import math
+import os.path
+import datetime
+import traceback
 
 from pytrackvis.appenv import *
 from pytrackvis.altitude import *
@@ -180,40 +183,87 @@ class Manager:
 
         files = glob_filelist(files)
         for fname in files:
-            fm = FileManager([fname])
-            try:
-                fm.load(optimize_points=self.config.points["optimize"],
-                        filter_points=self.config.points["filter"]
-                        )
-                
-            except Exception as e:
-                self.logger.error("import_files: Can't load %s: %s" % (fname, e))
-                continue
-
-            self.logger.info("file loaded %s" % fname)
-            track = fm.track()
-            if track._optimizer:
-                self.logger.info("Optimizer results (points): %s" % track._optimizer)
-
-            track_id = self.db_track_exists(track)
-            
+            track_id = self.db_track_exists(Track.calculate_hash(fname))
+  
             if not track_id:
+                fm = FileManager([fname])
+                try:
+                
+                    ret = fm.load(optimize_points=self.config.points["optimize"],
+                                  filter_points=self.config.points["filter"]
+                                )
+
+                except Exception as e:
+                    s = traceback.format_exc()
+                    self.logger.exception(s)
+                    self.logger.error("import_files: Can't load %s: %s" % (fname, e))
+                    continue
+
+                if ret is None:
+                    self.logger.error("import_files: Can't load %s: no points" % fname )
+                    continue
+
+                track = fm.track()
+                if track._optimizer:
+                    self.logger.info("Optimizer results (points): %s" % track._optimizer)
+
                 # create all the required images and products.
                 # create track map preview
+          
                 self.create_image_products(track)
-                self.db_store_track(track)
+                track = self.db_store_track(track)
+                self.logger.info("file stored in db successfully %s (%d)" % (fname, track.id))
+   
  
             else:
-                track.id = track_id
-                self.logger.warning("Track %s exists on DB (id=%d)" % (track.hash, track.id))
+                self.logger.warning("Track %s exists on DB (id=%d)" % (fname, track_id))
+
+
+    def fix_time(self, files):
+        """fix the tracks that doesn't change the time value (stuck on the same stamp)
+
+        Args:
+            files (_type_): _description_
+        """
+        files = glob_filelist(files)
+        for fname in files:
+            fm = FileManager([fname])
+            
+            try:
+                fm.load(optimize_points=False, filter_points=False )
+            except Exception as e:
+                self.logger.error("fix_time: Can't load %s: %s" % (fname, e))
+                return
+            
+            p = os.path.dirname(fname)
+            fn,ex = os.path.splitext(os.path.basename(fname))
+            tgt = "%s/%s-fixed.gpx" % (p,fn)
+            track = fm.track()
+            time_base = track.points[0].time
+            time_base_orig = track.points[0].time
+            time_delta = datetime.timedelta(seconds=1)
+            for p in track.points:
+                p.time = time_base
+                time_base = time_base + time_delta
+    
+            with open(tgt,"w+") as tgt_fd:
+                tgt_fd.write(track.as_gpx())
+
+            self.logger.info("fixed %s: %s -> %s " % (fname, time_base_orig, time_base))
+
 
 
     def create_image_products(self, track):
+
+        # marginal gain if disable configure the thumbs.
+        create_thumbs = True
+
         target_fname = self.track_previews.map_object(track.hash, create_dirs=True, relative=True)
         target_fname_abs = self.track_previews.map_object(track.hash)
 
         map = self.mappreview_manager.create_map_preview(track)
-        map_thumb = self.mappreview_manager_thumb.create_map_preview(track)
+        if create_thumbs:
+            map_thumb = self.mappreview_manager_thumb.create_map_preview(track)
 
         #relative route (for www)
         track.preview = "%s.png" % target_fname
@@ -221,23 +271,25 @@ class Manager:
         # absolute path (for store)
         
         map.save("%s.png" % target_fname_abs, 'PNG')
-        map_thumb.save("%s_tb.png" % target_fname_abs, 'PNG')
+        if create_thumbs:
+            map_thumb.save("%s_tb.png" % target_fname_abs, 'PNG')
         
         # elevation profile
         elev_profile_fname = "%s_elevation.png" % target_fname_abs
-        elev_profile_fname_thumb = "%s_elevation_tb.png" % target_fname_abs
+        if create_thumbs:
+            elev_profile_fname_thumb = "%s_elevation_tb.png" % target_fname_abs
 
         png = PNGFactory(outputfname=elev_profile_fname, size=self.config.elevation_profile['size'])
         png.CreatePNG(track._gpx, 
                         elevation=track.stats().uphill_climb, 
                         draw_border=self.config.elevation_profile['border'])
 
-
-        png = PNGFactory(outputfname=elev_profile_fname_thumb, size=self.config.elevation_profile['thumb_size'])
-        png.CreatePNG(track._gpx, 
-                        elevation=track.stats().uphill_climb, 
-                        draw_border=self.config.elevation_profile['border'],
-                        full_featured=False)
+        if create_thumbs:
+            png = PNGFactory(outputfname=elev_profile_fname_thumb, size=self.config.elevation_profile['thumb_size'])
+            png.CreatePNG(track._gpx, 
+                            elevation=track.stats().uphill_climb, 
+                            draw_border=self.config.elevation_profile['border'],
+                            full_featured=False)
 
         # calculate similarity
         map_sim = self.simpreview_manager.create_map_preview(track, empty_map=True, track_color=(200,200,200))
@@ -549,12 +601,11 @@ class Manager:
             return False
         return data["hash"]
 
-
-    def db_track_exists(self, track):
+    def db_track_exists(self, track_hash):
         "check if the track is loaded in the database, using the hash"
         sql = "select id,hash from tracks where hash = ?"
         cursor = self.db.cursor()
-        cursor.execute(sql, (track.hash,))
+        cursor.execute(sql, (track_hash,))
         data = cursor.fetchone()
         cursor.close()
         if not data:

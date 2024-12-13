@@ -144,7 +144,7 @@ class FileManager:
                         args['lon'] = point.longitude
                         args['ele'] = point.elevation
                         args['timestamp'] = str(point.time)
-
+               
                         for e in point.extensions:
                             attr = re.sub('{.+}','',e.tag)
                             if attr == "TrackPointExtension":
@@ -156,7 +156,7 @@ class FileManager:
                         
                         point = TrackPointGPX(**args)
                         track_points.add_point(point)
-
+        
         return track_points
 
     def load(self, optimize_points=True, filter_points=True, only_load=False):
@@ -168,8 +168,12 @@ class FileManager:
             do_stats = True
             if only_load: 
                 do_stats = False
+            
+            if len(track.points) == 0:
+                return None
             track.set_internal_data(i, optimize_points=optimize_points, do_stats=do_stats)
             self.tracks[track.id] = track
+           
         return self.tracks
 
     def stats(self,f):

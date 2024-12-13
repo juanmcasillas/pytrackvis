@@ -4,10 +4,7 @@
 {%block head%}
 {{super()}}
         
-        <script type="text/javascript" charset="utf8" 
-                 src="{{ url_for('static', filename='js/nunjucks.min.js') }}"></script>
-        <script type="text/javascript" charset="utf8" 
-                 src="{{ url_for('static', filename='js/moment.min.js') }}"></script>
+
 {%endblock%}
 
 {% block title %}{% include 'title.html' %}{%- endblock %}
@@ -18,94 +15,12 @@
 <!--end for -->
 
 <script>
-function show_big(title,map_img, elev_img) {
-    Swal.fire({
-    title: `<h2>${title}</h2>`,
-    width: '800px',
-    html: `
-    <div class="" role="alert">
-        <div class="w-100">
-            <img src="${map_img}" class="img-fluid w-100" ></img>
-            <img src="${elev_img}" class="pt-1 img-fluid w-100" ></img>
-        </div>
-    </div>
-    `,
-    showCloseButton: false,
-    confirmButtonText: 'Close',
-    })
-}
-
-function json_error(title,message) {
-    Swal.fire({
-        title: `<h2>${title}</h2>`,
-        width: '800px',
-        html: `
-        <div class="" role="alert">
-            <div class="w-80">
-                <p>${message}</p>
-            </div>
-        </div>
-        `,
-        showCloseButton: false,
-        confirmButtonText: 'Close',
-        })
-}
-
-
-
-
-function load_tracks(query) {
-        
-        if (query === undefined || query === '') {
-            // console.log("using default query")
-            query = null
-            
-        }
-        
-        var postData = { 
-                query: query,
-            }; 
-        //console.log(postData)
-            // see @web_impl.route('/tracks/query', methods=['POST'])
-        $.ajax({
-            url: '/tracks/query',
-            type: 'POST',
-            dataType: 'json',
-            data: JSON.stringify(postData),
-            contentType: 'application/json',
-            success: function (data) {
-                if (data.error > 0) {
-                    json_error("Error getting tracks", data.text)
-                    return;
-                }
-                // use here the container to process the tracks and save them
-                // console.log(data.tracks)
-                //var block = document.getElementById('block-page')
-                $('#block-page').empty()
-                $('#track-counter').html(`${data.tracks.length} tracks found`)
-                var page = nunjucks.render('track.html', { tracks: data.tracks })
-                $('#block-page').html(page);
-            },
-            fail: function (data) {
-                json_error("Error getting tracks", data)
-                //console.error(data);
-            }
-        });
-    }
 
 $( document ).ready(function() {
-
-
-    configure_nunjucks();
     load_tracks('{{query}}');
 })
 
-
-
-
 </script>
-
-
 
 {%- endblock %}
 

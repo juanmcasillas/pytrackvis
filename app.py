@@ -14,6 +14,7 @@
 import argparse
 import sys
 
+import pytrackvis.timing
 from pytrackvis.appenv import *
 from pytrackvis.manager import *
 
@@ -37,6 +38,12 @@ if __name__ == "__main__":
 
     list_parser = subparsers.add_parser("list_tracks",help="Show imported tracks")
     list_parser.set_defaults(command="list_tracks")
+
+    fix_time_parser = subparsers.add_parser("fix_time",
+                                               help="Fix the time adding 1s on each point. Dump the same as gpx, fixed", 
+                                               )
+    fix_time_parser.set_defaults(command="fix_time")
+    fix_time_parser.add_argument("file",help="fit or gpx files")
 
 
     args = parser.parse_args()
@@ -69,5 +76,9 @@ if __name__ == "__main__":
         manager.list_tracks()
         sys.exit(0)
 
+    if args.command == "fix_time":
+        subargs = import_files_parser.parse_args()
+        manager.fix_time(subargs.files[1:])
+        sys.exit(0)
 
     manager.shutdown()

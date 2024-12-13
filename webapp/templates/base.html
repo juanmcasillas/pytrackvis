@@ -83,6 +83,12 @@
             src="{{ url_for('static', filename='js/sweetalert2.all.min.js') }}"></script>
 
         <script type="text/javascript" charset="utf8" 
+            src="{{ url_for('static', filename='js/nunjucks.min.js') }}"></script>
+   
+        <script type="text/javascript" charset="utf8" 
+            src="{{ url_for('static', filename='js/moment.min.js') }}"></script>
+
+        <script type="text/javascript" charset="utf8" 
             src="{{ url_for('static', filename='js/app/app.js') }}"></script>
 
         <script 
@@ -105,4 +111,11 @@
         {% block scripts %}
         {% endblock %}
     </body>
+
+    <!-- global things goes here -->
+    <div class="d-flex align-items-center" id="wait-spinning">
+        <img class="mx-auto" src="/static/img/loading-buffering.gif"></img>
+    </div>
+
+
 </html>

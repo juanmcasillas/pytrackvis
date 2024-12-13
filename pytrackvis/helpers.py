@@ -271,9 +271,13 @@ def set_proxy(proxy_url):
 
 
 def max_min_avg_from_list(l):
-    max_value = max(l)
-    min_value = min(l)
-    avg_value = 0 if len(l) == 0 else float(sum(l))/len(l)
+    max_value = 0
+    min_value = 0
+    avg_value = 0
+    if len(l) > 0:
+        max_value = max(l)
+        min_value = min(l)
+        avg_value = 0 if len(l) == 0 else float(sum(l))/len(l)
     return (max_value, min_value, avg_value)
 
 def is_nan(x):

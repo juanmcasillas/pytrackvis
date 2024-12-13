@@ -372,11 +372,11 @@ class OSMMapper(GenericMapper):
 
         if os.path.exists(urlp):
             r = Image.open(urlp)
-            if DEBUG_ME:
+            if DEBUG_ME and self.debug:
                 print("C %d, %d, %s" % (tile.x, tile.y, url))
             return r
         else:
-            if DEBUG_ME:
+            if DEBUG_ME and self.debug:
                 print("X %d, %d, %s" % (tile.x, tile.y, url))
 
         # get and save

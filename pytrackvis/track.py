@@ -19,11 +19,12 @@ import os
 import time
 import datetime
 import copy
+import hashlib
+import os.path
 
 from .helpers import bearing, distancePoints, module, C, remove_accents
 from .stats import Stats, get_fval
 from .optimizer import GPXOptimizer
-
 
 class UnitConverter:
     def __init__(self):
@@ -229,15 +230,15 @@ class TrackPointFit(TrackPoint):
                  timestamp         = None,
                  position_lat      = None,
                  position_long     = None,
-                 altitude          = None,
-                 speed             = None,
-                 power             = None,
-                 grade             = None,
-                 heart_rate        = None,
-                 cadence           = None,
-                 temperature       = None,
-                 enhanced_altitude = None,
-                 enhanced_speed    = None
+                 altitude          = 0,
+                 speed             = 0,
+                 power             = 0,
+                 grade             = 0,
+                 heart_rate        = 0,
+                 cadence           = 0,
+                 temperature       = 0,
+                 enhanced_altitude = 0,
+                 enhanced_speed    = 0
     ):
         super().__init__(self)
 
@@ -259,6 +260,7 @@ class TrackPointFit(TrackPoint):
         self.altitude = self.enhanced_altitude if self.enhanced_altitude else self.altitude
         self.speed = self.enhanced_speed if self.enhanced_speed else self.speed
 
+
 class TrackPointGPX(TrackPoint):
     """
     timestamp (time)    2018-08-15T09:17:26Z
@@ -279,13 +281,13 @@ class TrackPointGPX(TrackPoint):
                  timestamp    = None,
                  lat          = None,
                  lon          = None,
-                 ele          = None,
-                 PowerInWatts = None,
-                 hr           = None,
-                 cad          = None,
-                 atemp        = None,
-                 Temperature  = None,
-                 power        = None,
+                 ele          = 0,
+                 PowerInWatts = 0,
+                 hr           = 0,
+                 cad          = 0,
+                 atemp        = 0,
+                 Temperature  = 0,
+                 power        = 0,
 
     ):
         super().__init__(self)
@@ -316,6 +318,13 @@ class TrackPointGPX(TrackPoint):
 
 
 class Track:
+
+    @staticmethod
+    def calculate_hash(fname):
+        # hash in python3 is randomized.
+        return hashlib.md5(os.path.realpath(fname).encode('utf-8')).hexdigest()
+        # return hash(tuple())
+
     def __init__(self, name="Track", id=None):
         self.fname = None #see set_internal_data() for details
         self.name = name
@@ -397,7 +406,8 @@ class Track:
             "temperature": []
         }
 
-        hash_array = []
+        # removed for performance
+        #hash_array = []
 
         # Create points:
         for p in self.points:
@@ -405,7 +415,7 @@ class Track:
             if p.latitude is not None and \
                p.longitude is not None and \
                p.timestamp is not None:
-        
+               
                 p_gpx = gpxpy.gpx.GPXTrackPoint(
                             latitude=p.latitude,
                             longitude=p.longitude,
@@ -418,17 +428,22 @@ class Track:
                 self._gpx_extensions['temperature'].append(get_fval(p.temperature))
 
                 gpx_segment.points.append(p_gpx)
-                hash_array.append(module(p.as_vector()))
+                #hash_array.append(module(p.as_vector()))
 
-        self.hash = hash(tuple(hash_array))
-
+        # very costly, get a simple and fast version (fname)
+        self.hash = self.calculate_hash(self.fname)
+        #self.hash = hash(tuple(hash_array))
 
         if optimize_points:
             self._optimizer = GPXOptimizer()
             gpx_points = self._optimizer.Optimize(self._gpx.tracks[0].segments[0].points)
-
+            if self._optimizer.st_save_points_percent > 90 and self._optimizer.st_final_points < 10:
+                # this is a problem, so notify it.
+                print("warning, too much optimization in this track. reverting to defaults")
+                gpx_points = self._gpx.tracks[0].segments[0].points
+               
             self._gpx.tracks[0].segments[0].points = gpx_points
-
+            
 
         # clear the intermediate structure.
         del self.points
@@ -523,7 +538,7 @@ class Track:
         # calculate some things about gpx info using gpxpy module.
         # cache the stats, due they are expensive.
         if self._stats is None:
-             self._stats = Stats(self, filter_points=filter_points)
+            self._stats = Stats(self, filter_points=filter_points)
 
         return self._stats
 

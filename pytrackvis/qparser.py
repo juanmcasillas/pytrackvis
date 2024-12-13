@@ -123,6 +123,9 @@ class SQLQueryTransformer(Transformer):
         # HH:MM;SS
         return "%s:%s:%s" % (items[0],items[1],items[2])
 
+    def like(self, items):
+        return "%s like %s" % (items[0], items[1])
+    
     def equals(self, items):
         return "%s = %s" % (items[0], items[1])
     
@@ -301,6 +304,7 @@ class QueryParser:
                             | "(" bool_expression "OR"i comparison_type ")" -> bool_or
 
     comparison_type         : equals 
+                            | like
                             | not_equals 
                             | greater_than 
                             | less_than 
@@ -311,6 +315,7 @@ class QueryParser:
                             | is_not_null
 
     equals                  : expression "=" expression
+    like                    : expression "LIKE"i expression
     not_equals              : expression ("<>" | "!=") expression
     greater_than            : expression ">" expression
     less_than               : expression "<" expression
