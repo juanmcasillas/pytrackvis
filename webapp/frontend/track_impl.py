@@ -70,6 +70,21 @@ def track_as_original():
     return send_file(trk['fname'],as_attachment=True,download_name= os.path.basename(trk['fname']))
 
 
+
+@track_impl.route('/track/delete', methods=['GET', 'POST'])
+def track_delete():
+    id = request.args.get("id",None)
+    if not id:
+        return redirect(url_for('web_impl.error', msg="Invalid id"))
+    trk = current_app.manager.db_get_track(id)
+    if trk is None:
+        return redirect(url_for('web_impl.error', msg="Invalid track id"))
+
+    # delete all items, then delete the database, and in the tables.
+    current_app.manager.delete_track(trk)
+    return redirect(url_for('web_impl.tracks_list'))
+
+
 @track_impl.route('/track/as_gpx', methods=['GET', 'POST'])
 @cache.cached(timeout=100000,query_string=True)
 def track_as_gpx():

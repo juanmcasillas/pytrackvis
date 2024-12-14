@@ -182,6 +182,7 @@ class Manager:
         #  .\app.py import_files .\data\fit\*.fit # ony files in this dir
 
         files = glob_filelist(files)
+        trackids = []
         for fname in files:
             track_id = self.db_track_exists(Track.calculate_hash(fname))
   
@@ -213,10 +214,14 @@ class Manager:
                 self.create_image_products(track)
                 track = self.db_store_track(track)
                 self.logger.info("file stored in db successfully %s (%d)" % (fname, track.id))
+                trackids.append(str(track.id))
    
  
             else:
                 self.logger.warning("Track %s exists on DB (id=%d)" % (fname, track_id))
+
+        if len(trackids) > 0:
+            self.check_similarity(trackids=trackids)
 
 
     def fix_time(self, files):
@@ -303,204 +308,6 @@ class Manager:
         with open(geojson_fname,"w+") as geojson_fd:
             geojson_fd.write(json.dumps(track.as_geojson_line()["data"]))
 
-        # precache gpx objects
-        # don't do this .. because we need generate them from the app.
-        # gpx_fname_abs = self.gpx_previews.map_object(track.hash,create_dirs=True)
-        # gpx_fname = "%s.gpx" % gpx_fname_abs
-        # with open(gpx_fname,"w+") as gpx_fd:
-        #     gpx_fd.write(track.as_gpx())
-
-    # def check_similarity_points(self):
-    #     # shows the similarity values of the tracks, and create matches.
-    #     file_data = self.db_get_similarity()
-    #     tracks = {}
-
-    #     for d in file_data:
-    #         fname = d["fname"]
-    #         fm = FileManager([fname])
-    #         try:
-    #             fm.load(optimize_points=self.config.points["optimize"],
-    #                     filter_points=self.config.points["filter"],
-    #                     only_load=True
-    #                     )
-                
-    #         except Exception as e:
-    #             self.logger.error("check_similarity: Can't load %s: %s" % (fname, e))
-    #             continue
-
-    #         print("loaded: %s" % fname)
-    #         track = fm.track()
-    #         add_similarity_helpers(track)
-    #         # create the elements for fast comparation.
-    #         tracks[str(track.hash)] = track
-        
-    #     print("done:",len(tracks))
-    #     # check each track with the others. calculate the similarity values
-    #     # then classify the things ordered by similarity.
-    #     result = []
-    #     print(len(tracks.keys()))
-    
-    #     for tx_key in tracks:
-    #         tx = tracks[tx_key]
-    #         tx.similar_tracks = [tx.hash]
-    #         # create a point cache
-    #         print("-> %s %s" % (tx.hash,tx.fname))
-    #         for ty_key in tracks:
-    #             ty = tracks[ty_key]
-    #             print("\t*%s %s" % (ty.hash,ty.fname))
-    #             if tx.hash == ty.hash:
-    #                 # same track, skip
-    #                 continue
-                
-    #             if not ty.hash in tx.similar_tracks:
-    #                 #if same_track(tx, ty, trk1_cache=track1_cache):
-    #                 if same_track(tx, ty, use_cache=True):
-    #                     tx.similar_tracks.append(ty.hash)
-    
-    #     ## done. Check all the data.
-    #     ## filter similar groups by matching then.
-    #     similar_tracks = []
-    #     for tx_key in tracks:
-    #         tracks[tx_key].similar_tracks.sort()
-    #         if tracks[tx_key].similar_tracks not in similar_tracks:
-    #             similar_tracks.append(tracks[tx_key].similar_tracks)
-
-    #     for i in similar_tracks:
-    #         print(i)
-    #     self.db_save_similarity(similar_tracks)
-
-    def check_similarity_element(self, match_treshold=500.0):
-
-        def is_similar(image1, image2):
-            # print(image1.shape)
-            # print(image2.shape)
-            # print(image1)
-            # print(image2)
-            s = np.bitwise_xor(image1,image2).any()
-            return image1.shape == image2.shape and not(np.bitwise_xor(image1,image2).any())
-        
-        def difference(image1, image2):
-            diff = image1 - image2
-            if np.all(diff == 0):
-                return False
-            else:
-                img = Image.fromarray(np.uint8(diff)).convert('L')
-                img.save("diff.png","png")
-                return True
-
-            im1 = Image.fromarray(np.uint8(image1)).convert('L')
-            im2 = Image.fromarray(np.uint8(image2)).convert('L')
-            diff = ImageChops.difference(im1, im2)
-            diff.save("diff.png","png")
-            r = diff.getbbox()
-            print("getbox", r)
-            if r:
-                return True
-            else:
-                return False
-        
-
-        def mse(image1, image2):
-            # the 'Mean Squared Error' between the two images is the
-            # sum of the squared difference between the two images;
-            # NOTE: the two images must have the same dimension
-            err = np.sum((image1.astype("float") - image2.astype("float")) ** 2)
-            err /= float(image1.shape[0] * image1.shape[1])
-            # return the MSE, the lower the error, the more "similar"
-            # the two images are
-            return err            
-
-        # shows the similarity values of the tracks, and create matches.
-        # based on sim files (similarity files using distance)
-        file_data = self.db_get_similarity()
-        tracks = {}
-
-        for d in file_data:
-            fname = d["fname"]
-            hash = d["hash"]
-            
-            t_center = C(latitude=d['middle_lat'],longitude=d['middle_long'],elevation=d['middle_elev'])
-            t_len= d['length_2d']
-            metadata = C(center=t_center, length=t_len)
-
-            # XXX
-            target_png = "%s.png" % self.sim_previews.map_object(hash)
-            if not os.path.exists(target_png):
-                self.logger.error("check_similarity: Can't load %s: %s" % (fname, target_png))
-                continue
-
-            #data = Image.open(target) # open colour image
-            #data = data.convert('L')
-            data = cv2.imread(target_png, cv2.IMREAD_GRAYSCALE) #cv2.COLOR_BGR2GRAY, ,cv2.COLOR_BGR2GRAY
-            #cv2.imshow("", data)
-            #cv2.waitKey(100)
-            points = cv2.findNonZero(data)
-
-        
-
-            #data = cv2.imread( target, cv2.IMREAD_GRAYSCALE )
-            print("loaded: %s" % target_png)
-            # create the elements for fast comparation.
-            tracks[str(hash)] = C(similar_tracks=[],  points=points, hash=hash, fname=fname, 
-                                  target=target_png, metadata=metadata)
-        
-        print("done:",len(tracks))
-        # check each track with the others. calculate the similarity values
-        # then classify the things ordered by similarity.
-        result = []
-        distance_manager = cv2.createHausdorffDistanceExtractor()
-
-        for tx_key in tracks:
-            tx = tracks[tx_key]
-            tx.similar_tracks = [tx.hash]
-            # create a point cache
-            for ty_key in tracks:
-                ty = tracks[ty_key]
-                
-                # this skip the same track, due they have 
-                # the same hash.
-                if not ty.hash in tx.similar_tracks:
-                    #mse_val = mse(tx.img, ty.img)
-                    #is_sim = is_similar(tx.img, ty.img)
-
-                    geo_d = distancePoints(tx.metadata.center, ty.metadata.center)
-                    length_d = math.fabs(tx.metadata.length - ty.metadata.length)
-                    hausdor_d = 0.0
-
-                    # fix the treshold here based on empirically works.
-                    if geo_d < 500.0 and length_d < 500.0:
-                        hausdor_d = distance_manager.computeDistance(tx.points, ty.points)
-                    
-                        # print("\t-> %s %s" % (tx.target,tx.fname))
-                        # print("\t*  %s %s" % (ty.target,ty.fname))
-                        # print("\t: hau_d %3.2f" % hausdor_d)
-                        # print("\t: geo_d %3.2f" % geo_d)
-                        # print("\t: len_d %3.2f" % length_d)
-
-                        # use < 2 approx with thigh values
-                        # maybe must be proportional on length of track...
-                        if hausdor_d < 5.0:
-                        #if hausdor_d <2.0 and geo_d < 100.0 and math.fabs(length_d) <= 100:
-                            tx.similar_tracks.append(ty.hash)
-                            print("\t-> %s %s" % (tx.target,tx.fname))
-                            print("\t*  %s %s" % (ty.target,ty.fname))
-                            print("\t: hau_d %3.2f" % hausdor_d)
-                            print("\t: geo_d %3.2f" % geo_d)
-                            print("\t: len_d %3.2f" % length_d)
-        
-        ## done. Check all the data.
-        ## filter similar groups by matching then.
-        similar_tracks = []
-        for tx_key in tracks:
-            tracks[tx_key].similar_tracks.sort()
-            if tracks[tx_key].similar_tracks not in similar_tracks:
-                similar_tracks.append(tracks[tx_key].similar_tracks)
-
-        for i in similar_tracks:
-            print(i)
-        self.db_save_similarity(similar_tracks)
-
-    # WIP. use group instead tracks
     def check_similarity(self, threshold={ 
                     'distance': 500.0,
                     'length': 500.0,
@@ -512,12 +319,14 @@ class Manager:
 
         # shows the similarity values of the tracks, and create matches.
         # based on sim files (similarity files using distance)
-        file_data = self.db_get_similarity(trackids)
+        file_data,groups = self.db_get_similarity(trackids)
+        print(groups)
+
         tracks = {}
-        groups = []
+        
         
         # testing
-        limit_load = None
+        limit_load = 100
 
         for d in file_data:
             fname = d["fname"]
@@ -636,9 +445,47 @@ class Manager:
         self.logger.info("file loaded %s" % trk_data['fname'])
         return fm.track()
     
-    #ca
+    def delete_track(self, track):
+        target_fname = self.track_previews.map_object(track['hash'], create_dirs=True, relative=True)
+        target_fname_abs = self.track_previews.map_object(track['hash'])
+        target_sim = self.sim_previews.map_object(track['hash'], create_dirs=True)
+        geojson_fname_abs = self.geojson_previews.map_object(track['hash'],create_dirs=True)
+
+        track_preview_tb = "%s_tb.png" % target_fname
+        
+        elev_profile_fname_thumb = "%s_elevation_tb.png" % target_fname_abs
+        sim_tgt = "%s.png" % target_sim
+        geojson_fname = "%s.geojson" % geojson_fname_abs
+
+        for i in [ track['preview'], 
+                   track['preview_elevation'],
+                   track_preview_tb, 
+                   elev_profile_fname_thumb, 
+                   sim_tgt, 
+                   geojson_fname]:
+            if os.path.exists(i):
+                os.remove(i)
+            
+        self.db_delete_track(track['id'])
+
+
+
+    #
     # database methods
     #
+        
+    def db_delete_track(self, id):
+
+        sql1 = "delete from tracks where id = ?"
+        sql2 = "delete from TRACK_IN_PLACES where id_track = ?"
+        sql3 = "delete from SIMILAR_TRACKS where id_track = ?"
+        cursor = self.db.cursor()
+        for sql in [ sql1, sql2, sql3 ]:
+            cursor.execute(sql, (id,))
+        self.db.commit()
+        cursor.close()
+    
+
     def db_get_tracks(self):
         sql = "select * from tracks"
         cursor = self.db.cursor()
@@ -723,26 +570,6 @@ class Manager:
             return False
         return data["id"]
     
-    def db_save_similarity__old(self, data):
-        sql = "delete from similar_tracks"
-        cursor = self.db.cursor()
-        cursor.execute(sql)
-        self.db.commit()
-
-        sql = "insert into similar_tracks(id, hash_track, id_track) values (?, ?, ?)"
-        sql2 = "select id from tracks where hash = ?"
-    
-        for i in range(len(data)):
-            for j in data[i]:
-                cursor2 = self.db.cursor()
-                cursor2.execute(sql2,(j,))
-                track_id = cursor2.fetchone()["id"]
-                cursor2.close()
-                cursor.execute(sql, (i, j, track_id,))  
-        
-        self.db.commit()
-        cursor.close()
-
     def db_save_similarity(self, groups):
         sql = "delete from similar_tracks"
         cursor = self.db.cursor()
@@ -764,9 +591,27 @@ class Manager:
         self.db.commit()
         cursor.close()
 
+    def db_get_similarity_groups(self):
+        groups_t = {}
+       
+        sql = "select * from similar_tracks"
+        cursor = self.db.cursor()
+        cursor.execute(sql)
+        data = cursor.fetchall()
+        groups_data = map(lambda x: dict(x), data)
+        cursor.close()
+        
+        for g in groups_data:
+            if g['id'] in groups_t.keys():
+                groups_t[g['id']].append(g['hash_track'])
+            else:
+                groups_t[g['id']] = [ g['hash_track'] ]
+  
+        return list(groups_t.values())
 
 
     def db_get_similarity(self, trackids = []):
+
         sql = "select id,hash,fname,middle_lat,middle_long,middle_elev,length_2d from tracks"
         if trackids and len(trackids) > 0:
             tids = ",".join(trackids)
@@ -775,9 +620,30 @@ class Manager:
         cursor = self.db.cursor()
         cursor.execute(sql)
         data = cursor.fetchall()
-        track_data = map(lambda x: dict(x), data)
         cursor.close()
-        return list(track_data)
+        track_data = map(lambda x: dict(x), data)
+        track_data = list(track_data)
+        
+
+        groups = self.db_get_similarity_groups()
+        # for elements in group, add to track data the required elements.
+        for g in groups:
+            key = g['0']
+            found = False
+            for t in track_data:
+                if t["hash"] == key:
+                    found = True
+                    break
+            if not found:
+                sql = "select id,hash,fname,middle_lat,middle_long,middle_elev,length_2d from tracks where hash = ?"
+                cursor = self.db.cursor()
+                cursor.execute(sql,(key,))
+                data = cursor.fetchone()
+                cursor.close()
+                track_data.append(data)
+                print("adding %s" % key)
+
+        return track_data, groups
     
         # sql = "select id,hash_track from similar_tracks"
         # cursor.execute(sql)
