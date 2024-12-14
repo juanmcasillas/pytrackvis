@@ -320,13 +320,13 @@ class Manager:
         # shows the similarity values of the tracks, and create matches.
         # based on sim files (similarity files using distance)
         file_data,groups = self.db_get_similarity(trackids)
-        print(groups)
+        #print(groups)
 
         tracks = {}
         
         
         # testing
-        limit_load = 100
+        limit_load = None
 
         for d in file_data:
             fname = d["fname"]
@@ -353,7 +353,7 @@ class Manager:
             print("loaded: %s" % target_png)
             # create the elements for fast comparation.
             tracks[str(hash)] = C(similar_tracks=[],  points=points, hash=hash, fname=fname, 
-                                  target=target_png, metadata=metadata)
+                                  target=target_png, metadata=metadata, previous_checked=d['previous_checked'])
         
             if limit_load is not None:
                 limit_load -= 1
@@ -376,6 +376,9 @@ class Manager:
             modify = False
             for tx_key in tracks:
                 tx = tracks[tx_key]
+                if tx.previous_checked:
+                    continue
+
                 found = False
                 for group in groups:
                     if tx.hash in group and len(group) == 1:
@@ -419,8 +422,10 @@ class Manager:
             print("-" * 80)
             print(g)
             for i in g:
-                t = tracks[i]
-                print(t.hash, t.fname)
+                #t = tracks[i]
+                #print(t.hash, t.fname)
+                # crash because we only load the first element in the optimized (import) mode
+                print(i)
         self.db_save_similarity(groups)
 
 
@@ -611,8 +616,10 @@ class Manager:
 
 
     def db_get_similarity(self, trackids = []):
-
-        sql = "select id,hash,fname,middle_lat,middle_long,middle_elev,length_2d from tracks"
+        # add this attribute previous_checked to speed up the 
+        # processing, so check only the tracks
+        # in the array.
+        sql = "select id,hash,fname,middle_lat,middle_long,middle_elev,length_2d, false as previous_checked from tracks"
         if trackids and len(trackids) > 0:
             tids = ",".join(trackids)
             sql += " where id in (%s)" % tids
@@ -621,51 +628,34 @@ class Manager:
         cursor.execute(sql)
         data = cursor.fetchall()
         cursor.close()
+
         track_data = map(lambda x: dict(x), data)
         track_data = list(track_data)
-        
+       
+
 
         groups = self.db_get_similarity_groups()
         # for elements in group, add to track data the required elements.
         for g in groups:
-            key = g['0']
+            key = g[0]
             found = False
             for t in track_data:
                 if t["hash"] == key:
                     found = True
                     break
             if not found:
-                sql = "select id,hash,fname,middle_lat,middle_long,middle_elev,length_2d from tracks where hash = ?"
+                # add this attribute previous_checked to speed up the 
+                # processing, so check only the tracks
+                # in the array.
+                sql = "select id,hash,fname,middle_lat,middle_long,middle_elev,length_2d, true as previous_checked from tracks where hash = ?"
                 cursor = self.db.cursor()
                 cursor.execute(sql,(key,))
                 data = cursor.fetchone()
                 cursor.close()
                 track_data.append(data)
-                print("adding %s" % key)
+                # print("*** adding %s" % key)
 
         return track_data, groups
-    
-        # sql = "select id,hash_track from similar_tracks"
-        # cursor.execute(sql)
-        # data = cursor.fetchall()
-        # cursor.close()
-        # # build the array
-        # data = map(lambda x: dict(x), data)
-        
-        # similar_data = {}
-        # for d in data:
-        #     if d['id'] not in similar_data.keys():
-        #         similar_data[d['id']] = [ d['hash_track'] ]
-        #     else:
-        #         similar_data[d['id']].append(d['hash_track'])
-
-        # # [
-        # #     [-4733961121561410647, 2604169270486981572]
-        # #     [-7144163367426839845]
-        # #     [-1444645076578622331]
-        # # ]
-        # return track_data, list(similar_data.values())
-
 
 
     def db_update_track_field(self, field_name, track_id, field_value):
