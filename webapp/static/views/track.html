@@ -51,10 +51,9 @@
 
             {% if track.similar|length >= 1 %}  
                 <div>
-                <h6>Similar tracks</h6>
-                {% for similar in track.similar %}  
-                        <li><a href="/tracks/view?id={{similar.id}}">{{similar.name}} (id:{{similar.id}})</a>
-                {% endfor %}
+                <h6><a class="similar-track-link" 
+                       href="/tracks/list?query=similar {{track.id}}">Similar Tracks ({{track.similar|length}})</a>
+                    </h6>
                 </div>
             {% endif %}
 

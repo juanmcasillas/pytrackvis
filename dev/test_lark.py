@@ -11,13 +11,17 @@ from pytrackvis.qparser import QueryParser
 
 if __name__ == "__main__":
 
-    parser = QueryParser(get_attr="id", limit=10, offset=0, verbose=True)
+    parser = QueryParser(get_attr="id", limit=0, offset=0, verbose=True)
 
     sentences = []
 
-    sentences.append('all')
-    sentences.append('all order by stamp desc limit 10')
-    sentences.append('* order by stamp desc limit 10')
+    # sentences.append('all')
+    # sentences.append('all order by stamp desc limit 10')
+    # sentences.append('* order by stamp desc limit 10')
+    # sentences.append('similar 2420')
+    #sentences.append('similar 2420 order by stamp desc limit 10')
+    # sentences.append('similar 2420 order by stamp desc')
+    sentences.append('similar 2420 limit 1')
     # sentences.append('title "navas del rey"')
     # sentences.append("title 'navas del rey'")
     # sentences.append('sport \'BIKE\'')

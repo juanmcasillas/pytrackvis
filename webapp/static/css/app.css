@@ -263,3 +263,18 @@ a.tool-item:hover  {
     background-color: white;
 }
 
+a.similar-track-link:visited  {
+    color: black;
+    font-size: small;
+    text-decoration: none;
+}
+
+ a.similar-track-link:link  {
+    color: black;
+    font-size: small;
+    text-decoration: none;
+}
+
+a.similar-track-link:hover  {
+	text-decoration:underline;
+}

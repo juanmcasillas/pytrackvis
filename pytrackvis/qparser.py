@@ -223,10 +223,21 @@ class SQLQueryTransformer(Transformer):
     def all_expression(self, items):
         return "1=1"
 
+   
+
     def select(self, items):
 
+        ptree = items[0]
 
-        s = "select %s from tracks where %s" % (self.get, items[0])
+        if isinstance(ptree,tree.Tree) and ptree.data == "similar_expression":
+            s = """select * from tracks where id in (
+	                  select id_track from SIMILAR_TRACKS where id in (
+		                select id from SIMILAR_TRACKS where id_track = %s
+	                  ) 
+                   ) and id != %s""" % (ptree.children[0],ptree.children[0])
+        else:
+            s = "select %s from tracks where %s" % (self.get, items[0])
+    
         items.pop(0)
         if items[0] is None:
             items.pop(0)
@@ -258,6 +269,7 @@ class SQLQueryTransformer(Transformer):
                 if i is not None:
                     s += " %s" % i
 
+      
         return s
 
 
@@ -271,11 +283,14 @@ class QueryParser:
     grammar = """
 
     select                  : all_sentence [ "ORDER"i "BY"i (order_by_expr ",")*  order_by_expr] [ "LIMIT"i limit_count [ "OFFSET"i skip_rows ] ]
+                            | similar_sentence [ "ORDER"i "BY"i (order_by_expr ",")*  order_by_expr] [ "LIMIT"i limit_count [ "OFFSET"i skip_rows ] ]
                             | bool_expression [ "ORDER"i "BY"i (order_by_expr ",")*  order_by_expr] [ "LIMIT"i limit_count [ "OFFSET"i skip_rows ] ]
 
     all_sentence            : "ALL"i -> all_expression
                             | "*" -> all_expression
     
+    similar_sentence        : "SIMILAR"i integer_  -> similar_expression
+                            
     order_by_expr           : order -> order_by_expression
 
     order                   : (name) ["ASC"i] -> order_asc
