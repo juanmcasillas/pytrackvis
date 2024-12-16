@@ -145,11 +145,17 @@ CREATE TABLE if NOT exists `TRACKS` (
 
 CREATE TABLE if NOT exists  `PLACES` (
     `id`           INTEGER PRIMARY KEY AUTOINCREMENT,
+    `hash`         TEXT DEFAULT "",
     `name`         TEXT DEFAULT "",
+    `searchname`   TEXT DEFAULT "",
+    `link`         TEXT DEFAULT "",
     `latitude`     REAL DEFAULT 0.0,
     `longitude`    REAL DEFAULT 0.0,
     `elevation`    REAL DEFAULT 0.0,
-    `description`  TEXT DEFAULT NULL
+    `description`  TEXT DEFAULT NULL,
+    `kind`         TEXT DEFAULT NULL,
+    `radius`       REAL DEFAULT 25.0,
+    `stamp`        INTEGER DEFAULT 0
 );
 
 CREATE TABLE if NOT exists  `TRACK_IN_PLACES` (

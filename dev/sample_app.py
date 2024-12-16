@@ -11,7 +11,7 @@
 # //
 # /////////////////////////////////////////////////////////////////////////////
 
-from filemanager import *
+from trackmanager import *
 
 
 if __name__ == "__main__":
@@ -20,7 +20,7 @@ if __name__ == "__main__":
     parser.add_argument("input_file", help="file to read. Can be .fit or .gpxfile")
     args = parser.parse_args()
 
-    fm = FileManager(args.input_file, args.verbose)
+    fm = TrackManager(args.input_file, args.verbose)
     fm.load()
     # print(stats.dataframe().transpose().to_html(
     #     justify='center', header=False, index=True, index_names=False, 

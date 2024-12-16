@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # /////////////////////////////////////////////////////////////////////////////
 # //
-# // filemanager.py 
+# // trackmanager.py 
 # //
 # // load the file from FIT or GPX source
 # //
@@ -27,13 +27,13 @@ import sys
 import configparser
 import random
 
-from .filemanager import FileManager
+from .trackmanager import TrackManager
 from .track import Track, TrackPointFit, TrackPointGPX
 from .appenv import AppEnv
 
 
 
-class FileManagerWithMaps(FileManager):
+class TrackManagerWithMaps(TrackManager):
     FIT_FILE = ".fit"
     GPX_FILE = ".gpx"
     FILE_EXT = [ FIT_FILE, GPX_FILE ]

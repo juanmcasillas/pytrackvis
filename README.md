@@ -23,7 +23,9 @@ A simple Python GPX and FIT track file format visualization app on 2D / 3D Map u
 * [bootstrap-flask](https://bootstrap-flask.readthedocs.io/en/stable/) Bootstrap-Flask is a collection of Jinja macros for Bootstrap and Flask. 
 
 * [flask_socketio](https://flask-socketio.readthedocs.io/en/latest/) Gives Flask applications access to low latency bi-directional communications between the clients and the server. 
-* [flask-caching](https://flask-caching.readthedocs.io/en/latest/) extension to Flask that adds caching support for various backends to any Flask application
+* [flask-caching](https://fastkml.readthedocs.io/en/latest/index.html) a KML parser
+* [fastkml]()
+
 
 
 
@@ -37,7 +39,7 @@ These are for now not used.
 * Install the modules with 
 ```
 python -m pip install gpxpy fitdecode shapely jinja2==3.0 Flask==3.1.0 app_config itsdangerous==2.0.1 \
-            bootstrap-flask flask_socketio Flask-Caching
+            bootstrap-flask flask_socketio Flask-Caching fastkml
 ```
 
 ## Info

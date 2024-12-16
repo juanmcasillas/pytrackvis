@@ -25,6 +25,7 @@ import os.path
 from .helpers import bearing, distancePoints, module, C, remove_accents
 from .stats import Stats, get_fval
 from .optimizer import GPXOptimizer
+from .geojson import GeoJSON
 
 class UnitConverter:
     def __init__(self):
@@ -147,43 +148,21 @@ class TrackPoint:
         d['temperature']   =self.temperature
         return d
 
-    def geojson_feature_collection(self):
-        o = {
-             "type": "geojson",
-             "data": {
-                "type": "FeatureCollection",
-                "features": [ ]
-             }
-        }
-        return o
+    
 
     def as_geojson_point(self):
-        o = self.geojson_feature_collection()
-        # add it to the geojson
-        o["data"]["features"].append(self.as_geojson_point_feature())
+        o = GeoJSON.geojson_point( [ self.latitude, self.longitude,self.altitude], 
+                                  {
+                                    "timestamp": self.timestamp,
+                                    "speed": self.speed,
+                                    "power": self.power,
+                                    "grade": self.grade,
+                                    "heart_rate": self.heart_rate,
+                                    "cadence": self.cadence,
+                                    "temperature": self.temperature,
+                                  })
         return o
 
-
-    def as_geojson_point_feature(self):
-        o = {
-            "type": "Feature",
-            "geometry": {
-                "type": "Point",
-                    "coordinates": [self.latitude,
-                                    self.longitude,
-                                    self.altitude]
-                },
-                "properties": {
-                    "timestamp": self.timestamp,
-                    "speed": self.speed,
-                    "power": self.power,
-                    "grade": self.grade,
-                    "heart_rate": self.heart_rate,
-                    "cadence": self.cadence,
-                    "temperature": self.temperature,
-                }
-        }
-        return o
 
     def pos(self):
         return (self.longitude, self.latitude, self.altitude)
@@ -478,37 +457,21 @@ class Track:
         return self._gpx.to_xml()
     
     def as_geojson_line(self):
-
-        o = {}
-        o["type"] = "geojson"
-        o["data"] = {
-                "type": "Feature",
-                "properties": { 'series': {} },
-                "geometry": {
-                    "type": "LineString",
-                    "coordinates": [ ]
-                }
-        }
-        #
-        # use the processed data, no the raw one loaded
-        
+        pl = []
         for p in self.points:
-            o["data"]["geometry"]["coordinates"].append([
-                p.longitude,
-                p.latitude,
-                p.elevation]
-            )
+            pl.append( [p.longitude, p.latitude,p.elevation] )
+
+        o = GeoJSON.geojson_line(pl, {'series': {}})
         # copy extensions, if found
         for ext in self._gpx_extensions.keys():
             o["data"]["properties"]["series"][ext] = copy.copy(self._gpx_extensions[ext])
-            
-            
         return o
 
     def as_geojson_points(self, points):
-        col = TrackPoint().geojson_feature_collection()
-        for p in points:
-            col["data"]["features"].append(p.as_geojson_point_feature())
+        pl = []
+        for p in self.points:
+            pl.append( GeoJSON.point_feature([p.longitude, p.latitude,p.elevation] ))
+        col = GeoJSON.feature_collection(pl)
         return col
 
     def track_center(self, as_point=False):

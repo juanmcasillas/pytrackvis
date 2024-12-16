@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # /////////////////////////////////////////////////////////////////////////////
 # //
-# // filemanager.py 
+# // trackmanager.py 
 # //
 # // load the file from FIT or GPX source
 # //
@@ -36,7 +36,7 @@ from .track import Track, TrackPointFit, TrackPointGPX
 from .appenv import AppEnv
 
 
-class FileManager:
+class TrackManager:
     FIT_FILE = ".fit"
     GPX_FILE = ".gpx"
     FILE_EXT = [ FIT_FILE, GPX_FILE ]

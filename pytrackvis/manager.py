@@ -32,8 +32,11 @@ from pytrackvis.mapper import OSMMapper
 from pytrackvis.helpers import C, set_proxy, manhattan_point, same_track
 from pytrackvis.helpers import glob_filelist, add_similarity_helpers, del_similarity_helpers
 from pytrackvis.helpers import CacheManager, distancePoints
+from pytrackvis.geojson import GeoJSON
 from pytrackvis.track import Track
-from pytrackvis.filemanager import FileManager
+from pytrackvis.place import Place
+from pytrackvis.trackmanager import TrackManager
+from pytrackvis.placemanager import PlaceManager
 from pytrackvis.mapreview import MapPreviewManager
 from pytrackvis.dbstats import GetStatsFromDB
 from pytrackvis.qparser import QueryParser
@@ -128,7 +131,6 @@ class Manager:
         return GetStatsFromDB(self.db)
 
 
-
     def create_database(self):
         """create the database. Removes the directories in the preview
         """
@@ -167,7 +169,55 @@ class Manager:
         os.makedirs(self.config.geojson_preview["geojson_previews_dir"],exist_ok=True)
 
 
-    def import_files(self, files):
+    def get_places(self):
+        return self.db_get_places()
+
+    def get_places_as_geojson(self):
+
+        ret = GeoJSON.feature_collection([])
+        dbplaces = self.db_get_places()
+        for place in dbplaces:
+            ret['data']['features'].append( Place().from_dict(place).as_geojson_point() )
+        
+        return ret
+
+
+
+
+
+    def import_places(self, files):
+        """import the files into the database if they are not inserted. LAT/LON/ELEV position as hash
+
+        Args:
+            files (array): an array with glob paths, or files. Example:
+            ['.\data\Cartography\**\*.gpx', '.\data\fit\*.kml', 'file.gpx']
+        """
+
+        files = glob_filelist(files)
+        for fname in files:
+            pm = PlaceManager([fname])
+            try:
+                places = pm.load()
+            except Exception as e:
+                s = traceback.format_exc()
+                self.logger.exception(s)
+                self.logger.error("import_places: Can't load %s: %s" % (fname, e))
+                continue
+
+            counter = 0
+            for place in places:
+                if not self.db_place_exists(place.hash):
+                    self.db_store_place(place)
+                    counter += 1
+                else:
+                    self.logger.warning("import_places: can't insert place %s (%s), already exists in DB" % (place.name, place.hash))
+
+            self.logger.warning("import_places: Inserted %d places from %s" % (counter, fname))
+
+    
+    
+    
+    def import_tracks(self, files):
         """import the files into the database if they are not inserted. Use the hash value
            as discriminator (id)
 
@@ -177,8 +227,8 @@ class Manager:
             ['.\data\Cartography\**\*.fit', '.\data\fit\*.fit', 'file.gpx']
         """
 
-        #  .\app.py import_files .\data\Cartography\**\*.fit # All files
-        #  .\app.py import_files .\data\fit\*.fit # ony files in this dir
+        #  .\app.py import_tracks .\data\Cartography\**\*.fit # All files
+        #  .\app.py import_tracks .\data\fit\*.fit # ony files in this dir
 
         files = glob_filelist(files)
         trackids = []
@@ -186,7 +236,7 @@ class Manager:
             track_id = self.db_track_exists(Track.calculate_hash(fname))
 
             if not track_id:
-                fm = FileManager([fname])
+                fm = TrackManager([fname])
                 try:
 
                     ret = fm.load(optimize_points=self.config.points["optimize"],
@@ -196,11 +246,11 @@ class Manager:
                 except Exception as e:
                     s = traceback.format_exc()
                     self.logger.exception(s)
-                    self.logger.error("import_files: Can't load %s: %s" % (fname, e))
+                    self.logger.error("import_tracks: Can't load %s: %s" % (fname, e))
                     continue
 
                 if ret is None:
-                    self.logger.error("import_files: Can't load %s: no points" % fname )
+                    self.logger.error("import_tracks: Can't load %s: no points" % fname )
                     continue
 
                 track = fm.track()
@@ -212,7 +262,7 @@ class Manager:
 
                 self.create_image_products(track)
                 track = self.db_store_track(track)
-                self.logger.info("file stored in db successfully %s (%d)" % (fname, track.id))
+                self.logger.info("file stored in db successfully %s (%d/%s)" % (fname, track.id, track.hash))
                 trackids.append(str(track.id))
 
 
@@ -231,7 +281,7 @@ class Manager:
         """
         files = glob_filelist(files)
         for fname in files:
-            fm = FileManager([fname])
+            fm = TrackManager([fname])
 
             try:
                 fm.load(optimize_points=False, filter_points=False )
@@ -313,8 +363,6 @@ class Manager:
                     'hausdorff': 5.0 },
                     trackids = []
                 ):
-
-
 
         # shows the similarity values of the tracks, and create matches.
         # based on sim files (similarity files using distance)
@@ -436,7 +484,7 @@ class Manager:
 
     def get_track(self, id):
         trk_data = self.db_get_track(id)
-        fm = FileManager([trk_data['fname']])
+        fm = TrackManager([trk_data['fname']])
 
         try:
             fm.load(optimize_points=self.config.points["optimize"],
@@ -616,6 +664,28 @@ class Manager:
         if not data:
             return False
         return data["id"]
+    
+    def db_place_exists_id(self, place_id):
+        "check if the place is loaded in the database, using the hash"
+        sql = "select id,hash from places where id = ?"
+        cursor = self.db.cursor()
+        cursor.execute(sql, (place_id,))
+        data = cursor.fetchone()
+        cursor.close()
+        if not data:
+            return False
+        return data["hash"]
+    
+    def db_place_exists(self, place_hash):
+        "check if the place is loaded in the database, using the hash"
+        sql = "select id,hash from places where hash = ?"
+        cursor = self.db.cursor()
+        cursor.execute(sql, (place_hash,))
+        data = cursor.fetchone()
+        cursor.close()
+        if not data:
+            return False
+        return data["id"]    
 
     def db_save_similarity(self, groups):
         sql = "delete from similar_tracks"
@@ -707,6 +777,15 @@ class Manager:
         self.db.commit()
         cursor.close()
 
+
+    def db_get_places(self):
+        sql = "select * from places"
+        cursor = self.db.cursor()
+        cursor.execute(sql)
+        data = cursor.fetchall()
+        data = map(lambda x: dict(x), data)
+        cursor.close()
+        return list(data)
 
     def db_store_track(self, track):
         sql = """
@@ -841,3 +920,28 @@ class Manager:
         self.db.commit()
         cursor.close()
         return track
+    
+    def db_store_place(self, place):
+        sql = """
+        insert into places(hash, name, searchname, link, 
+                           latitude, longitude, elevation, 
+                           description, 
+                           kind,
+                           radius,
+                           stamp
+                           )
+        values ( ?, ?, ?, ?, 
+                 ?, ?, ?, 
+                 ?, 
+                 ?, 
+                 ?,
+                 ? 
+            );
+        """
+
+        cursor = self.db.cursor()
+        cursor.execute(sql, place.as_tuple(db=True))
+        place.id = cursor.lastrowid
+        self.db.commit()
+        cursor.close()
+        return place    

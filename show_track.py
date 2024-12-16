@@ -12,7 +12,7 @@
 # //
 # /////////////////////////////////////////////////////////////////////////////
 
-from pytrackvis.filemanager_map import *
+from pytrackvis.placemanager import *
 from pytrackvis.appenv import *
 from pytrackvis.mapper import OSMMapper
 from pytrackvis.helpers import C, set_proxy,track_similarity, manhattan_point
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     AppEnv.config_set("verbose",args.verbose)
 
 
-    fm = FileManagerWithMaps(args.files)
+    fm = TrackManagerWithMaps(args.files)
     fm.load(optimize_points=True)
     # print(stats.dataframe().transpose().to_html(
     #     justify='center', header=False, index=True, index_names=False, 

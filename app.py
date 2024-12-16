@@ -27,11 +27,11 @@ if __name__ == "__main__":
     create_db_parser = subparsers.add_parser("create_db",help="creates the database")
     create_db_parser.set_defaults(command="create_db")
 
-    import_files_parser = subparsers.add_parser("import_files",
+    import_tracks_parser = subparsers.add_parser("import_tracks",
                                                help="Import files from different locations", 
                                                )
-    import_files_parser.set_defaults(command="import_files")
-    import_files_parser.add_argument("files",help="fit or gpx files", nargs='+')
+    import_tracks_parser.set_defaults(command="import_tracks")
+    import_tracks_parser.add_argument("files",help="fit or gpx files", nargs='+')
 
     similarity_parser = subparsers.add_parser("check_similarity",help="Computes similarity on the DB")
     similarity_parser.set_defaults(command="check_similarity")
@@ -45,6 +45,11 @@ if __name__ == "__main__":
     fix_time_parser.set_defaults(command="fix_time")
     fix_time_parser.add_argument("file",help="fit or gpx files")
 
+    import_places_parser = subparsers.add_parser("import_places",
+                                               help="Import places from different locations", 
+                                               )
+    import_places_parser.set_defaults(command="import_places")
+    import_places_parser.add_argument("files",help="kml or gpx files", nargs='+')
 
     args = parser.parse_args()
 
@@ -62,10 +67,10 @@ if __name__ == "__main__":
         manager.create_database()
         sys.exit(0)
 
-    if args.command == "import_files":
-        subargs = import_files_parser.parse_args()
+    if args.command == "import_tracks":
+        subargs = import_tracks_parser.parse_args()
         # remove the current command in the args.
-        manager.import_files(subargs.files[1:])
+        manager.import_tracks(subargs.files[1:])
         sys.exit(0)
 
     if args.command == "check_similarity":
@@ -77,8 +82,15 @@ if __name__ == "__main__":
         sys.exit(0)
 
     if args.command == "fix_time":
-        subargs = import_files_parser.parse_args()
+        subargs = import_tracks_parser.parse_args()
         manager.fix_time(subargs.files[1:])
         sys.exit(0)
+
+    if args.command == "import_places":
+        subargs = import_tracks_parser.parse_args()
+        # remove the current command in the args.
+        manager.import_places(subargs.files[1:])
+        sys.exit(0)
+
 
     manager.shutdown()
