@@ -278,3 +278,20 @@ a.similar-track-link:visited  {
 a.similar-track-link:hover  {
 	text-decoration:underline;
 }
+
+
+a.pagination-link:visited  {
+    color: darkgrey;
+    font-size: 0.8em;
+    text-decoration: none;
+}
+
+ a.pagination-link:link  {
+    color: darkgrey;
+    font-size: 0.8em;
+    text-decoration: none;
+}
+
+a.pagination-link:hover  {
+	text-decoration:underline;
+}

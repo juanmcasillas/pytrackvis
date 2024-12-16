@@ -25,21 +25,21 @@ class SQLQueryTransformer(Transformer):
         else:
             r = attr
         return r
-    
+
     def title_expression(self, items):
-        
+
         data = re.sub(r"[\"']",'',items[0])
         return("searchname like '%%%s%%'"  % data)
 
     def sport_expression(self, items):
         return("kind = %s" % items[0])
-    
+
     def equipment_expression(self, items):
         return("equipment = %s" % items[0])
 
     def device_expression(self, items):
         return("device = %s" % items[0])
-            
+
     def custom_expression(self, items):
         return("%s" % items[0])
 
@@ -50,52 +50,52 @@ class SQLQueryTransformer(Transformer):
         return items[0]
 
     def date_func(self, items):
-        
+
         if len(items) >= 2:
             args = " ,".join(items[1:])
             return "date(%s,%s)" % (items[0],args)
-     
+
         return "date('%s')" % items[0]
 
     def datetime_func(self, items):
-        
+
         if len(items) >= 3:
             args = " ,".join(items[2:])
             return "datetime('%s %s',%s)" % (items[0],items[1], args)
-     
+
         return "datetime('%s %s')" % (items[0],items[1])
 
 
     def trackdate_func(self, items):
-        
+
         if len(items) > 0:
             args = " ,".join(items)
             return "date(stamp,'unixepoch',%s)" % args
-        return "date(stamp,'unixepoch')" 
-    
+        return "date(stamp,'unixepoch')"
+
     def tracktime_func(self, items):
-        
+
         if len(items) > 0:
             args = " ,".join(items)
             return "time(stamp,'unixepoch',%s)" % args
-        return "time(stamp,'unixepoch')" 
+        return "time(stamp,'unixepoch')"
 
     def trackdatetime_func(self, items):
-        
+
         if len(items) > 0:
             args = " ,".join(items)
             return "datetime(stamp,'unixepoch',%s)" % args
-        return "datetime(stamp,'unixepoch')" 
+        return "datetime(stamp,'unixepoch')"
 
     def time_func(self, items):
         if len(items) >= 2:
             args = " ,".join(items[1:])
             return "time(%s,%s)" % (items[0],args)
-         
+
         return "time(%s)" % items[0]
 
 
-     
+
 
 
     def date_today(self, items):
@@ -114,21 +114,21 @@ class SQLQueryTransformer(Transformer):
 
     def name(self, items):
         return items[0]
-    
+
     def date(self, items):
         # YYYY-DD-MM
         return "%s-%s-%s" % (items[0],items[1],items[2])
-    
+
     def time(self, items):
         # HH:MM;SS
         return "%s:%s:%s" % (items[0],items[1],items[2])
 
     def like(self, items):
         return "%s like %s" % (items[0], items[1])
-    
+
     def equals(self, items):
         return "%s = %s" % (items[0], items[1])
-    
+
     def not_equals(self, items):
         return "%s != %s" % (items[0], items[1])
 
@@ -137,7 +137,7 @@ class SQLQueryTransformer(Transformer):
 
     def less_than(self, items):
         return "%s < %s" % (items[0], items[1])
-    
+
     def greater_than_or_equal(self, items):
         return "%s >= %s" % (items[0], items[1])
 
@@ -155,15 +155,15 @@ class SQLQueryTransformer(Transformer):
 
     def comparison_type(self, items):
         return items[0]
-    
+
     def number_with_prefix(self, items):
         if len(items) == 1:
             return items[0]
         return float(items[0])*items[1]
-    
+
     def km_prefix(self, items):
         return 1000.0
-    
+
     def order_asc(self, items):
         return "%s ASC" % self._xlate(items[0])
 
@@ -181,7 +181,7 @@ class SQLQueryTransformer(Transformer):
 
     def comparison_type(self, items):
         return items[0]
-    
+
     def bool_parentheses(self, items):
         return items[0]
 
@@ -189,7 +189,7 @@ class SQLQueryTransformer(Transformer):
         return "%s or %s" % (items[0], items[1])
 
     def bool_and(self, items):
-        return "%s and %s" % (items[0], items[1])    
+        return "%s and %s" % (items[0], items[1])
 
     def column_name(self, items):
         # do some translations.
@@ -213,31 +213,37 @@ class SQLQueryTransformer(Transformer):
 
     def custom_sport(self, items):
         return "'%s'" % re.sub(r"[\"']",'',items[0].value)
-        
+
     def custom_device(self, items):
         return "'%s'" % re.sub(r"[\"']",'',items[0].value)
 
     def custom_equipment(self, items):
-        return "'%s'" % re.sub(r"[\"']",'',items[0].value)        
-    
+        return "'%s'" % re.sub(r"[\"']",'',items[0].value)
+
     def all_expression(self, items):
         return "1=1"
 
-   
+
 
     def select(self, items):
 
+        # custom query to get the similar tracks for one track
+        # remove the current track for the similar set, also.
         ptree = items[0]
-
         if isinstance(ptree,tree.Tree) and ptree.data == "similar_expression":
             s = """select * from tracks where id in (
 	                  select id_track from SIMILAR_TRACKS where id in (
 		                select id from SIMILAR_TRACKS where id_track = %s
-	                  ) 
+	                  )
                    ) and id != %s""" % (ptree.children[0],ptree.children[0])
+
+            #s = """
+            #    select T.* from TRACKS T, SIMILAR_TRACKS SM where T.id = SM.id_track and SM.id in (select id from SIMILAR_TRACKS where id_track=%s);
+            #"""
+
         else:
             s = "select %s from tracks where %s" % (self.get, items[0])
-    
+
         items.pop(0)
         if items[0] is None:
             items.pop(0)
@@ -249,12 +255,12 @@ class SQLQueryTransformer(Transformer):
                 if items[0].lower().endswith(" desc") or items[0].lower().endswith(" asc"):
                     order.append(items[0])
                     items.pop(0)
-                    if items[0] is None: 
+                    if items[0] is None:
                         break
                 else:
                     break
             order = "order by " + ", ".join(order)
-        
+
         s = "%s %s" % (s, order)
 
         # limit and offset
@@ -269,7 +275,7 @@ class SQLQueryTransformer(Transformer):
                 if i is not None:
                     s += " %s" % i
 
-      
+
         return s
 
 
@@ -288,9 +294,9 @@ class QueryParser:
 
     all_sentence            : "ALL"i -> all_expression
                             | "*" -> all_expression
-    
+
     similar_sentence        : "SIMILAR"i integer_  -> similar_expression
-                            
+
     order_by_expr           : order -> order_by_expression
 
     order                   : (name) ["ASC"i] -> order_asc
@@ -299,7 +305,7 @@ class QueryParser:
     limit_count             : integer_ -> limit_count
     skip_rows               : integer_
 
-    custom_expression       : title_expression 
+    custom_expression       : title_expression
                             | sport_expression
                             | equipment_expression
                             | device_expression
@@ -318,15 +324,15 @@ class QueryParser:
                             | "(" bool_expression "AND"i comparison_type ")" -> bool_and
                             | "(" bool_expression "OR"i comparison_type ")" -> bool_or
 
-    comparison_type         : equals 
+    comparison_type         : equals
                             | like
-                            | not_equals 
-                            | greater_than 
-                            | less_than 
+                            | not_equals
+                            | greater_than
+                            | less_than
                             | greater_than_or_equal
-                            | less_than_or_equal 
-                            | between 
-                            | is_null 
+                            | less_than_or_equal
+                            | between
+                            | is_null
                             | is_not_null
 
     equals                  : expression "=" expression
@@ -351,7 +357,7 @@ class QueryParser:
                             | "DATE"i "(" (name| "'" date "'") ("," date_param )*  ")" -> date_func
                             | "TIME"i "(" (name| "'" time "'") ("," date_param )*  ")" -> time_func
                             | "DATETIME"i "(" (name| "'" date time "'") ("," date_param )*  ")" -> datetime_func
-                            
+
     ?literal                : boolean -> bool
                             | number_expr -> number
                             | /'([^']|\s)+'|''/ -> string
@@ -401,8 +407,8 @@ class QueryParser:
     HOURS                   : /[0-9]{2}/
     MINUTES                 : /[0-9]{2}/
     SECONDS                 : /[0-9]{2}/
-    name                    : CNAME 
-                           
+    name                    : CNAME
+
 
     %import common.ESCAPED_STRING
     %import common.CNAME
@@ -412,7 +418,7 @@ class QueryParser:
     """
 
     def __init__(self, get_attr="id", limit=None, offset=None, verbose=False):
-        
+
         self.get_attr = get_attr
         self.limit = limit
         self.offset = offset
@@ -429,24 +435,24 @@ class QueryParser:
             'name': 'searchname',
             'sport': 'kind',
         }
-        
+
         self.parser = Lark(self.grammar, strict=True, start='select', ambiguity='explicit')
-        self.transformer = SQLQueryTransformer(get=self.get_attr, 
-                                               limit=self.limit, 
-                                               offset=offset, 
+        self.transformer = SQLQueryTransformer(get=self.get_attr,
+                                               limit=self.limit,
+                                               offset=offset,
                                                xlate_table=self.xlate_table)
-       
+
 
     def run(self, query):
         try:
-           
+
             data = self.parser.parse(query)
             if self.verbose:
                 print(data.pretty())
             result = self.transformer.transform(data)
         except Exception as e:
             return ( False, e)
-    
+
         return (True, result)
 
 
@@ -468,7 +474,7 @@ if __name__ == "__main__":
     # sentences.append('sport BIKE')
     # sentences.append('sport RUN order by length')
     # sentences.append('device FENIX3 order by length')
-    
+
     # sentences.append('distance > 100 or kind = "run"')
     # sentences.append('distance between 100 and 200')
     # sentences.append('distance >= 100 or length_2d <= 100 or elevation is null')
@@ -483,10 +489,10 @@ if __name__ == "__main__":
     # sentences.append('this is an error')
 
     for s in sentences:
-    
+
         db = sqlite3.connect("../db/trackdb.db", check_same_thread=False)
         db.row_factory = sqlite3.Row
-    
+
         result, sql = parser.run(s)
         print("-" * 80)
         print(s)

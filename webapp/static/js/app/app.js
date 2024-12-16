@@ -110,7 +110,7 @@ function json_error(title,message) {
           })
 }
 
-function load_tracks(query) {
+function load_tracks(query, offset=0, limit=0) {
         
     if (query === undefined || query === '') {
         // console.log("using default query")
@@ -118,18 +118,19 @@ function load_tracks(query) {
         
     }
     
-    var postData = { 
-            query: query,
-        }; 
     //console.log(postData)
         // see @web_impl.route('/tracks/query', methods=['POST'])
     
     $.ajax({
         url: '/tracks/query',
         type: 'POST',
-        dataType: 'json',
-        data: JSON.stringify(postData),
-        contentType: 'application/json',
+        //dataType: 'json',
+        //data: JSON.stringify(postData),
+        // contentType: 'application/json',
+        data: { 'query': query, 
+                'offset': offset, 
+                'limit': limit 
+            },
         beforeSend: function (data) {
             $('#wait-spinning').css("visibility", "visible");
         },
@@ -143,8 +144,15 @@ function load_tracks(query) {
             //var block = document.getElementById('block-page')
             $('#wait-spinning').css("visibility", "hidden");
             $('#block-page').empty()
-            $('#track-counter').html(`${data.tracks.length} tracks found`)
-            var page = nunjucks.render('track.html', { tracks: data.tracks })
+            var total_msg = `${data.tracks.length}`
+            if (data.total_size != data.tracks.length) {
+                total_msg = `${data.tracks.length}/${data.total_size}`
+            }
+            var msg_s = ''
+            msg_s = (data.tracks.length > 1 ? 's': '')
+
+            $('#track-counter').html(`${total_msg} track${msg_s} found`)
+            var page = nunjucks.render('track.html', { tracks: data.tracks, pagination: data.pagination, query: data.query })
             $('#block-page').html(page);
         },
         fail: function (data) {

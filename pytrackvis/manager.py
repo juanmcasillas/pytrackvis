@@ -18,14 +18,13 @@ import sqlite3
 import configparser
 import sys
 import shutil
-import numpy as np
-from PIL import Image, ImageChops
-import cv2 
 import json
 import math
 import os.path
 import datetime
 import traceback
+import cv2
+import re
 
 from pytrackvis.appenv import *
 from pytrackvis.altitude import *
@@ -38,7 +37,7 @@ from pytrackvis.filemanager import FileManager
 from pytrackvis.mapreview import MapPreviewManager
 from pytrackvis.dbstats import GetStatsFromDB
 from pytrackvis.qparser import QueryParser
-
+from pytrackvis.timing import *
 class Manager:
     LOG_NAME = "PyTrackVis"
 
@@ -65,16 +64,16 @@ class Manager:
         self.configure_logger()
         self.configure_proxy()
         self.db_connect()
-        self.mappreview_manager = MapPreviewManager(self.config.map_preview, 
+        self.mappreview_manager = MapPreviewManager(self.config.map_preview,
                                                     cachedir=self.config.osm_cache["directory"],
                                                     debug=self.config.osm_cache["debug"])
-        self.mappreview_manager_thumb = MapPreviewManager(self.config.map_preview_thumb, 
+        self.mappreview_manager_thumb = MapPreviewManager(self.config.map_preview_thumb,
                                                     cachedir=self.config.osm_cache["directory"],
                                                     debug=self.config.osm_cache["debug"])
-        self.simpreview_manager = MapPreviewManager(self.config.sim_preview, 
+        self.simpreview_manager = MapPreviewManager(self.config.sim_preview,
                                                     cachedir=None,
                                                     debug=False)
-        
+
 
     def shutdown(self):
         """ends the execution, closes the database
@@ -91,10 +90,10 @@ class Manager:
             sys.exit(0)
         if put_env:
             os.environ["MAPTILER_KEY"] = tokens["TOKENS"]["MAPTILER_KEY"]
-        
+
         AppEnv.config_set(self.config.tokens["MAPTILER_KEY"],tokens["TOKENS"]["MAPTILER_KEY"])
         self.config.tokens["MAPTILER_KEY"] = tokens["TOKENS"]["MAPTILER_KEY"]
-        
+
         self.logger.info("MAPTILER_KEY token loaded")
 
 
@@ -111,7 +110,7 @@ class Manager:
         self.logger.setLevel(self.config.logs["level"])
         log_formatter = logging.Formatter(self.config.logs["format"])
         # rootLogger = logging.getLogger()
-        
+
         if not os.path.exists(self.config.logs["app"]):
             logpath = os.path.dirname(self.config.logs["app"])
             os.makedirs(logpath, exist_ok=True)
@@ -127,7 +126,7 @@ class Manager:
     ## some commands
     def getstats_from_db(self):
         return GetStatsFromDB(self.db)
-    
+
 
 
     def create_database(self):
@@ -175,7 +174,7 @@ class Manager:
 
         Args:
             files (array): an array with glob paths, or files. Example:
-            ['.\data\Cartography\**\*.fit', '.\data\fit\*.fit', 'file.gpx'] 
+            ['.\data\Cartography\**\*.fit', '.\data\fit\*.fit', 'file.gpx']
         """
 
         #  .\app.py import_files .\data\Cartography\**\*.fit # All files
@@ -185,11 +184,11 @@ class Manager:
         trackids = []
         for fname in files:
             track_id = self.db_track_exists(Track.calculate_hash(fname))
-  
+
             if not track_id:
                 fm = FileManager([fname])
                 try:
-                
+
                     ret = fm.load(optimize_points=self.config.points["optimize"],
                                   filter_points=self.config.points["filter"]
                                 )
@@ -210,13 +209,13 @@ class Manager:
 
                 # create all the required images and products.
                 # create track map preview
-          
+
                 self.create_image_products(track)
                 track = self.db_store_track(track)
                 self.logger.info("file stored in db successfully %s (%d)" % (fname, track.id))
                 trackids.append(str(track.id))
-   
- 
+
+
             else:
                 self.logger.warning("Track %s exists on DB (id=%d)" % (fname, track_id))
 
@@ -233,13 +232,13 @@ class Manager:
         files = glob_filelist(files)
         for fname in files:
             fm = FileManager([fname])
-            
+
             try:
                 fm.load(optimize_points=False, filter_points=False )
             except Exception as e:
                 self.logger.error("fix_time: Can't load %s: %s" % (fname, e))
                 return
-            
+
             p = os.path.dirname(fname)
             fn,ex = os.path.splitext(os.path.basename(fname))
             tgt = "%s/%s-fixed.gpx" % (p,fn)
@@ -250,7 +249,7 @@ class Manager:
             for p in track.points:
                 p.time = time_base
                 time_base = time_base + time_delta
-    
+
             with open(tgt,"w+") as tgt_fd:
                 tgt_fd.write(track.as_gpx())
 
@@ -274,25 +273,25 @@ class Manager:
         track.preview = "%s.png" % target_fname
         track.preview_elevation = "%s_elevation.png" % target_fname
         # absolute path (for store)
-        
+
         map.save("%s.png" % target_fname_abs, 'PNG')
         if create_thumbs:
             map_thumb.save("%s_tb.png" % target_fname_abs, 'PNG')
-        
+
         # elevation profile
         elev_profile_fname = "%s_elevation.png" % target_fname_abs
         if create_thumbs:
             elev_profile_fname_thumb = "%s_elevation_tb.png" % target_fname_abs
 
         png = PNGFactory(outputfname=elev_profile_fname, size=self.config.elevation_profile['size'])
-        png.CreatePNG(track._gpx, 
-                        elevation=track.stats().uphill_climb, 
+        png.CreatePNG(track._gpx,
+                        elevation=track.stats().uphill_climb,
                         draw_border=self.config.elevation_profile['border'])
 
         if create_thumbs:
             png = PNGFactory(outputfname=elev_profile_fname_thumb, size=self.config.elevation_profile['thumb_size'])
-            png.CreatePNG(track._gpx, 
-                            elevation=track.stats().uphill_climb, 
+            png.CreatePNG(track._gpx,
+                            elevation=track.stats().uphill_climb,
                             draw_border=self.config.elevation_profile['border'],
                             full_featured=False)
 
@@ -308,14 +307,14 @@ class Manager:
         with open(geojson_fname,"w+") as geojson_fd:
             geojson_fd.write(json.dumps(track.as_geojson_line()["data"]))
 
-    def check_similarity(self, threshold={ 
+    def check_similarity(self, threshold={
                     'distance': 500.0,
                     'length': 500.0,
                     'hausdorff': 5.0 },
                     trackids = []
                 ):
 
-        
+
 
         # shows the similarity values of the tracks, and create matches.
         # based on sim files (similarity files using distance)
@@ -323,15 +322,15 @@ class Manager:
         #print(groups)
 
         tracks = {}
-        
-        
+
+
         # testing
         limit_load = None
 
         for d in file_data:
             fname = d["fname"]
             hash = d["hash"]
-            
+
             t_center = C(latitude=d['middle_lat'],longitude=d['middle_long'],elevation=d['middle_elev'])
             t_len= d['length_2d']
             metadata = C(center=t_center, length=t_len)
@@ -352,9 +351,9 @@ class Manager:
             #data = cv2.imread( target, cv2.IMREAD_GRAYSCALE )
             print("loaded: %s" % target_png)
             # create the elements for fast comparation.
-            tracks[str(hash)] = C(similar_tracks=[],  points=points, hash=hash, fname=fname, 
+            tracks[str(hash)] = C(similar_tracks=[],  points=points, hash=hash, fname=fname,
                                   target=target_png, metadata=metadata, previous_checked=d['previous_checked'])
-        
+
             if limit_load is not None:
                 limit_load -= 1
                 if limit_load <= 0:
@@ -386,7 +385,7 @@ class Manager:
                         #print("it's me, skipping %s" % (tx.hash))
                         found = True
                         continue
-                     
+
                     if tx.hash in group:
                         # similar to something, it's ok. break and mark as found.
                         #print("%s in group %s, skipping" % (tx.hash, group))
@@ -411,7 +410,7 @@ class Manager:
                                 print("\t: geo_d %3.2f" % geo_d)
                                 print("\t: len_d %3.2f" % length_d)
                                 break
-                
+
                 # no match for this element, so add it to the groups.
                 if not found:
                     groups.append( [ tx.hash ])
@@ -438,7 +437,7 @@ class Manager:
     def get_track(self, id):
         trk_data = self.db_get_track(id)
         fm = FileManager([trk_data['fname']])
-        
+
         try:
             fm.load(optimize_points=self.config.points["optimize"],
                     filter_points=self.config.points["filter"]
@@ -449,7 +448,7 @@ class Manager:
 
         self.logger.info("file loaded %s" % trk_data['fname'])
         return fm.track()
-    
+
     def delete_track(self, track):
         target_fname = self.track_previews.map_object(track['hash'], create_dirs=True, relative=True)
         target_fname_abs = self.track_previews.map_object(track['hash'])
@@ -457,20 +456,20 @@ class Manager:
         geojson_fname_abs = self.geojson_previews.map_object(track['hash'],create_dirs=True)
 
         track_preview_tb = "%s_tb.png" % target_fname
-        
+
         elev_profile_fname_thumb = "%s_elevation_tb.png" % target_fname_abs
         sim_tgt = "%s.png" % target_sim
         geojson_fname = "%s.geojson" % geojson_fname_abs
 
-        for i in [ track['preview'], 
+        for i in [ track['preview'],
                    track['preview_elevation'],
-                   track_preview_tb, 
-                   elev_profile_fname_thumb, 
-                   sim_tgt, 
+                   track_preview_tb,
+                   elev_profile_fname_thumb,
+                   sim_tgt,
                    geojson_fname]:
             if os.path.exists(i):
                 os.remove(i)
-            
+
         self.db_delete_track(track['id'])
 
 
@@ -478,7 +477,7 @@ class Manager:
     #
     # database methods
     #
-        
+
     def db_delete_track(self, id):
 
         sql1 = "delete from tracks where id = ?"
@@ -489,7 +488,7 @@ class Manager:
             cursor.execute(sql, (id,))
         self.db.commit()
         cursor.close()
-    
+
 
     def db_get_tracks(self):
         sql = "select * from tracks"
@@ -499,7 +498,7 @@ class Manager:
         data = map(lambda x: dict(x), data)
         cursor.close()
         return list(data)
-    
+
     def db_get_track(self, id):
         sql = "select * from tracks where id = ?"
         cursor = self.db.cursor()
@@ -508,50 +507,93 @@ class Manager:
         cursor.close()
         data['similar'] = self.db_get_track_similarity(data['id'])
         return data
-    
-    def db_get_tracks_info(self, query=None):
-        
+
+    def db_get_tracks_info(self, query=None, offset=0, limit=0):
+
         # this query return the IDS.
         sql = query if query else self.config.queries["default"]
 
+        # change query if offset or limit is passed (for pagination)
+        # not needed because I do the crop using the parameters,
+        # to retrieve all the data (fast)
+        # if limit != 0:
+        #     if re.findall(r'limit\s+(\d+)',sql, flags=re.I) != []:
+        #         sql = re.sub(r'limit\s+(\d+)','limit %d' % limit, sql,flags=re.I)
+        #     else:
+        #         #sql += " limit %d" % limit
+        #         pass
+      
+
+        # if offset != 0:
+        #     if re.findall(r'offset\s+(\d+)',sql, flags=re.I) != []:
+        #         sql = re.sub(r'offset\s+(\d+)','offset %d' % offset, sql,flags=re.I)
+        #     else:
+        #         #sql += " offset %d" % offset
+        #         pass
+
+        
+        self.logger.info("Exec query: <%s> (limit: %d, offset: %d)" % (sql, limit, offset))
         cursor = self.db.cursor()
         cursor.execute(sql)
         data = cursor.fetchall()
         data = list(map(lambda x: dict(x), data))
-        
         cursor.close()
+        # need to paginate the thing.
+        # pagination_limit = self.config.queries['pagination_limit'] if limit == 0 else limit
+        pagination_limit = self.config.queries['pagination_limit']
+        data_len = len(data)
+        pagination = []
+        i = 1
+        # no pagination, big query
+        if len(data) > pagination_limit:
+            added=0
+            while added < data_len:
+                pagination.append( { 'index': i, 'offset': added, 'limit': pagination_limit} )
+                added += pagination_limit
+                i += 1
+            
+            data = data[offset:offset+pagination_limit]
+
+
+        # this is very costly for all the tracks.
+        # I need to paginate this in order to work
+        # fast, but they can be some pagination 
+        # if they use limit or offset.
+
         for i in data:
             i['similar'] = self.db_get_track_similarity(i['id'])
-        return data
 
-    
+        return data,pagination,data_len
+
+
     def db_get_track_similarity(self, id):
         sql = """
             select * from tracks where id in (
 	            select id_track from SIMILAR_TRACKS where id in (
 		            select id from SIMILAR_TRACKS where id_track = ?
 	            )
-            );"""
-        
+            ) and id != ?;
         """
-        get the groups of track similarity, but process them. If only 
+        # select is faster than join
+        # sql = """
+        #     select * from tracks where id in (
+        #         select S.id_track from SIMILAR_TRACKS as S, SIMILAR_TRACKS P 
+        #             where P.id = S.id and S.id_TRACK = ?
+	    #         )
+        #     ) and id != ?;
+        # """
+            
+        """
+        get the groups of track similarity, but process them. If only
         one track in the group, return an empty set (no similar, only me)
         if not, then extract my own id from the list.
         """
         cursor = self.db.cursor()
-        cursor.execute(sql,(id,))
+        cursor.execute(sql,(id,id,))
         data = cursor.fetchall()
         data = list(map(lambda x: dict(x), data))
         cursor.close()
-        ret = []
-        if len(data) == 1:
-            return ret
-        for i in data:
-            if i['id'] == id:
-                continue
-            ret.append(i)
-
-        return ret
+        return data
 
     def db_track_exists_id(self, track_id):
         "check if the track is loaded in the database, using the hash"
@@ -574,7 +616,7 @@ class Manager:
         if not data:
             return False
         return data["id"]
-    
+
     def db_save_similarity(self, groups):
         sql = "delete from similar_tracks"
         cursor = self.db.cursor()
@@ -583,7 +625,7 @@ class Manager:
 
         sql = "insert into similar_tracks(id, hash_track, id_track) values (?, ?, ?)"
         sql2 = "select id from tracks where hash = ?"
-    
+
         i = 0
         for g in groups:
             for h in g:
@@ -591,39 +633,39 @@ class Manager:
                 cursor2.execute(sql2,(h,))
                 track_id = cursor2.fetchone()["id"]
                 cursor2.close()
-                cursor.execute(sql, (i, h, track_id,))  
+                cursor.execute(sql, (i, h, track_id,))
             i+=1
         self.db.commit()
         cursor.close()
 
     def db_get_similarity_groups(self):
         groups_t = {}
-       
+
         sql = "select * from similar_tracks"
         cursor = self.db.cursor()
         cursor.execute(sql)
         data = cursor.fetchall()
         groups_data = map(lambda x: dict(x), data)
         cursor.close()
-        
+
         for g in groups_data:
             if g['id'] in groups_t.keys():
                 groups_t[g['id']].append(g['hash_track'])
             else:
                 groups_t[g['id']] = [ g['hash_track'] ]
-  
+
         return list(groups_t.values())
 
 
     def db_get_similarity(self, trackids = []):
-        # add this attribute previous_checked to speed up the 
+        # add this attribute previous_checked to speed up the
         # processing, so check only the tracks
         # in the array.
         sql = "select id,hash,fname,middle_lat,middle_long,middle_elev,length_2d, false as previous_checked from tracks"
         if trackids and len(trackids) > 0:
             tids = ",".join(trackids)
             sql += " where id in (%s)" % tids
-        
+
         cursor = self.db.cursor()
         cursor.execute(sql)
         data = cursor.fetchall()
@@ -631,7 +673,7 @@ class Manager:
 
         track_data = map(lambda x: dict(x), data)
         track_data = list(track_data)
-       
+
 
 
         groups = self.db_get_similarity_groups()
@@ -644,7 +686,7 @@ class Manager:
                     found = True
                     break
             if not found:
-                # add this attribute previous_checked to speed up the 
+                # add this attribute previous_checked to speed up the
                 # processing, so check only the tracks
                 # in the array.
                 sql = "select id,hash,fname,middle_lat,middle_long,middle_elev,length_2d, true as previous_checked from tracks where hash = ?"
@@ -668,40 +710,40 @@ class Manager:
 
     def db_store_track(self, track):
         sql = """
-        insert into tracks(fname, hash, preview, preview_elevation, stamp, number_of_points, 
+        insert into tracks(fname, hash, preview, preview_elevation, stamp, number_of_points,
                            duration, quality, length_2d, length_3d,
                            start_time,end_time,moving_time,
-                           
+
                            stopped_time, moving_distance,
                            stopped_distance,
-                           
+
                            max_speed_ms,max_speed_kmh,
                            avg_speed_ms,avg_speed_kmh,
                            uphill_climb,downhill_climb,
                            minimum_elevation,maximum_elevation,
-                           
+
                            name,searchname,kind,device,equipment,
                            description,
                            is_clockwise,score,rating,
-                           
+
                            min_lat,min_long,max_lat,max_long,
-                           
+
                            middle_lat,middle_long,middle_elev,
                            begin_lat,begin_long,begin_elev,
                            end_lat,end_long,end_elev,
-                           
+
                            uphill_distance,level_distance,downhill_distance,
-                           
+
                            uphill_elevation,level_elevation,downhill_elevation,
-                           
+
                            uphill_avg_slope,level_avg_slope,downhill_avg_slope,
-                           
+
                            uphill_p_distance,level_p_distance,downhill_p_distance,
-                           
+
                            uphill_speed,level_speed,downhill_speed,
-                           
+
                            uphill_time,level_time,downhill_time,
-                           
+
                            uphill_p_time,level_p_time,downhill_p_time,
 
                            uphill_slope_range_distance_0,
@@ -747,45 +789,45 @@ class Manager:
                  ?, ?,
                  ?,
 
-                 ?, ?, 
+                 ?, ?,
                  ?, ?,
                  ?, ?,
                  ?, ?,
 
-                 ?, ?, ?, ?, ?, 
-                 ?,  
+                 ?, ?, ?, ?, ?,
+                 ?,
                  ?, ?,?,
 
-                 ?, ?, ?, ?,    
+                 ?, ?, ?, ?,
 
-                 ?, ?, ?,                     
+                 ?, ?, ?,
 
-                 ?, ?, ?,                     
+                 ?, ?, ?,
 
-                 ?, ?, ?,                     
+                 ?, ?, ?,
 
-                 ?, ?, ?,                     
+                 ?, ?, ?,
 
-                 ?, ?, ?,                     
+                 ?, ?, ?,
 
-                 ?, ?, ?,                     
+                 ?, ?, ?,
 
-                 ?, ?, ?,                     
+                 ?, ?, ?,
 
-                 ?, ?, ?,                     
+                 ?, ?, ?,
 
-                 ?, ?, ?,                     
+                 ?, ?, ?,
 
-                 ?, ?, ?,                     
+                 ?, ?, ?,
 
-                 ?, ?, ?, ?, ?, ?, ?,
-                 
                  ?, ?, ?, ?, ?, ?, ?,
 
                  ?, ?, ?, ?, ?, ?, ?,
 
                  ?, ?, ?, ?, ?, ?, ?,
-                 
+
+                 ?, ?, ?, ?, ?, ?, ?,
+
                  ?, ?, ?,
                  ?, ?, ?,
                  ?, ?, ?,

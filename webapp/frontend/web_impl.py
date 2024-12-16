@@ -22,6 +22,7 @@ import os
 import sys
 import time
 import json
+import html
 from webapp.caching import cache
 from pytrackvis.helpers import remove_accents
 from .webhelpers import *
@@ -54,21 +55,35 @@ def tracks_dashboard():
     stats = current_app.manager.getstats_from_db()
     return render_template('dashboard.html',stats=stats, stats_json=json.dumps(stats))
 
-@web_impl.route('/tracks/query', methods=['POST'])
+@web_impl.route('/tracks/query', methods=['GET','POST'])
 def tracks_query():
     
-    data = request.get_json(silent=True)
-    if not data:
-        return JsonResultError(500, "invalid json").response()
+    # process both entries (get and post)
+    query = request.args.get("query",None)
+    offset = int(request.args.get("offset",0))
+    limit = int(request.args.get("size",0))
 
-    if not 'query' in data.keys():
-        return JsonResultError(500, "invalid json - no keys").response()
+    if 'query' in request.form.keys():
+        query = request.form['query']
+
+    if 'offset' in request.form.keys():
+        offset = request.form['offset']
+        offset = int(offset)
     
-    query = data['query']
-    if query is None:
+    if 'limit' in request.form.keys():
+        limit = request.form['limit']
+        limit = int(limit)
+
+    input_query = ""
+    if query is None or query == "":
         query = current_app.manager.config.queries['default']
+        offset = 0
+        limit = 0
     else:
+        query = html.unescape(query)
         query = remove_accents(query)
+        input_query = query
+        current_app.logger.info("input query: <%s> (limit: %d, offset: %d)" % (query,limit,offset))
         result, query = current_app.manager.query_parser.run(query)
         if not result:
             return jsonify(error = True,
@@ -76,10 +91,10 @@ def tracks_query():
                           code = 1,
                           tracks = [])
                 
-    current_app.logger.info("Parsed query: <%s>" % query)
+    current_app.logger.info("Parsed query: <%s> (limit: %d, offset: %d)" % (query,limit,offset))
     
     try:
-        tracks = current_app.manager.db_get_tracks_info(query)
+        tracks, pagination, data_len = current_app.manager.db_get_tracks_info(query=query, offset=offset, limit=limit)
     except Exception as e:
         return jsonify(error = True,
                         text = 'bad query: %s' % e,
@@ -89,7 +104,12 @@ def tracks_query():
     return jsonify(error = False,
                    text = 'success',
                    code = 0,
-                   tracks = tracks)
+                   pagination = pagination,
+                   total_size = data_len,
+                   tracks = tracks,
+                   query = input_query)
+
+
 
 @web_impl.route('/tracks/list', methods=['GET'])
 def tracks_list():
@@ -97,7 +117,13 @@ def tracks_list():
     query = request.args.get("query",None)
     if query is None:
         query = ""
-    return render_template('list.html', query=query)
+    else:
+        query = html.unescape(query)
+
+    offset = request.args.get("offset",0)
+    limit = request.args.get("limit",0)
+    
+    return render_template('list.html', query=query, offset=offset, limit=limit)
 
 
 

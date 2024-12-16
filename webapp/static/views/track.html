@@ -1,3 +1,10 @@
+<div id="track-paginator" class="mb-4">
+    {% for page in pagination %}
+    <a class="pagination-link" 
+              href="/tracks/list?query={{query}}&offset={{page.offset}}&limit={{page.limit}}">{{page.index}}</a>
+    {% endfor %}
+</div>
+
 {% for track in tracks %}
 <div class="card m-2 border-0">
     <div class="row g-0">
@@ -68,7 +75,8 @@
               <!--| as_thumb -->
         <img src="/static/img/track_previews/{{track.preview|as_thumb}}" class="img-fluid w-100" ></img>
         <img src="/static/img/track_previews/{{track.preview_elevation|as_thumb}}" class="pt-1 img-fluid  w-100"></img>
-     </div>
+    </div>
+
 </div>
  <hr>
 </div>
@@ -85,3 +93,10 @@ $("#rateYo_{{track.id}}").rateYo({starWidth: "18px",
                     });
 </script>
 {% endfor %}
+
+<div id="track-paginator" class="mt-2">
+    {% for page in pagination %}
+    <a class="pagination-link" 
+              href="/tracks/list?query={{query}}&offset={{page.offset}}&limit={{page.limit}}">{{page.index}}</a>
+    {% endfor %}
+</div>

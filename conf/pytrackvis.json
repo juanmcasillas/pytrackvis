@@ -6,7 +6,8 @@
         "offset": 0
     },
     "queries": {
-        "default": "select * from tracks order by stamp desc limit 10"
+        "default": "select * from tracks order by stamp desc limit 10",
+        "pagination_limit": 50
     },
     "points": {
         "optimize": true,
