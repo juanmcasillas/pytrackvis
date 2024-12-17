@@ -212,6 +212,13 @@ a.get-track-link:hover  {
     top: 80px;
     left: 10px;
 }
+.map-places  {
+    z-index: 1;
+    position: absolute;
+    font-size: small;
+    top: 120px;
+    left: 10px;
+}
 .map-info {
     z-index: 1;
     position: absolute;

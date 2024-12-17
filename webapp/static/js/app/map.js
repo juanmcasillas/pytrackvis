@@ -5,6 +5,17 @@ var mapManager = {
     track: null,
     terrain_source: null,
     marker: new maplibregl.Marker(),
+    image_markers: [ 'marker-places-nc', 'marker-places-hc'],
+
+    init_defaults: function(track) {
+        this.track = track
+        this.terrain_source = { source: 'pytrackvis_terrain' }
+        this.marker.setLngLat([track.begin.long, track.begin.lat, track.begin.elev]).addTo(map);
+        this.marker.setOpacity(0)
+        this.trk_layer_id = this.layer_prefix(`track_${this.track.id}_layer`)
+        this.places_layer_id = this.layer_prefix('places-layer')
+    
+    },
 
     change: function() {
         if (this.is3D == false) {
@@ -47,9 +58,42 @@ var mapManager = {
     },
     marker_on: function() {
         this.marker.setOpacity(1)
-    }
-    
+    },
+    update_markers: function() {
+        // doesnt work for the async/await thing
+        this.image_markers.forEach( (marker) => {
+            if (! window.map.getImage(marker)) {
+                console.log(`reloading ${marker} /static/img/icons/${marker}.png`)
+                const image = window.map.loadImage(`/static/img/icons/${marker}.png`);
+                window.map.addImage(marker, image.data);
+            }
+        });
+    },
+    set_normal_contrast: function() {
+        var trk_layer = this.layer_prefix(`track_${this.track.id}_layer`)
+        var places_layer = this.layer_prefix('places-layer')
 
+        window.map.setPaintProperty(this.trk_layer_id,    'line-color', '#FFFF50');
+        window.map.setPaintProperty(this.places_layer_id, 'text-color', '#FFFFFF');
+        window.map.setPaintProperty(this.places_layer_id, 'text-halo-color', '#FFFFFF');
+        window.map.setLayoutProperty(this.places_layer_id, 'icon-image', 'marker-places-nc');
+    },
+    set_high_contrast: function() {
+
+        window.map.setPaintProperty(this.trk_layer_id,    'line-color', '#880ED4');
+        window.map.setPaintProperty(this.places_layer_id, 'text-color', '#000000');
+        window.map.setPaintProperty(this.places_layer_id, 'text-halo-color', '#000000');
+        window.map.setLayoutProperty(this.places_layer_id, 'icon-image', 'marker-places-hc');
+    },
+    show_hide_places: function() {
+        var vis = window.map.getLayoutProperty(this.places_layer_id, 'visibility');
+        if (vis == 'none') {
+            window.map.setLayoutProperty(this.places_layer_id, 'visibility', 'visible');
+        }else {
+            window.map.setLayoutProperty(this.places_layer_id, 'visibility', 'none');
+        }
+        
+    }
 }
 
 function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
@@ -84,23 +128,45 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
     map.keyboard.disable(); 
     map.touchZoomRotate.disableRotation();
     
-    mapManager.track = track
-    mapManager.terrain_source = { source: 'pytrackvis_terrain' }
-    mapManager.marker.setLngLat([track.begin.long, track.begin.lat, track.begin.elev]).addTo(map);
-    mapManager.marker.setOpacity(0)
+    mapManager.init_defaults(track)
+
+ 
     
     
     
     // used when change the map style (topo, stellite, etc)
-    map.on('style.load', () => {
+    map.on('style.load', async () => {
         mapManager.update_terrain();
+
+        var marker = 'marker-places-nc'
+        if (! map.getImage(marker)) {
+            console.log(`reloading ${marker} /static/img/icons/${marker}.png`)
+            const image = await map.loadImage(`/static/img/icons/${marker}.png`);
+            map.addImage(marker, image.data);
+        }
+        marker = 'marker-places-hc'
+        if (! map.getImage(marker)) {
+            console.log(`reloading ${marker} /static/img/icons/${marker}.png`)
+            const image = await map.loadImage(`/static/img/icons/${marker}.png`);
+            map.addImage(marker, image.data);
+        }
+  
     });
 
     // main callback
     map.on('load', async () => {
-
-        const image = await map.loadImage('/static/img/icons/marker-wpt-small.png');
-        map.addImage('custom-marker', image.data);
+        var marker = 'marker-places-nc'
+        if (! map.getImage(marker)) {
+            console.log(`reloading ${marker} /static/img/icons/${marker}.png`)
+            const image = await map.loadImage(`/static/img/icons/${marker}.png`);
+            map.addImage(marker, image.data);
+        }
+        marker = 'marker-places-hc'
+        if (! map.getImage(marker)) {
+            console.log(`reloading ${marker} /static/img/icons/${marker}.png`)
+            const image = await map.loadImage(`/static/img/icons/${marker}.png`);
+            map.addImage(marker, image.data);
+        }
 
         map.addControl(new maplibregl.FullscreenControl({container: document.querySelector('body')}),  'top-right');
         map.addControl(
@@ -171,7 +237,7 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
             
         }
        
-        //test for places
+        // load the GEOJSON for places layer.
         map.addSource(mapManager.layer_prefix('places'), {
             type: "geojson",
             data: "/places/as_geojson"
@@ -181,8 +247,12 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
             'source': mapManager.layer_prefix('places'),
             'type': 'symbol',
             'layout': {
+                'visibility': 'none',
                 'icon-allow-overlap': true,
-                'icon-image': 'custom-marker',
+                'text-allow-overlap': true,
+                'icon-overlap': 'always',
+                'text-overlap': 'always',
+                'icon-image': 'marker-places-nc',
                 'text-field': ['get', 'name'],
                 'text-font': [
                     'Open Sans Semibold',
@@ -191,10 +261,13 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
                 'text-offset': [0, 1.25],
                 'text-anchor': 'top',
                 'text-size': 12,
+                'text-letter-spacing': 0.05,
                 
             },
             'paint': {
-                'text-color': '#EEEEEE'
+                'text-color': '#FFFFFF',
+                'text-halo-color': '#ffffff',
+                'text-halo-width': 0.1
             }
         });
 
@@ -260,9 +333,10 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
             // layers.
             if (['satellite', 'hybrid'].includes(styleId)) {
                 // use high-contrast color.
-                map.setPaintProperty(mapManager.layer_prefix(`track_${track.id}_layer`), 'line-color', '#FFFF50');
+                mapManager.set_normal_contrast();
+
             } else {
-                map.setPaintProperty(mapManager.layer_prefix(`track_${track.id}_layer`), 'line-color', '#880ED4');
+                mapManager.set_high_contrast();
             }
 
             map.setStyle(`https://api.maptiler.com/maps/${styleId}/style.json?key=${MAPTILER_KEY}`, {
@@ -285,6 +359,7 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
                   };
                 }
               });
+
 
 
         });
@@ -311,7 +386,7 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
 
         new maplibregl.Popup()
             .setLngLat(coordinates)
-            .setHTML(description)
+            .setHTML((description === undefined ? 'No description available' : description))
             .addTo(map);
     });
 
