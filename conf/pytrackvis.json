@@ -32,7 +32,13 @@
     },
     "osm_cache": {
         "enabled": true,
-        "directory": "osm_cache",
+        "directory": "cache/osm",
+        "debug": false
+    },
+    "catastro": {
+        "enabled": true,
+        "cache_dir": "cache/catastro",
+        "unsafe_ssl": true,
         "debug": false
     },
     "sim_preview": {

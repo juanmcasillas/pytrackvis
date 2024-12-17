@@ -37,10 +37,12 @@ from pytrackvis.track import Track
 from pytrackvis.place import Place
 from pytrackvis.trackmanager import TrackManager
 from pytrackvis.placemanager import PlaceManager
+from pytrackvis.catastro import CatastroManager
 from pytrackvis.mapreview import MapPreviewManager
 from pytrackvis.dbstats import GetStatsFromDB
 from pytrackvis.qparser import QueryParser
 from pytrackvis.timing import *
+
 class Manager:
     LOG_NAME = "PyTrackVis"
 
@@ -58,6 +60,9 @@ class Manager:
         self.query_parser = QueryParser(get_attr=self.config.query_parser['attrs'],
                                         limit=self.config.query_parser['limit'],
                                         offset=self.config.query_parser['offset'])
+
+        self.catastro_manager = CatastroManager(self.config.catastro['cache_dir'], 
+                                                unsafe_ssl=self.config.catastro['unsafe_ssl'])
 
     def db_connect(self):
         self.db = sqlite3.connect(self.config.database["file"], check_same_thread=False)
@@ -180,11 +185,19 @@ class Manager:
             ret['data']['features'].append( Place().from_dict(place).as_geojson_point() )
         
         return ret
+    
+    def check_catastro(self, lat, lng):
+        data, poly = self.catastro_manager.check_point(lat, lng)
+        
+        features = []
+        for p in poly:
+            coords = list(map(lambda x: [ float(x[0]), float(x[1]), float(x[2])], p['coords']))
+            features.append(GeoJSON.polygon_feature(coords,{}))
 
 
 
-
-
+        return data, GeoJSON.feature_collection(features = features)
+      
     def import_places(self, files):
         """import the files into the database if they are not inserted. LAT/LON/ELEV position as hash
 

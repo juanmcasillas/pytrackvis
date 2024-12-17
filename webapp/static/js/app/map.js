@@ -10,6 +10,22 @@ var mapManager = {
         'nc', 
         'hc',
         // add custom on init
+        '10',
+        '93',
+        '46',
+        '48',
+        '63',
+        '52',
+        '53',
+        '36',
+        '140',
+        '141',
+        '142',
+        '105',
+        '54',
+        '14',
+        'nc',
+        '106',
     ],
 
 
@@ -24,10 +40,12 @@ var mapManager = {
         this.places_layer_id = this.layer_prefix('places-layer')
         this.track_source_id = this.layer_prefix(`track_${this.track.id}-source`)
         this.track_layer_id = this.layer_prefix(`track_${this.track.id}-layer`)
-
-        for (var i=0; i<265; i++) {
-            this.icons.push(`${i}`)
-        }
+        this.catastro_source_id = this.layer_prefix('catastro-source')
+        this.catastro_layer_id = this.layer_prefix('catastro-layer')
+        // implicit load of required icons to speed up
+        // for (var i=0; i<265; i++) {
+        //     this.icons.push(`${i}`)
+        // }
     },
 
     change: function() {
@@ -76,7 +94,10 @@ var mapManager = {
                 //console.log(`X reloading ${icon} /static/img/icons/wpt/${icon}.png`)
                 const image = await window.map.loadImage(`/static/img/icons/wpt/${icon}.png`);
                 //console.log(image)
-                window.map.addImage(icon, image.data);
+                //check again
+                if (! window.map.getImage(icon)) {
+                     window.map.addImage(icon, image.data); 
+                }
             }
         }
     },
@@ -103,8 +124,76 @@ var mapManager = {
         }else {
             window.map.setLayoutProperty(this.places_layer_id, 'visibility', 'none');
         }
+    },
+    check_catastro: function(lat, lng) {
+  
+        console.log("testing catastro as this:", lat, lng)
+
+        $.ajax({
+            url: '/utils/check_catastro',
+            type: 'POST',
+            //dataType: 'json',
+            //data: JSON.stringify(postData),
+            // contentType: 'application/json',
+            data: { 'lat': lat, 
+                    'lng': lng, 
+                },
+            beforeSend: function (data) {
+                $('#wait-spinning').css("visibility", "visible");
+            },
+            success: function (data) {
+                if (data.error > 0) {
+                    json_error("Error getting catastro_info", data.text)
+                    return;
+                }
+                // use here the container to process the tracks and save them
+                // console.log(data.tracks)
+                //var block = document.getElementById('block-page')
+                $('#wait-spinning').css("visibility", "hidden");
+                // set things here. for now, add a layer with some things 
+                // to test.
+                
+                
+                if (window.map.getLayer(mapManager.catastro_layer_id)) {
+                    window.map.removeLayer(mapManager.catastro_layer_id)
+                }
+
+                if (window.map.getSource(mapManager.catastro_source_id)) {
+                    window.map.removeSource(mapManager.catastro_source_id)
+                }
+
+
+                window.map.addSource(mapManager.catastro_source_id, data.gdata)
+
+                window.map.addLayer({
+                    'id': mapManager.catastro_layer_id,
+                    'type': 'fill',
+                    'source': mapManager.catastro_source_id,
+                    'layout': { },
+                    'paint': {
+                        'fill-color': '#DD5050',
+                        'fill-opacity': 0.7
+                    }
+                });
+                console.log(data.gdata)
+
+            },
+            fail: function (data) {
+                $('#wait-spinning').css("visibility", "hidden");
+                json_error("Error getting catastro_info", data)
+                //console.error(data);
+            }
+        });
+
     }
 }
+
+
+
+
+
+
+
 
 function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
 
@@ -140,14 +229,10 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
     map.keyboard.disable(); 
     map.touchZoomRotate.disableRotation();
     mapManager.init_defaults(track)
-    console.log(mapManager)
-    // used when change the map style (topo, stellite, etc)
+
     map.on('style.load', async () => {
         mapManager.update_terrain();
         mapManager.load_icons();
-      
-       
-  
     });
    
     // main callback
@@ -420,16 +505,53 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
             .addTo(map);
     });
 
+    map.on('contextmenu',  (e) => {
+        
+        // console.log("XXX")
+        // console.log(e)
+        // console.log(e.lngLat)
+        // console.log(e.point)
+        popup = new maplibregl.Popup({closeOnMove: true, closeOnClick: true, closeButton: true})
+            .setLngLat(e.lngLat)
+            .setHTML(`
+                <h5>check catastro</h5>
+                <div>
+                    <span>${e.lngLat.lat}, ${e.lngLat.lng}</span>
+                    <a href="#"  onclick="mapManager.check_catastro(lat=${e.lngLat.lat}, lng=${e.lngLat.lng})">Check it</a>
+                </div>
+            `)
+            .addTo(map);
+  
+        return
+        
+    });
+
+  
     // Change the cursor to a pointer when the mouse is over the places layer.
-    map.on('mouseenter', 'places', () => {
+    map.on('mouseenter', mapManager.places_layer_id, () => {
         map.getCanvas().style.cursor = 'pointer';
     });
 
     // Change it back to a pointer when it leaves.
-    map.on('mouseleave', 'places', () => {
+    map.on('mouseleave', mapManager.places_layer_id, () => {
         map.getCanvas().style.cursor = '';
     });
 
+ 
 
+
+    // don't delete this, please
+
+    // show lat/long if needed
+    // map.on('mousemove', (e) => {
+    //     document.getElementById('map-info').innerHTML =
+    //         // e.point is the x, y coordinates of the mousemove event relative
+    //         // to the top-left corner of the map
+    //        `${JSON.stringify(e.point)
+    //         }<br />${
+    //             // e.lngLat is the longitude, latitude geographical position of the event
+               
+    //             JSON.stringify(e.lngLat.wrap())}`;
+    // });
 
 }

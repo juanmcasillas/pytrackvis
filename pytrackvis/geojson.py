@@ -53,7 +53,36 @@ class GeoJSON:
         }
         o["geometry"]["coordinates"] = coords
         o["properties"] = copy.copy(properties)
+        return o
+    
+    @staticmethod
+    def polygon_feature( coords, properties):
+        o = {
+            "type": "Feature",
+            "properties": { },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [ ]
+            }
+        }
+        # polys are stored inside the coordinates. 
+        o["geometry"]["coordinates"].append(coords)
+        o["properties"] = copy.copy(properties)
         return o    
+
+    @staticmethod
+    def line_feature( coords, properties):
+        o = {
+            "type": "Feature",
+            "properties": { },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [ ]
+            }
+        }
+        o["geometry"]["coordinates"] = coords
+        o["properties"] = copy.copy(properties)
+        return o   
 
     @staticmethod
     def geojson_point( coords, properties):
