@@ -43,7 +43,32 @@ class Place:
         self.radius = 25.0
         self.stamp = None
         
+        self.kind_default_icon = 'nc'
+        self.kind_mapping = {
+            'home':                      '10',
+            'bridge':                    '93',
+            'tree':                      '46',
+            'camera':                    '48',
+            'circle with x':             '63',
+            'controlled area':           '52',
+            'danger area':               '53',
+            'fishing hot spot facility': '36',
+            'flag, red':                 '140',
+            'flag, blue':                '141',
+            'flag, green':               '142',
+            'park':                      '105',
+            'restricted area':           '54',
+            'skull and crossbones':      '14',
+            'waypoint':                  'nc',
+            'peak':                      '106',
+        }
         
+    def kind_to_wpt(self, kind):
+        if kind.lower() in self.kind_mapping.keys():
+            return self.kind_mapping[kind.lower()]
+        else:
+            return self.kind_default_icon
+
 
     def calculate_hash(self):
         # hash in python3 is randomized.
@@ -77,11 +102,14 @@ class Place:
 
     def as_geojson_point(self):
         coords = self.longitude, self.latitude, self.elevation
+
+
         properties = {
             'name': self.name,
             'link': self.link,
             'description': self.description,
-            'kind': self.kind
+            'kind': self.kind,
+            'icon': self.kind_to_wpt(self.kind)
         }
         return GeoJSON.point_feature(coords, properties )
  

@@ -5,16 +5,29 @@ var mapManager = {
     track: null,
     terrain_source: null,
     marker: new maplibregl.Marker(),
-    image_markers: [ 'marker-places-nc', 'marker-places-hc'],
+
+    icons: [
+        'nc', 
+        'hc',
+        // add custom on init
+    ],
+
 
     init_defaults: function(track) {
         this.track = track
         this.terrain_source = { source: 'pytrackvis_terrain' }
         this.marker.setLngLat([track.begin.long, track.begin.lat, track.begin.elev]).addTo(map);
         this.marker.setOpacity(0)
-        this.trk_layer_id = this.layer_prefix(`track_${this.track.id}_layer`)
+      
+
+        this.places_source_id = this.layer_prefix('places-source')
         this.places_layer_id = this.layer_prefix('places-layer')
-    
+        this.track_source_id = this.layer_prefix(`track_${this.track.id}-source`)
+        this.track_layer_id = this.layer_prefix(`track_${this.track.id}-layer`)
+
+        for (var i=0; i<265; i++) {
+            this.icons.push(`${i}`)
+        }
     },
 
     change: function() {
@@ -50,40 +63,38 @@ var mapManager = {
     layer_prefix: function(layer_name) {
         return this.prefix + layer_name;
     },
-    track_data: function() {
-        return this.layer_prefix(`track_${track.id}`)
-    },
     marker_off: function() {
         this.marker.setOpacity(0)
     },
     marker_on: function() {
         this.marker.setOpacity(1)
     },
-    update_markers: function() {
-        // doesnt work for the async/await thing
-        this.image_markers.forEach( (marker) => {
-            if (! window.map.getImage(marker)) {
-                console.log(`reloading ${marker} /static/img/icons/${marker}.png`)
-                const image = window.map.loadImage(`/static/img/icons/${marker}.png`);
-                window.map.addImage(marker, image.data);
+    load_icons: async function() {
+        
+        for (const icon of mapManager.icons) { 
+            if (! window.map.getImage(icon)) {
+                //console.log(`X reloading ${icon} /static/img/icons/wpt/${icon}.png`)
+                const image = await window.map.loadImage(`/static/img/icons/wpt/${icon}.png`);
+                //console.log(image)
+                window.map.addImage(icon, image.data);
             }
-        });
+        }
     },
     set_normal_contrast: function() {
         var trk_layer = this.layer_prefix(`track_${this.track.id}_layer`)
         var places_layer = this.layer_prefix('places-layer')
 
-        window.map.setPaintProperty(this.trk_layer_id,    'line-color', '#FFFF50');
+        window.map.setPaintProperty(this.track_layer_id,    'line-color', '#FFFF50');
         window.map.setPaintProperty(this.places_layer_id, 'text-color', '#FFFFFF');
         window.map.setPaintProperty(this.places_layer_id, 'text-halo-color', '#FFFFFF');
-        window.map.setLayoutProperty(this.places_layer_id, 'icon-image', 'marker-places-nc');
+        //window.map.setLayoutProperty(this.places_layer_id, 'icon-image', 'nc');
     },
     set_high_contrast: function() {
 
-        window.map.setPaintProperty(this.trk_layer_id,    'line-color', '#880ED4');
+        window.map.setPaintProperty(this.track_layer_id,    'line-color', '#880ED4');
         window.map.setPaintProperty(this.places_layer_id, 'text-color', '#000000');
         window.map.setPaintProperty(this.places_layer_id, 'text-halo-color', '#000000');
-        window.map.setLayoutProperty(this.places_layer_id, 'icon-image', 'marker-places-hc');
+        //window.map.setLayoutProperty(this.places_layer_id, 'icon-image', 'hc');
     },
     show_hide_places: function() {
         var vis = window.map.getLayoutProperty(this.places_layer_id, 'visibility');
@@ -92,7 +103,6 @@ var mapManager = {
         }else {
             window.map.setLayoutProperty(this.places_layer_id, 'visibility', 'none');
         }
-        
     }
 }
 
@@ -124,49 +134,39 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
         //center: { lon: track.center.long, lat: track.center.lat }
     }));
     
+
+
     map.dragRotate.disable();
     map.keyboard.disable(); 
     map.touchZoomRotate.disableRotation();
-    
     mapManager.init_defaults(track)
-
- 
-    
-    
-    
+    console.log(mapManager)
     // used when change the map style (topo, stellite, etc)
     map.on('style.load', async () => {
         mapManager.update_terrain();
-
-        var marker = 'marker-places-nc'
-        if (! map.getImage(marker)) {
-            console.log(`reloading ${marker} /static/img/icons/${marker}.png`)
-            const image = await map.loadImage(`/static/img/icons/${marker}.png`);
-            map.addImage(marker, image.data);
-        }
-        marker = 'marker-places-hc'
-        if (! map.getImage(marker)) {
-            console.log(`reloading ${marker} /static/img/icons/${marker}.png`)
-            const image = await map.loadImage(`/static/img/icons/${marker}.png`);
-            map.addImage(marker, image.data);
-        }
+        mapManager.load_icons();
+      
+       
   
     });
-
+   
     // main callback
     map.on('load', async () => {
-        var marker = 'marker-places-nc'
-        if (! map.getImage(marker)) {
-            console.log(`reloading ${marker} /static/img/icons/${marker}.png`)
-            const image = await map.loadImage(`/static/img/icons/${marker}.png`);
-            map.addImage(marker, image.data);
-        }
-        marker = 'marker-places-hc'
-        if (! map.getImage(marker)) {
-            console.log(`reloading ${marker} /static/img/icons/${marker}.png`)
-            const image = await map.loadImage(`/static/img/icons/${marker}.png`);
-            map.addImage(marker, image.data);
-        }
+    
+        mapManager.load_icons()
+        // var marker = 'marker-places-nc'
+        // if (! map.getImage(marker)) {
+        //     console.log(`reloading ${marker} /static/img/icons/${marker}.png`)
+        //     const image = await map.loadImage(`/static/img/icons/${marker}.png`);
+        //     map.addImage(marker, image.data);
+        // }
+        // marker = 'marker-places-hc'
+        // if (! map.getImage(marker)) {
+        //     console.log(`reloading ${marker} /static/img/icons/${marker}.png`)
+        //     const image = await map.loadImage(`/static/img/icons/${marker}.png`);
+        //     map.addImage(marker, image.data);
+        // }
+
 
         map.addControl(new maplibregl.FullscreenControl({container: document.querySelector('body')}),  'top-right');
         map.addControl(
@@ -181,14 +181,14 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
         map.addControl(new maplibreGLMeasures.default({ units: 'metric'}), 'top-right');
 
 
-        map.addSource(mapManager.layer_prefix(`track_${track.id}`), {
+        map.addSource(mapManager.track_source_id, {
             type: "geojson",
             data: `/track/as_geojson?id=${track.id}`
         });
         map.addLayer({
-            'id': mapManager.layer_prefix(`track_${track.id}_layer`),
+            'id': mapManager.track_layer_id,
             'type': 'line',
-            'source': mapManager.layer_prefix(`track_${track.id}`),
+            'source': mapManager.track_source_id,
             'layout': { 
                 'line-join': "round", 
                 'line-cap': "round"
@@ -203,7 +203,6 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
         //
         // terrain info.
         // 
-
         
         if (load_terrain) {
 
@@ -215,9 +214,6 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
             map.setTerrain({
                 source: mapManager.layer_prefix("terrain")
             });
-
-            //testtest
-            
 
             if (hillshading) {
                 // this doesn't produce any effect for now.
@@ -237,14 +233,18 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
             
         }
        
+        //
         // load the GEOJSON for places layer.
-        map.addSource(mapManager.layer_prefix('places'), {
+        // 
+
+        map.addSource(mapManager.places_source_id, {
             type: "geojson",
             data: "/places/as_geojson"
         });
+        
         map.addLayer({
-            'id': mapManager.layer_prefix('places-layer'),
-            'source': mapManager.layer_prefix('places'),
+            'id': mapManager.places_layer_id,
+            'source': mapManager.places_source_id,
             'type': 'symbol',
             'layout': {
                 'visibility': 'none',
@@ -252,7 +252,7 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
                 'text-allow-overlap': true,
                 'icon-overlap': 'always',
                 'text-overlap': 'always',
-                'icon-image': 'marker-places-nc',
+                'icon-image': ['get', 'icon'],
                 'text-field': ['get', 'name'],
                 'text-font': [
                     'Open Sans Semibold',
@@ -367,13 +367,43 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
         // end of map onLoad
         // call the rest of things here after map loading.
           // its a promise
-        let track_data = map.getSource(mapManager.track_data())
+
+        let track_data = map.getSource(mapManager.track_source_id)
         track_data.getData().then( function(results) {
             plotElevation(results,map,mapManager)
         });
+
+        // don't work. useful maybe for places then, lets see.
+        // let features = map.getSource(mapManager.places_source_id)
+        // features.getData().then( function(results) {
+        //     for (const marker of results.features) {
+        //         // Create a DOM element for each marker.
+        //         const el = document.createElement('div');
+        //         //const width = marker.properties.iconSize[0];
+        //         //const height = marker.properties.iconSize[1];
+        //         el.className = 'marker';
+        //         el.style.backgroundImage = `url(http://localhost:5000/static/img/icons/wpt/0.png)`;
+        //         el.style.width = `132px`;
+        //         el.style.height = `132px`;
+        //         el.style.backgroundSize = '100%';
+        
+        //         el.addEventListener('click', () => {
+        //             window.alert(marker.properties.name);
+        //         });
+        
+        //         // Add markers to the map.
+        //         new maplibregl.Marker(el)
+        //             .setLngLat(marker.geometry.coordinates)
+        //             .addTo(map);
+        //     }
+
+
+        // });
     })
 
-    map.on('click', mapManager.layer_prefix('places-layer'), (e) => {
+
+
+    map.on('click', mapManager.places_layer_id, (e) => {
         const coordinates = e.features[0].geometry.coordinates.slice();
         const description = e.features[0].properties.description;
 
@@ -400,16 +430,6 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
         map.getCanvas().style.cursor = '';
     });
 
-    // show lat/long if needed
-    // map.on('mousemove', (e) => {
-    //     document.getElementById('map-info').innerHTML =
-    //         // e.point is the x, y coordinates of the mousemove event relative
-    //         // to the top-left corner of the map
-    //        `${JSON.stringify(e.point)
-    //         }<br />${
-    //             // e.lngLat is the longitude, latitude geographical position of the event
-               
-    //             JSON.stringify(e.lngLat.wrap())}`;
-    // });
+
 
 }

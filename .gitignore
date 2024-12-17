@@ -22,6 +22,9 @@ webapp/static/geojson/**
 webapp/static/gpx/**
 dev/ln2sql
 dev/ln2sql/**
+dev/Points
+dev/wpts
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
