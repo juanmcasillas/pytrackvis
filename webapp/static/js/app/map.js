@@ -5,6 +5,7 @@ var mapManager = {
     track: null,
     terrain_source: null,
     marker: new maplibregl.Marker(),
+    catastro_flag: null,
 
     icons: [
         'nc', 
@@ -125,6 +126,18 @@ var mapManager = {
             window.map.setLayoutProperty(this.places_layer_id, 'visibility', 'none');
         }
     },
+    toogle_catastro: function(obj) {
+        if (this.catastro_flag === null) {
+            obj.classList.replace("map-catastro", "map-catastro-active");
+            map.getCanvas().style.cursor = 'pointer';
+            this.catastro_flag = obj
+        } else {
+            this.catastro_flag.classList.replace("map-catastro-active", "map-catastro");
+            map.getCanvas().style.cursor = '';
+            this.catastro_flag = null;
+        }
+        
+    },
     check_catastro: function(lat, lng) {
   
         console.log("testing catastro as this:", lat, lng)
@@ -139,7 +152,8 @@ var mapManager = {
                     'lng': lng, 
                 },
             beforeSend: function (data) {
-                $('#wait-spinning').css("visibility", "visible");
+                // no wait, ugly
+                //$('#wait-spinning').css("visibility", "visible");
             },
             success: function (data) {
                 if (data.error > 0) {
@@ -149,10 +163,19 @@ var mapManager = {
                 // use here the container to process the tracks and save them
                 // console.log(data.tracks)
                 //var block = document.getElementById('block-page')
-                $('#wait-spinning').css("visibility", "hidden");
+
+                // no wait, ugly
+                // $('#wait-spinning').css("visibility", "hidden");
                 // set things here. for now, add a layer with some things 
                 // to test.
                 
+                console.log(data.data.catastro)
+                if (data.data.catastro.ccc == "DPU") {
+                    // public domain, show alert, quit
+                    json_error("Dominio Público (ccc=DPU)", "no poly for this region, sorry")
+                    return
+                }
+
                 
                 if (window.map.getLayer(mapManager.catastro_layer_id)) {
                     window.map.removeLayer(mapManager.catastro_layer_id)
@@ -164,31 +187,56 @@ var mapManager = {
 
 
                 window.map.addSource(mapManager.catastro_source_id, data.gdata)
-
+                // add things to catastro layer ??
                 window.map.addLayer({
                     'id': mapManager.catastro_layer_id,
                     'type': 'fill',
                     'source': mapManager.catastro_source_id,
                     'layout': { },
                     'paint': {
-                        'fill-color': '#DD5050',
+                        'fill-color': [ 'get', 'style'],
                         'fill-opacity': 0.7
                     }
                 });
-                console.log(data.gdata)
+
+                map.on('click', mapManager.catastro_layer_id, (e) => {
+                    
+                    e.features[0].properties.info = JSON.parse(e.features[0].properties.info)
+                    new maplibregl.Popup()
+                        .setLngLat(e.lngLat)
+                        .setHTML(`
+                            <div>
+                            <h5>${e.features[0].properties.cdc}</h5>
+                            <h6>Public: ${e.features[0].properties.is_public}</h6>
+                            <ul>
+                             <li>RC: ${e.features[0].properties.rc}
+                             <li>CCC: ${e.features[0].properties.ccc}
+                             <li>CodMun: ${e.features[0].properties.info.codigo_municipio}
+                             <li>Designation: ${e.features[0].properties.info.denominacion_clase}
+                             <li>Mun: ${e.features[0].properties.info.nombre_municipio}
+                             <li>Prov: ${e.features[0].properties.info.nombre_provincia}
+                             <li>Par: ${e.features[0].properties.info.nombre_paraje}
+                             <li>Dom: ${e.features[0].properties.info.domicilio_tributario}
+                            </ul>
+                            </div>
+                        `)
+                        .addTo(map);
+                        console.log("features", e.features[0].properties)
+                });
+                // console.log(data.gdata)
 
             },
             fail: function (data) {
-                $('#wait-spinning').css("visibility", "hidden");
+                //$('#wait-spinning').css("visibility", "hidden");
                 json_error("Error getting catastro_info", data)
                 //console.error(data);
             }
         });
 
+        // do only one time
+        this.toogle_catastro()
     }
 }
-
-
 
 
 
@@ -259,12 +307,13 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
                 visualizePitch: false,
                 showZoom: true,
                 showCompass: true
-            }, 
+            },
             'top-right')
         );
         map.addControl(new maplibregl.ScaleControl({ unit: 'metric'}), 'bottom-right');
         map.addControl(new maplibreGLMeasures.default({ units: 'metric'}), 'top-right');
-
+        
+        
 
         map.addSource(mapManager.track_source_id, {
             type: "geojson",
@@ -317,7 +366,7 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
             }
             
         }
-       
+        
         //
         // load the GEOJSON for places layer.
         // 
@@ -505,22 +554,33 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
             .addTo(map);
     });
 
-    map.on('contextmenu',  (e) => {
+    map.on('click',  (e) => {
         
+        // only check catastro if mode is activated
+        if ( !mapManager.catastro_flag) {
+            return;
+        }
+
+        // issue the call directly.
+        mapManager.check_catastro(lat=e.lngLat.lat, lng=e.lngLat.lng)
+        return 
+
         // console.log("XXX")
         // console.log(e)
         // console.log(e.lngLat)
         // console.log(e.point)
-        popup = new maplibregl.Popup({closeOnMove: true, closeOnClick: true, closeButton: true})
-            .setLngLat(e.lngLat)
-            .setHTML(`
-                <h5>check catastro</h5>
-                <div>
-                    <span>${e.lngLat.lat}, ${e.lngLat.lng}</span>
-                    <a href="#"  onclick="mapManager.check_catastro(lat=${e.lngLat.lat}, lng=${e.lngLat.lng})">Check it</a>
-                </div>
-            `)
-            .addTo(map);
+
+        // use a popup - not needed.
+        // popup = new maplibregl.Popup({closeOnMove: true, closeOnClick: true, closeButton: true})
+        //     .setLngLat(e.lngLat)
+        //     .setHTML(`
+        //         <h5>check catastro</h5>
+        //         <div>
+        //             <span>${e.lngLat.lat}, ${e.lngLat.lng}</span>
+        //             <a href="#"  onclick="mapManager.check_catastro(lat=${e.lngLat.lat}, lng=${e.lngLat.lng})">Check it</a>
+        //         </div>
+        //     `)
+        //     .addTo(map);
   
         return
         

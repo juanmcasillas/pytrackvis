@@ -25,6 +25,7 @@ import datetime
 import traceback
 import cv2
 import re
+import copy 
 
 from pytrackvis.appenv import *
 from pytrackvis.altitude import *
@@ -192,13 +193,14 @@ class Manager:
         features = []
         for p in poly:
             coords = list(map(lambda x: [ float(x[0]), float(x[1]), float(x[2])], p['coords']))
-            features.append(GeoJSON.polygon_feature(coords,{}))
-
-
+            t = copy.copy(p)
+            del t['coords']
+            t['is_public'] = data['catastro']['is_public']
+            features.append(GeoJSON.polygon_feature(coords, t))
 
         return data, GeoJSON.feature_collection(features = features)
       
-    def import_places(self, files):
+    def import_places(self, category, files):
         """import the files into the database if they are not inserted. LAT/LON/ELEV position as hash
 
         Args:
@@ -206,11 +208,12 @@ class Manager:
             ['.\data\Cartography\**\*.gpx', '.\data\fit\*.kml', 'file.gpx']
         """
 
+       
         files = glob_filelist(files)
         for fname in files:
             pm = PlaceManager([fname])
             try:
-                places = pm.load()
+                places = pm.load(category)
             except Exception as e:
                 s = traceback.format_exc()
                 self.logger.exception(s)
@@ -941,14 +944,16 @@ class Manager:
                            description, 
                            kind,
                            radius,
-                           stamp
+                           stamp,
+                           category
                            )
         values ( ?, ?, ?, ?, 
                  ?, ?, ?, 
                  ?, 
                  ?, 
                  ?,
-                 ? 
+                 ?,
+                 ?
             );
         """
 

@@ -49,6 +49,7 @@ if __name__ == "__main__":
                                                help="Import places from different locations", 
                                                )
     import_places_parser.set_defaults(command="import_places")
+    import_places_parser.add_argument("category",help="string with category")
     import_places_parser.add_argument("files",help="kml or gpx files", nargs='+')
 
     args = parser.parse_args()
@@ -88,8 +89,11 @@ if __name__ == "__main__":
 
     if args.command == "import_places":
         subargs = import_tracks_parser.parse_args()
+        category = subargs.files[1]
+        files = subargs.files[2:]
+       
         # remove the current command in the args.
-        manager.import_places(subargs.files[1:])
+        manager.import_places(category, files)
         sys.exit(0)
 
 

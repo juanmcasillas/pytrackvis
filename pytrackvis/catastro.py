@@ -186,8 +186,8 @@ denominacion_clase = %s
             'nombre_provincia': self.nombre_provincia,
             'nombre_municipio': self.nombre_municipio,
             'nombre_paraje': self.nombre_paraje,
-            'domicilio_tributario ': self.domicilio_tributario,
-            'calificacion_catastral ': self.calificacion_catastral,
+            'domicilio_tributario': self.domicilio_tributario,
+            'calificacion_catastral': self.calificacion_catastral,
             'denominacion_clase': self.denominacion_clase,
         }
         return r
@@ -206,7 +206,66 @@ class CatastroManager:
     # RC = {pc1}{pc2} = 28099A00709004
     OVCCallejero_url = "OVCCallejero.asmx/Consulta_DNPRC?Provincia=&Municipio=&RC={rc}"
 
-    
+    class_styles = {}
+    class_styles['C-']      = "#33cccc" #LABOR O LABRADO SECANO
+    class_styles['E-']      = "#66ffff" #PASTOS
+    class_styles['O-']      = "#66AAAA" #OLIVOS DE SECANO
+    class_styles['FE']      = "#336600" #ENCINAR
+    class_styles['HC']      = "#900010" #HIDROGRAFA CONSTRUIDA
+    class_styles['HG']      = "#A00010" #HIDROGRAFA NATURAL
+    class_styles['I-']      = "#303080" #IMPRODUCTIVO
+    class_styles['MB']      = "#33cc66" #MONTE BAJO
+    class_styles['PD']      = "#00cc66" #PRADOS O PRADERAS
+    class_styles['CR']      = "#00EE90" #LABOR O REGADIO
+    class_styles['FR']      = "#00FFA0" #FRUTALES REGADIO
+    class_styles['V-']      = "#006699" #VID SECANO
+    class_styles['VT']      = "#406020" #VIA DE COMUNICACION DE DOMINIO PUBLICO
+    class_styles['VO']      = "#00AA99" #VI�A OLIVAR SECANO
+    class_styles['MM']      = "#30AA90" #PINAR MADERABLE
+    class_styles['MP']      = "#30AAAA" #PINAR PINEA O DE FRUTO
+    class_styles['NC']      = "#66f090" #PARAJE
+    class_styles['MR']      = "#66f040" #PARAJE
+    class_styles['CE']      = "#44f020" #PARAJE
+
+    class_styles['123']     = "#907060" # RECOLETOS
+    class_styles['127']     = "#907060" # RECOLETOS
+    class_styles['270']     = "#557580" # DELESPINO
+    class_styles['10']      = "#407080" # CORREDERA
+    class_styles['12']      = "#506070" # HOSPITAL
+    class_styles['36']      = "#506070" # HOSPITAL
+    class_styles['50']      = "#407080" # MARTIRES DE EL TIEMBLO
+    class_styles['35']      = "#407080" # GENERALISIMO FRANCO
+    class_styles['RI']      = "#805070" #
+    class_styles['PR']      = "#807080" #
+    class_styles['HR']      = "#40BBCC" #UMBRIA - SEVILLA
+    class_styles['EU']      = "#40A0D0" #REHOYO - SEVILLA
+    class_styles['FS']      = "#40A0D0" #REHOYO - SEVILLA
+
+    class_styles['9']       = "#902070" #FUENTE NUEVA
+    class_styles['2']       = "#902070" #CONCEPCION
+    class_styles['13']      = "#902070" #IGLESIA
+    class_styles['20']      = "#667070" #TENERIA
+    class_styles['47']      = "#667070" #EXTRARRADIO
+    class_styles['F-']      = "#667070" #EXTRARRADIO
+    class_styles['MT']      = "#667070" #EXTRARRADIO
+    class_styles['PR']      = "#667070" #EXTRARRADIO
+    class_styles['80']      = "#667070" #EXTRARRADIO
+    class_styles['EE']      = "#669090" #PASTOS CON ENCINAS
+    class_styles['MF']      = "#22AA55" #ESPECIES MEZCLADAS
+    class_styles['FF']      = "#404040" #VIA FERREA
+    class_styles['EO']      = "#009988" #PASTOS CON OLIVOS
+
+    class_styles['84']      = "#405070" #DISEMINADO
+    class_styles['85']      = "#306090" #VI�UELAS
+
+    class_styles['GE']      = "#50AA66" #generico # not used ?
+    class_styles['DES']     = "#8000AA" #desconocido
+    class_styles['PRI']     = "#700020" #privado
+
+    class_styles['AM']        = "#500010" #PARAJE
+    class_styles['560']       = "#500010" #CASTILLO
+    class_styles['78']        = "#500010" #RONCESVALLES
+    class_styles['90024']     = "#500010" #SECTOR-5
 
     def __init__(self, cachedir, unsafe_ssl = True):
         self.unsafe_ssl = unsafe_ssl
@@ -522,6 +581,16 @@ class CatastroManager:
         #    return True
         #return False
 
+    def map_class(self, cls):
+        styles = {}
+        # colors: #AAbbggrr
+
+        if cls in self.class_styles.keys():
+            return self.class_styles[cls]
+        else:
+            return  "#EE0000" # default
+
+
     def check_point(self, lat, lon, debug=True):
     
         lat = float(lat)
@@ -598,12 +667,16 @@ class CatastroManager:
                     if not rc in polygons.keys():
                         polygons[rc] = msg
                         polygons_ordered.append({ 'msg': msg, 'coords': coords, 
-                                                 'ccc':ccc, 'cdc': cdc, 'info': info.as_dict(), 'rc': rc })
+                                                  'ccc': ccc, 'cdc': cdc, 
+                                                  'info': info.as_dict(), 
+                                                  'rc': rc,
+                                                  'style': self.map_class(ccc) })
                                             # missing point, point
 
                     last_polygon = { 'msg': msg, 'coords': coords, 
                                      'ccc':ccc, 'cdc': cdc, 'info': 
-                                     info, 'rc': rc }
+                                     info.as_dict(), 'rc': rc,
+                                     'style': self.map_class(ccc) }
 
 
 

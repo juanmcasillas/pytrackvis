@@ -60,3 +60,15 @@ python3.9 app.py import_files /Archive/Cartography/files/EDGE1000/2021/*.fit
 python3.9 app.py import_files /Archive/Cartography/files/EDGE1000/2022/*.fit
 python3.9 app.py import_files /Archive/Cartography/files/EDGE1000/2023/*.fit
 python3.9 app.py import_files /Archive/Cartography/files/EDGE1000/2024/*.fit
+
+# places
+
+python3.9 app.py import_places "access gates" /Archive/Cartography/files/databases/Waypoints.kml
+python3.9 app.py import_places "access gates" /Archive/Cartography/files/databases/myplaces.GPX
+python3.9 app.py import_places "access gates" /Archive/Cartography/files/databases/myplaces.kml
+python3.9 app.py import_places "access gates" /Archive/Cartography/files/databases/puertas_db.GPX
+python3.9 app.py import_places "access gates" /Archive/Cartography/files/databases/wpt_to_load.gpx
+python3.9 app.py import_places "access gates" /Archive/Cartography/files/databases/wpt_17_12_2024.GPX
+
+python3.9 app.py import_places "pedriza peaks" /Archive/Cartography/files/databases/pedriza_riscos.gpx
+python3.9 app.py import_places "pedriza peaks" pedriza_peaks /Archive/Cartography/files/databases/pedriza_toload.gpx

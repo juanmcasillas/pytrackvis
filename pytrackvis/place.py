@@ -21,7 +21,7 @@ import datetime
 import copy
 import hashlib
 import os.path
-import pprint 
+import pprint
 
 from .helpers import bearing, distancePoints, module, C, remove_accents
 from .geojson import GeoJSON
@@ -42,7 +42,8 @@ class Place:
         self.kind = ""
         self.radius = 25.0
         self.stamp = None
-        
+        self.category = ""
+
         self.kind_default_icon = 'nc'
         self.kind_mapping = {
             'home':                      '10',
@@ -62,7 +63,7 @@ class Place:
             'waypoint':                  'nc',
             'peak':                      '106',
         }
-        
+
     def kind_to_wpt(self, kind):
         if kind.lower() in self.kind_mapping.keys():
             return self.kind_mapping[kind.lower()]
@@ -86,18 +87,19 @@ class Place:
 
     def as_dict(self):
         d = {}
-        d['id']           = self.id         
-        d['hash']         = self.hash       
-        d['name']         = self.name       
-        d['searchname']   = self.searchname 
-        d['link']         = self.link       
-        d['latitude']     = self.latitude   
-        d['longitude']    = self.longitude  
-        d['elevation']    = self.elevation  
+        d['id']           = self.id
+        d['hash']         = self.hash
+        d['name']         = self.name
+        d['searchname']   = self.searchname
+        d['link']         = self.link
+        d['latitude']     = self.latitude
+        d['longitude']    = self.longitude
+        d['elevation']    = self.elevation
         d['description']  = self.description
-        d['kind']         = self.kind       
-        d['radius']       = self.radius     
-        d['stamp']        = self.stamp      
+        d['kind']         = self.kind
+        d['radius']       = self.radius
+        d['stamp']        = self.stamp
+        d['category']     = self.category
         return d
 
     def as_geojson_point(self):
@@ -112,7 +114,7 @@ class Place:
             'icon': self.kind_to_wpt(self.kind)
         }
         return GeoJSON.point_feature(coords, properties )
- 
+
 
 
     def as_tuple(self, db=False):
@@ -123,11 +125,11 @@ class Place:
             pass
         # id not passed
         return (self.hash, self.name, self.searchname, self.link,
-                self.latitude, self.longitude, self.elevation, 
+                self.latitude, self.longitude, self.elevation,
                 self.description,
-                self.kind, 
+                self.kind,
                 self.radius,
-                self.stamp
+                self.stamp,
+                self.category
         )
-    
-   
+

@@ -40,7 +40,7 @@ class PlaceManager(TrackManager):
         }
 
 
-    def _kml_loader(self, fname):
+    def _kml_loader(self, fname, category):
 
         if self.verbose:
             print("running kml_loader(%s) NOT_IMPLEMENTED" % fname)
@@ -59,7 +59,7 @@ class PlaceManager(TrackManager):
                 args['description'] = place.description
                 args['kind'] = "waypoint"
                 args['stamp'] = datetime.datetime.now(datetime.timezone.utc).isoformat(sep=' ',timespec='seconds')
-
+                args['category'] = category
                 place = Place(args['name']).from_dict(args)
                 place.calculate_hash() 
                 places.append( place )
@@ -67,7 +67,7 @@ class PlaceManager(TrackManager):
         return places
 
 
-    def _gpx_loader(self, fname):
+    def _gpx_loader(self, fname, category):
         if self.verbose:
             print("running gpx_loader(%s)" % fname)
        
@@ -97,6 +97,7 @@ class PlaceManager(TrackManager):
                 args['description'] = wpt.description
                 args['kind'] = str(wpt.symbol)
                 args['stamp'] = str(wpt.time)
+                args['category'] = category
 
                 for e in wpt.extensions:
                     attr = re.sub('{.+}','',e.tag)
@@ -115,12 +116,12 @@ class PlaceManager(TrackManager):
 
 
 
-    def load(self):
+    def load(self, category):
         for i in self.file_names:
             if not self.file_types[i]:
                 raise ValueError("file %s has not valid type" % i)
             loader = self.FILE_LOADER[self.file_types[i]]
-            places =  loader(i)
+            places =  loader(i, category)
             self.places = places
            
         return self.places

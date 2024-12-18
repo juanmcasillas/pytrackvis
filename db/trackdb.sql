@@ -155,7 +155,8 @@ CREATE TABLE if NOT exists  `PLACES` (
     `description`  TEXT DEFAULT NULL,
     `kind`         TEXT DEFAULT NULL,
     `radius`       REAL DEFAULT 25.0,
-    `stamp`        INTEGER DEFAULT 0
+    `stamp`        INTEGER DEFAULT 0,
+    `category`     TEXT DEFAULT ""
 );
 
 CREATE TABLE if NOT exists  `TRACK_IN_PLACES` (

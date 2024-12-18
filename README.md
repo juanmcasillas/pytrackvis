@@ -25,7 +25,7 @@ A simple Python GPX and FIT track file format visualization app on 2D / 3D Map u
 * [flask_socketio](https://flask-socketio.readthedocs.io/en/latest/) Gives Flask applications access to low latency bi-directional communications between the clients and the server. 
 * [flask-caching](https://fastkml.readthedocs.io/en/latest/index.html) a KML parser
 * [fastkml]()
-
+* [mapblox-gl-layers](https://github.com/developmentseed/mapbox-gl-layers)
 
 
 
