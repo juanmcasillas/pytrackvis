@@ -1,248 +1,3 @@
-var mapManager = {
-    prefix: 'pytrackvis_',         // used to mark our custom layers in the map
-    is3D: false,
-    terrain: false,
-    track: null,
-    terrain_source: null,
-    marker: new maplibregl.Marker(),
-    catastro_flag: null,
-
-    icons: [
-        'nc', 
-        'hc',
-        // add custom on init
-        '10',
-        '93',
-        '46',
-        '48',
-        '63',
-        '52',
-        '53',
-        '36',
-        '140',
-        '141',
-        '142',
-        '105',
-        '54',
-        '14',
-        'nc',
-        '106',
-    ],
-
-
-    init_defaults: function(track) {
-        this.track = track
-        this.terrain_source = { source: 'pytrackvis_terrain' }
-        this.marker.setLngLat([track.begin.long, track.begin.lat, track.begin.elev]).addTo(map);
-        this.marker.setOpacity(0)
-      
-
-        this.places_source_id = this.layer_prefix('places-source')
-        this.places_layer_id = this.layer_prefix('places-layer')
-        this.track_source_id = this.layer_prefix(`track_${this.track.id}-source`)
-        this.track_layer_id = this.layer_prefix(`track_${this.track.id}-layer`)
-        this.catastro_source_id = this.layer_prefix('catastro-source')
-        this.catastro_layer_id = this.layer_prefix('catastro-layer')
-        // implicit load of required icons to speed up
-        // for (var i=0; i<265; i++) {
-        //     this.icons.push(`${i}`)
-        // }
-    },
-
-    change: function() {
-        if (this.is3D == false) {
-            this.is3D= true;
-            window.map.setPitch(60);
-            window.map.dragRotate.enable();
-            window.map.keyboard.enable(); 
-            window.map.touchZoomRotate.enableRotation();
-            window.map.setTerrain(this.terrain_source)
-            this.terrain = true
-        }
-        else {
-            this.is3D = false;
-            window.map.setPitch(0);
-            window.map.dragRotate.disable();
-            window.map.keyboard.disable(); 
-            window.map.touchZoomRotate.disableRotation();
-            window.map.setTerrain(null)
-            this.terrain = false;
-        }
-    },
-    recenter: function() {
-        window.map.fitBounds( track.bounds )
-       
-        //window.map.setCenter({ lon: track.center.long, lat: track.center.lat })
-    },
-    update_terrain: function() {
-        if (this.terrain) {
-              window.map.setTerrain(this.terrain_source)
-        }
-    },
-    layer_prefix: function(layer_name) {
-        return this.prefix + layer_name;
-    },
-    marker_off: function() {
-        this.marker.setOpacity(0)
-    },
-    marker_on: function() {
-        this.marker.setOpacity(1)
-    },
-    load_icons: async function() {
-        
-        for (const icon of mapManager.icons) { 
-            if (! window.map.getImage(icon)) {
-                //console.log(`X reloading ${icon} /static/img/icons/wpt/${icon}.png`)
-                const image = await window.map.loadImage(`/static/img/icons/wpt/${icon}.png`);
-                //console.log(image)
-                //check again
-                if (! window.map.getImage(icon)) {
-                     window.map.addImage(icon, image.data); 
-                }
-            }
-        }
-    },
-    set_normal_contrast: function() {
-        var trk_layer = this.layer_prefix(`track_${this.track.id}_layer`)
-        var places_layer = this.layer_prefix('places-layer')
-
-        window.map.setPaintProperty(this.track_layer_id,    'line-color', '#FFFF50');
-        window.map.setPaintProperty(this.places_layer_id, 'text-color', '#FFFFFF');
-        window.map.setPaintProperty(this.places_layer_id, 'text-halo-color', '#FFFFFF');
-        //window.map.setLayoutProperty(this.places_layer_id, 'icon-image', 'nc');
-    },
-    set_high_contrast: function() {
-
-        window.map.setPaintProperty(this.track_layer_id,    'line-color', '#880ED4');
-        window.map.setPaintProperty(this.places_layer_id, 'text-color', '#000000');
-        window.map.setPaintProperty(this.places_layer_id, 'text-halo-color', '#000000');
-        //window.map.setLayoutProperty(this.places_layer_id, 'icon-image', 'hc');
-    },
-    show_hide_places: function() {
-        var vis = window.map.getLayoutProperty(this.places_layer_id, 'visibility');
-        if (vis == 'none') {
-            window.map.setLayoutProperty(this.places_layer_id, 'visibility', 'visible');
-        }else {
-            window.map.setLayoutProperty(this.places_layer_id, 'visibility', 'none');
-        }
-    },
-    toogle_catastro: function(obj) {
-        if (this.catastro_flag === null) {
-            obj.classList.replace("map-catastro", "map-catastro-active");
-            map.getCanvas().style.cursor = 'pointer';
-            this.catastro_flag = obj
-        } else {
-            this.catastro_flag.classList.replace("map-catastro-active", "map-catastro");
-            map.getCanvas().style.cursor = '';
-            this.catastro_flag = null;
-        }
-        
-    },
-    check_catastro: function(lat, lng) {
-  
-        console.log("testing catastro as this:", lat, lng)
-
-        $.ajax({
-            url: '/utils/check_catastro',
-            type: 'POST',
-            //dataType: 'json',
-            //data: JSON.stringify(postData),
-            // contentType: 'application/json',
-            data: { 'lat': lat, 
-                    'lng': lng, 
-                },
-            beforeSend: function (data) {
-                // no wait, ugly
-                //$('#wait-spinning').css("visibility", "visible");
-            },
-            success: function (data) {
-                if (data.error > 0) {
-                    json_error("Error getting catastro_info", data.text)
-                    return;
-                }
-                // use here the container to process the tracks and save them
-                // console.log(data.tracks)
-                //var block = document.getElementById('block-page')
-
-                // no wait, ugly
-                // $('#wait-spinning').css("visibility", "hidden");
-                // set things here. for now, add a layer with some things 
-                // to test.
-                
-                console.log(data.data.catastro)
-                if (data.data.catastro.ccc == "DPU") {
-                    // public domain, show alert, quit
-                    json_error("Dominio Público (ccc=DPU)", "no poly for this region, sorry")
-                    return
-                }
-
-                
-                if (window.map.getLayer(mapManager.catastro_layer_id)) {
-                    window.map.removeLayer(mapManager.catastro_layer_id)
-                }
-
-                if (window.map.getSource(mapManager.catastro_source_id)) {
-                    window.map.removeSource(mapManager.catastro_source_id)
-                }
-
-
-                window.map.addSource(mapManager.catastro_source_id, data.gdata)
-                // add things to catastro layer ??
-                window.map.addLayer({
-                    'id': mapManager.catastro_layer_id,
-                    'type': 'fill',
-                    'source': mapManager.catastro_source_id,
-                    'layout': { },
-                    'paint': {
-                        'fill-color': [ 'get', 'style'],
-                        'fill-opacity': 0.7
-                    }
-                });
-
-                map.on('click', mapManager.catastro_layer_id, (e) => {
-                    
-                    e.features[0].properties.info = JSON.parse(e.features[0].properties.info)
-                    new maplibregl.Popup()
-                        .setLngLat(e.lngLat)
-                        .setHTML(`
-                            <div>
-                            <h5>${e.features[0].properties.cdc}</h5>
-                            <h6>Public: ${e.features[0].properties.is_public}</h6>
-                            <ul>
-                             <li>RC: ${e.features[0].properties.rc}
-                             <li>CCC: ${e.features[0].properties.ccc}
-                             <li>CodMun: ${e.features[0].properties.info.codigo_municipio}
-                             <li>Designation: ${e.features[0].properties.info.denominacion_clase}
-                             <li>Mun: ${e.features[0].properties.info.nombre_municipio}
-                             <li>Prov: ${e.features[0].properties.info.nombre_provincia}
-                             <li>Par: ${e.features[0].properties.info.nombre_paraje}
-                             <li>Dom: ${e.features[0].properties.info.domicilio_tributario}
-                            </ul>
-                            </div>
-                        `)
-                        .addTo(map);
-                        console.log("features", e.features[0].properties)
-                });
-                // console.log(data.gdata)
-
-            },
-            fail: function (data) {
-                //$('#wait-spinning').css("visibility", "hidden");
-                json_error("Error getting catastro_info", data)
-                //console.error(data);
-            }
-        });
-
-        // do only one time
-        this.toogle_catastro()
-    }
-}
-
-
-
-
-
-
 function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
 
 
@@ -314,7 +69,7 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
         map.addControl(new maplibreGLMeasures.default({ units: 'metric'}), 'top-right');
         
         
-
+        // CAUTION
         map.addSource(mapManager.track_source_id, {
             type: "geojson",
             data: `/track/as_geojson?id=${track.id}`
@@ -334,6 +89,47 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
             }
         });
         
+        // test catastro. Empty one.
+     
+        map.addSource(mapManager.catastro_source_id, {
+            type: "geojson",
+            data: {
+                "id": generate_uuid(),
+                "type": "FeatureCollection",
+                "features": [ ]
+            }
+        });
+      
+        map.addLayer({
+            'id': mapManager.catastro_poly_layer_id,
+            'type': 'fill',
+            'source': mapManager.catastro_source_id,
+            'layout': { },
+            'paint': {
+                'fill-color': [ 'get', 'style'],
+                'fill-opacity': 0.7
+            },
+            'filter': ['==', '$type', 'Polygon']
+        });
+        
+        map.addLayer({
+            'id': mapManager.catastro_line_layer_id,
+            'type': 'line',
+            'source': mapManager.catastro_source_id,
+            'layout': { 
+                        'line-join': "round", 
+                        'line-cap': "round"
+                    },
+            'paint': {
+                'line-color': [ 'get', 'style'],
+                //'line-color': '#FFFF50',
+                'line-width': 5
+            },
+            'filter': ['==', '$type', 'LineString']
+        });
+
+   
+
         //
         // terrain info.
         // 
@@ -397,6 +193,8 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
             //         'line-width': 1
             //     }
             // });
+
+            
 
 
             if (hillshading) {
@@ -612,7 +410,7 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
         }
 
         // issue the call directly.
-        mapManager.check_catastro(lat=e.lngLat.lat, lng=e.lngLat.lng)
+        mapManager.check_catastro_point(lat=e.lngLat.lat, lng=e.lngLat.lng)
         return 
 
         // console.log("XXX")
@@ -636,6 +434,29 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
         
     });
 
+    map.on('click', mapManager.catastro_poly_layer_id, (e) => {
+        e.features[0].properties.info = JSON.parse(e.features[0].properties.info)
+        new maplibregl.Popup()
+            .setLngLat(e.lngLat)
+            .setHTML(`
+                <div>
+                <h5>${e.features[0].properties.cdc}</h5>
+                <h6>Public: ${e.features[0].properties.is_public}</h6>
+                <ul>
+                 <li>RC: ${e.features[0].properties.rc}
+                 <li>CCC: ${e.features[0].properties.ccc}
+                 <li>CodMun: ${e.features[0].properties.info.codigo_municipio}
+                 <li>Designation: ${e.features[0].properties.info.denominacion_clase}
+                 <li>Mun: ${e.features[0].properties.info.nombre_municipio}
+                 <li>Prov: ${e.features[0].properties.info.nombre_provincia}
+                 <li>Par: ${e.features[0].properties.info.nombre_paraje}
+                 <li>Dom: ${e.features[0].properties.info.domicilio_tributario}
+                </ul>
+                </div>
+            `)
+            .addTo(map);
+            //console.log("features", e.features[0].properties)
+    });
   
     // Change the cursor to a pointer when the mouse is over the places layer.
     map.on('mouseenter', mapManager.places_layer_id, () => {

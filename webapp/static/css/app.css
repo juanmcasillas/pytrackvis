@@ -220,20 +220,28 @@ a.get-track-link:hover  {
     left: 10px;
 }
 
-.map-catastro  {
+.map-catastro-point  {
     z-index: 1;
     position: absolute;
     font-size: small;
     top: 160px;
     left: 10px;
 }
-.map-catastro-active  {
+.map-catastro-point-active  {
     z-index: 1;
     position: absolute;
     font-size: small;
     top: 160px;
     left: 10px;
-    background-color: rgb(51, 51, 51);
+    background-color: rgb(142, 136, 191)
+}
+
+.map-catastro-track  {
+    z-index: 1;
+    position: absolute;
+    font-size: small;
+    top: 200px;
+    left: 10px;
 }
 .map-info {
     z-index: 1;
@@ -277,11 +285,11 @@ a.tool-item:hover  {
 
 #wait-spinning {
     visibility: hidden;
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
-    height: 100%;
+    height: 100%; overflow: hidden;
     opacity: 0.45;
     background-color: white;
 }

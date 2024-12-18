@@ -1,3 +1,8 @@
+function generate_uuid() {
+    return Math.random().toString(36).substring(2, 15) +
+        Math.random().toString(36).substring(2, 15);
+}
+
 //
 // update the track rating, using a post to the web service declared.
 //

@@ -3,7 +3,7 @@ sys.path.append('..')
 import pytrackvis.catastro as catastro 
 import argparse
 import pprint 
-
+import json
 
 if __name__ == "__main__":
 
@@ -26,4 +26,7 @@ if __name__ == "__main__":
     ### create a valid KML file here.1
     ###
 
-    
+    print("-" * 80 )
+    point, geojson = cm.check_point_as_geojson(args.lat, args.lon)
+    print(point)
+    print(json.dumps(geojson))

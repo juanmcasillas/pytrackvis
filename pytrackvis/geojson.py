@@ -9,15 +9,17 @@
 #
 # ############################################################################
 
+import uuid
 import copy
 
 class GeoJSON:
     
     @staticmethod
-    def feature_collection( features = []):
+    def feature_collection( features = [], id = None):
         o = {
              "type": "geojson",
              "data": {
+                "id": id or str(uuid.uuid4()),
                 "type": "FeatureCollection",
                 "features": [ ]
              }
@@ -26,10 +28,11 @@ class GeoJSON:
         return o
     
     @staticmethod
-    def geojson_line( points, properties):
+    def geojson_line( points, properties, id=None):
         o = {}
         o["type"] = "geojson"
         o["data"] = {
+                "id": id or str(uuid.uuid4()),
                 "type": "Feature",
                 "properties": { },
                 "geometry": {
@@ -42,8 +45,9 @@ class GeoJSON:
         return o
 
     @staticmethod
-    def point_feature( coords, properties):
+    def point_feature( coords, properties, id=None):
         o = {
+            "id": id or str(uuid.uuid4()),
             "type": "Feature",
             "properties": { },
             "geometry": {
@@ -56,8 +60,9 @@ class GeoJSON:
         return o
     
     @staticmethod
-    def polygon_feature( coords, properties):
+    def polygon_feature( coords, properties, id=None):
         o = {
+            "id": id or str(uuid.uuid4()),
             "type": "Feature",
             "properties": { },
             "geometry": {
@@ -71,8 +76,9 @@ class GeoJSON:
         return o    
 
     @staticmethod
-    def line_feature( coords, properties):
+    def line_feature( coords, properties, id=None):
         o = {
+            "id": id or str(uuid.uuid4()),
             "type": "Feature",
             "properties": { },
             "geometry": {
@@ -85,10 +91,11 @@ class GeoJSON:
         return o   
 
     @staticmethod
-    def geojson_point( coords, properties):
+    def geojson_point( coords, properties, id=None):
         o = {}
         o["type"] = "geojson"
         o["data"] = {
+                "id": id or str(uuid.uuid4()),
                 "type": "Feature",
                 "properties": { },
                 "geometry": {

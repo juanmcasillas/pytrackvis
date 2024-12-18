@@ -187,18 +187,25 @@ class Manager:
         
         return ret
     
-    def check_catastro(self, lat, lng):
-        data, poly = self.catastro_manager.check_point(lat, lng)
+    def check_catastro_track(self, track_id):
         
-        features = []
-        for p in poly:
-            coords = list(map(lambda x: [ float(x[0]), float(x[1]), float(x[2])], p['coords']))
-            t = copy.copy(p)
-            del t['coords']
-            t['is_public'] = data['catastro']['is_public']
-            features.append(GeoJSON.polygon_feature(coords, t))
+        if not self.db_track_exists_id(track_id):
+            return False
+        
+        track = self.get_track(track_id)
+        if not track:
+            return False
+        
+        geojson = self.catastro_manager.check_pointlist_as_geojson(track.points)
+        return geojson
 
-        return data, GeoJSON.feature_collection(features = features)
+        
+
+
+    def check_catastro_point(self, lat, lng):
+        data, geojson = self.catastro_manager.check_point_as_geojson(lat, lng)
+        return data, geojson
+        
       
     def import_places(self, category, files):
         """import the files into the database if they are not inserted. LAT/LON/ELEV position as hash
@@ -500,6 +507,9 @@ class Manager:
 
     def get_track(self, id):
         trk_data = self.db_get_track(id)
+        if not trk_data:
+            return None
+        
         fm = TrackManager([trk_data['fname']])
 
         try:

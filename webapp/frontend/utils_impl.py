@@ -27,9 +27,8 @@ from webapp.caching import cache
 utils_impl = Blueprint('utils_impl', __name__)
 
 
-
-@utils_impl.route('/utils/check_catastro', methods=['GET','POST'])
-def utils_check_catastro():
+@utils_impl.route('/utils/check_catastro_point', methods=['GET','POST'])
+def utils_check_catastro_point():
     # http://localhost:5000/utils/check_catastro?lat=40.392238&lng=-4.266139
     lat = request.args.get("lat",None)
     lng = request.args.get("lng",None)
@@ -45,11 +44,36 @@ def utils_check_catastro():
                         text = 'bad lat/lng',
                         code = 2)
 
-    data, geodata = current_app.manager.check_catastro(lat, lng)
+    data, geodata = current_app.manager.check_catastro_point(lat, lng)
 
     return jsonify(error = False,
                     text = 'ok',
                     data = data,
+                    gdata = geodata)
+
+@utils_impl.route('/utils/check_catastro_track', methods=['GET','POST'])
+def utils_check_catastro_track():
+    # http://localhost:5000/utils/check_catastro_track?track_id=2426
+    track_id = request.args.get("track_id",None)
+
+    
+    if 'track_id' in request.form.keys():
+        track_id = request.form['track_id']
+
+    if not track_id:
+        return jsonify(error = True,
+                        text = 'bad track_id',
+                        code = 2)
+
+    geodata = current_app.manager.check_catastro_track(track_id)
+    if not geodata:
+        return jsonify(error = True,
+                    text = "can't generate geojson data (badk track)",
+                    gdata = [])
+    
+    return(jsonify(geodata["data"]))
+    return jsonify(error = False,
+                    text = 'ok',
                     gdata = geodata)
 
 

@@ -7,6 +7,8 @@
         <script type="text/javascript" charset="utf8" 
                  src="{{ url_for('static', filename='js/app/track_stats.js') }}"></script>
         <script type="text/javascript" charset="utf8" 
+                 src="{{ url_for('static', filename='js/app/map_manager.js') }}"></script>
+        <script type="text/javascript" charset="utf8" 
                  src="{{ url_for('static', filename='js/app/map.js') }}"></script>
         <script type="text/javascript" charset="utf8" 
                  src="{{ url_for('static', filename='js/rainbowvis.js') }}"></script>                 
@@ -166,7 +168,8 @@
                 <button type="button" class="btn btn-light map-recenter" onclick="mapManager.recenter()" >Recenter</button>
                 <button type="button" class="btn btn-light map-recenter" onclick="mapManager.recenter()" >Recenter</button>
                 <button type="button" class="btn btn-light map-places" onclick="mapManager.show_hide_places()" >Show/Hide Places</button>
-                <button type="button" class="btn btn-light map-catastro" onclick="mapManager.toogle_catastro(this)" >Check Catastro</button>
+                <button type="button" class="btn btn-light map-catastro-point" onclick="mapManager.toogle_catastro_point(this)" >Check Catastro (Point)</button>
+                <button type="button" class="btn btn-light map-catastro-track" onclick="mapManager.check_catastro_track()" >Check Catastro (Track)</button>
                 <pre id="map-info" class="map-info"></pre>
             </div>
         </div>

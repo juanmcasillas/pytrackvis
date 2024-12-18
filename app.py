@@ -23,7 +23,9 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", help="Show data about file and processing", action="count", default=0)
     parser.add_argument("-c", "--config-file", help="Configuration File", default="conf/pytrackvis.json")
 
+
     subparsers = parser.add_subparsers(title="commands", dest="command")
+    
     create_db_parser = subparsers.add_parser("create_db",help="creates the database")
     create_db_parser.set_defaults(command="create_db")
 
@@ -40,17 +42,24 @@ if __name__ == "__main__":
     list_parser.set_defaults(command="list_tracks")
 
     fix_time_parser = subparsers.add_parser("fix_time",
-                                               help="Fix the time adding 1s on each point. Dump the same as gpx, fixed", 
+                                               help="Fix the time adding 1s on each point. Dump the same as gpx, fixed"
                                                )
     fix_time_parser.set_defaults(command="fix_time")
-    fix_time_parser.add_argument("file",help="fit or gpx files")
+    fix_time_parser.add_argument("file",help="fit or gpx files", nargs=1)
 
     import_places_parser = subparsers.add_parser("import_places",
-                                               help="Import places from different locations", 
+                                               help="Import places from different locations"
                                                )
     import_places_parser.set_defaults(command="import_places")
     import_places_parser.add_argument("category",help="string with category")
     import_places_parser.add_argument("files",help="kml or gpx files", nargs='+')
+
+
+    check_catastro_parser = subparsers.add_parser("check_catastro", 
+                                                  help="Check the track with the catastro, get all the polys")
+    check_catastro_parser.set_defaults(command="check_catastro")
+    check_catastro_parser.add_argument("trackid", help="id of the track being processed")
+    
 
     args = parser.parse_args()
 
@@ -96,5 +105,9 @@ if __name__ == "__main__":
         manager.import_places(category, files)
         sys.exit(0)
 
+    if args.command == "check_catastro":
+        ##subargs = check_catastro_parser.parse_args()
+        manager.check_track_in_catastro(args.trackid)
+        sys.exit(0)
 
     manager.shutdown()

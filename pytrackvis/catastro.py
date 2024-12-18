@@ -23,7 +23,10 @@ import ssl
 import urllib3
 from collections import namedtuple
 from .helpers import point_inside_polygon,C
+import copy 
+import json
 
+from .geojson import GeoJSON
 
 class GenericCache:
     """
@@ -50,8 +53,6 @@ class GenericCache:
 
 
     def Lookup(self, url, key=None):
-
-
         self.queries += 1
 
         # fix windows-unix issue
@@ -593,93 +594,68 @@ class CatastroManager:
 
     def check_point(self, lat, lon, debug=True):
     
+        # only works one time, so there is no problem interating the thing, I suppose.
         lat = float(lat)
         lon = float(lon)
         
         polygons = {}
         polygons_ordered = []
-        last_polygon = None
+      
 
         point = C(latitude=lat, longitude=lon, elevation=0.0)
         # check if the point is inside the poly, or what
         # if we have stored polys, try if we are inside. If not, work on
 
-        rc = None
-        cached = False
+        rc = self.GetRC((point.longitude, point.latitude))
+        ccc = None      # code of land
+        cdc = None      # description
+        is_p = False
 
-        if last_polygon:
+        if not rc:
+            is_p = True
+            msg =  "%f,%f DOMINIO PUBLICO (carretera, calle, etc.)" % (point.latitude, point.longitude)
+            ccc = "DPU" # Dominio Public Use
+            cdc = "DOMINIO PUBLICO"
+        else:
 
-            pcoords = last_polygon[1] # coords
+            # ask for RC data. Note about agregates, and so on.
 
-            #msg, coords, ccc, cdc, info, point, rc = last_poly
+            info = self.GetInfo(rc)
 
-            if point_inside_polygon(point, pcoords):
+            ccc = info.calificacion_catastral or None # desconocido
+            cdc = info.denominacion_clase or None
 
-                msg, coords, ccc, cdc, info, point, rc = last_polygon
-                msg = msg + "[POLY]"
-                cached = True
+            if info.calificacion_catastral and info.denominacion_clase:
+                #e.g VT, vias publicas
+                ccc = info.calificacion_catastral
+                cdc = info.denominacion_clase
 
-        # if data is not cached by previous polygon,
-        # then ask for things.
+            if info.domicilio_tributario:
+                ccc = ccc or "PRI"
+                cdc = info.domicilio_tributario
 
-        if not cached:
+            if not info.domicilio_tributario and info.nombre_via:
+                ccc = info.codigo_via
+                cdc = info.nombre_via
 
-            rc = self.GetRC((point.longitude, point.latitude))
-            ccc = None      # code of land
-            cdc = None      # description
+            if not cdc and info.nombre_paraje: cdc = info.nombre_paraje
 
-            if not rc:
-                msg =  "%f,%f DOMINIO PUBLICO (carretera, calle, etc.)" % (point.latitude, point.longitude)
-                ccc = "DPU" # Dominio Public Use
-                cdc = "DOMINIO PUBLICO"
-            else:
+            if not ccc: ccc = "DES"
+            if not cdc: cdc = "DESCONOCIDO"
 
-                # ask for RC data. Note about agregates, and so on.
+            msg =  "[%s] %f,%f %s(%s) {%s} %s" % (rc, point.latitude, point.longitude,  info.nombre_provincia, info.nombre_municipio, ccc, cdc)
 
-                info = self.GetInfo(rc)
-
-                ccc = info.calificacion_catastral or None # desconocido
-                cdc = info.denominacion_clase or None
-
-                if info.calificacion_catastral and info.denominacion_clase:
-                    #e.g VT, vias publicas
-                    ccc = info.calificacion_catastral
-                    cdc = info.denominacion_clase
-
-                if info.domicilio_tributario:
-                    ccc = ccc or "PRI"
-                    cdc = info.domicilio_tributario
-
-                if not info.domicilio_tributario and info.nombre_via:
-                    ccc = info.codigo_via
-                    cdc = info.nombre_via
-
-                if not cdc and info.nombre_paraje: cdc = info.nombre_paraje
-
-                if not ccc: ccc = "DES"
-                if not cdc: cdc = "DESCONOCIDO"
-
-                msg =  "[%s] %f,%f %s(%s) {%s} %s" % (rc, point.latitude, point.longitude,  info.nombre_provincia, info.nombre_municipio, ccc, cdc)
-
-
-                coords = self.getRCCoords(rc)
-                if coords:
-                    if not rc in polygons.keys():
-                        polygons[rc] = msg
-                        polygons_ordered.append({ 'msg': msg, 'coords': coords, 
-                                                  'ccc': ccc, 'cdc': cdc, 
-                                                  'info': info.as_dict(), 
-                                                  'rc': rc,
-                                                  'style': self.map_class(ccc) })
-                                            # missing point, point
-
-                    last_polygon = { 'msg': msg, 'coords': coords, 
-                                     'ccc':ccc, 'cdc': cdc, 'info': 
-                                     info.as_dict(), 'rc': rc,
-                                     'style': self.map_class(ccc) }
-
-
-
+            coords = self.getRCCoords(rc)
+            if coords:
+                if not rc in polygons.keys():
+                    polygons[rc] = msg
+                    polygons_ordered.append({ 'msg': msg, 'coords': coords, 
+                                                'ccc': ccc, 'cdc': cdc, 
+                                                'info': info.as_dict(), 
+                                                'rc': rc,
+                                                'is_public': is_p,
+                                                'style': self.map_class(ccc) })
+                                        # missing point, point
 
         # add fields and build the real thing.
         o = {
@@ -695,6 +671,279 @@ class CatastroManager:
         }
 
         return o, polygons_ordered
+
+
+
+    def check_pointlist(self, points):
+
+        polygons = {}
+        polygons_ordered = []
+        last_polygon = None
+        track_segments = []
+        debug_segments = False
+        segstate = "out"
+        segkind = False
+        segment = []
+        segment_coords = []
+
+        #for point in
+        
+        for pindex in range(len(points)):
+          
+            point = points[pindex]
+
+            # check if the point is inside the poly, or what
+            # if we have stored polys, try if we are inside. If not, work on
+
+            rc = None
+            cached = False
+
+            if last_polygon:
+                pcoords = list(last_polygon.values())[1] # coords
+
+                #msg, coords, ccc, cdc, info, point, rc = last_poly
+
+                if point_inside_polygon(point, pcoords):
+
+                    #msg, coords, ccc, cdc, info, pointx, rc, is_p, _ = list(last_polygon.values())
+                    # point is overwritten here.
+                    msg, coords, ccc, cdc, info, rc, is_p, _ = list(last_polygon.values())
+                    
+                    msg = msg + "[POLY]"
+                    cached = True
+
+            # if data is not cached by previous polygon,
+            # then ask for things.
+
+            if not cached:
+
+                rc = self.GetRC((point.longitude, point.latitude))
+                ccc = None      # code of land
+                cdc = None      # description
+                is_p = False
+
+                if not rc:
+                    is_p = True
+                    msg =  "%f,%f DOMINIO PUBLICO (carretera, calle, etc.)" % (point.latitude, point.longitude)
+                    ccc = "DPU" # Dominio Public Use
+                    cdc = "DOMINIO PUBLICO"
+                else:
+
+                    # ask for RC data. Note about agregates, and so on.
+
+                    info = self.GetInfo(rc)
+
+                    ccc = info.calificacion_catastral or None # desconocido
+                    cdc = info.denominacion_clase or None
+
+                    if info.calificacion_catastral and info.denominacion_clase:
+                        #e.g VT, vias publicas
+                        ccc = info.calificacion_catastral
+                        cdc = info.denominacion_clase
+
+                    if info.domicilio_tributario:
+                        ccc = ccc or "PRI"
+                        cdc = info.domicilio_tributario
+
+                    if not info.domicilio_tributario and info.nombre_via:
+                        ccc = info.codigo_via
+                        cdc = info.nombre_via
+
+                    if not cdc and info.nombre_paraje: cdc = info.nombre_paraje
+
+                    if not ccc: ccc = "DES"
+                    if not cdc: cdc = "DESCONOCIDO"
+
+                    msg =  "[%s] %f,%f %s(%s) {%s} %s %s" % (rc, point.latitude, point.longitude,  info.nombre_provincia, info.nombre_municipio, ccc, cdc, is_p)
+
+                    coords = self.getRCCoords(rc)
+                    if coords:
+                        if not rc in polygons.keys():
+                            polygons[rc] = msg
+                            #polygons_ordered.append([msg, coords, ccc, cdc, info, point, rc])
+                            polygons_ordered.append({ 'msg': msg, 'coords': coords, 
+                                                  'ccc': ccc, 'cdc': cdc, 
+                                                  'info': info.as_dict(), 
+                                                  #'point': point,
+                                                  'rc': rc,
+                                                  'is_public': is_p,
+                                                  'style': self.map_class(ccc) })
+
+                        #last_polygon = [msg, coords, ccc, cdc, info, point, rc]
+                        last_polygon = { 'msg': msg, 'coords': coords, 
+                                     'ccc':ccc, 'cdc': cdc, 'info': 
+                                     info.as_dict(), 
+                                     #'point': point,
+                                     'rc': rc,
+                                     'is_public': is_p,
+                                     'style': self.map_class(ccc) }
+
+            # ANALIZE BY CATEGORY and STATE.
+            if debug_segments:
+                print("N] ",msg.encode('ASCII','xmlcharrefreplace'))
+
+            # add fields
+
+            points[pindex].catastro = C()
+            points[pindex].catastro.rc = rc
+            points[pindex].catastro.ccc = ccc
+            points[pindex].catastro.cdc = cdc
+            points[pindex].catastro.is_public = self.isPublic(rc)
+
+            # process segments
+            # if same state
+            
+            p = points[pindex]
+            
+            if segstate == "out":
+                segstate = "in"
+                segkind = p.catastro.is_public
+                segment.append(p)
+                segment_coords.append([ p.latitude, p.longitude, p.elevation ])
+                if debug_segments: 
+                    print( "IN ", p.catastro.rc, p.catastro.ccc, p.catastro.cdc, segkind)
+                continue
+
+            if segstate == "in" and p.catastro.is_public != segkind:
+                segstate = "out"
+                
+                p2 = copy.copy(p)
+                p2.catastro.is_public = segkind
+                
+                segkind = p.catastro.is_public
+                
+                # copy the point avoid skip gaps.
+                segment.append(p2)
+                segment_coords.append([ p2.latitude, p2.longitude, p2.elevation ])
+                track_segments.append(( segment[-1].catastro.rc, segment[-1].catastro.ccc, segment[-1].catastro.cdc, segment[-1].catastro.is_public, segment, segment_coords ))
+                segment = []
+                segment_coords = []
+                segment.append(p)
+                segment_coords.append([ p.latitude, p.longitude, p.elevation ])
+                if debug_segments:
+                    print ("OUT", p.catastro.rc, p.catastro.ccc, p.catastro.cdc, segkind)
+                continue
+
+            if segstate == "in" and p.catastro.is_public == segkind:
+                segment.append(p)
+                segment_coords.append([ p.latitude, p.longitude, p.elevation ])
+                if debug_segments: 
+                    print ("---", p.catastro.rc, p.catastro.ccc, p.catastro.cdc, segkind)
+                continue
+
+        # if there is something in the segment add it
+        if segstate == "in" and len(segment) > 0:
+            track_segments.append(( segment[-1].catastro.rc, segment[-1].catastro.ccc, segment[-1].catastro.cdc, segment[-1].catastro.is_public, segment, segment_coords ))
+            if debug_segments: 
+                print ("OUT", segment[-1].catastro.rc, segment[-1].catastro.ccc, segment[-1].catastro.cdc, segkind)
+        
+
+        ## points have the info stored inside the strcture
+            
+        # print(points[0].catastro.rc)
+        # print(points[0].catastro.ccc) 
+        # print(points[0].catastro.cdc) 
+        # print(points[0].catastro.is_public)
+
+        # create a json feature collection.
+        ###
+        ### create a valid KML file here.
+        ###
+
+        # count_public = 1
+        # count_private = 1
+        # # kml_public = ""
+        # # kml_private = ""
+
+        # for sitem in track_segments:
+        #     rc, ccc, cdc, is_public, segment = sitem
+
+        #     style = "gpxtrackprivate"
+        #     count = count_public
+
+        #     if is_public:
+        #          style = "gpxtrackpublic"
+        #          count = count_private
+
+        #     gpx2kml = kmlfile.GPX2KMLPlacemark(segment,
+        #                                     gname="#%d[%s]" % (count, rc or "DOMINIO PUBLICO"),
+        #                                     gdesc="%s: %s" % (ccc, cdc), style=style)
+            #segment has the points.
+            # rc or "DOMINIO PUBLICO")
+                  
+            # count_public += 1
+            # count_private += 1
+
+            # if is_public:
+            #      kml_public += segment_processed(track)
+            # else:
+            #      kml_private += segment_processed(track)
+
+
+        # the list of polygons (useful)
+        # for poly in polygons_ordered:
+        #     print(poly)
+
+        ##self.cache.PrintStats()
+        return points, track_segments, polygons_ordered
+
+
+
+
+    def check_point_as_geojson(self, lat, lng):
+        # maplibre do some coord swapping (lat long) so put the thing right.
+        data, poly = self.check_point(lat, lng)
+        
+        features = []
+        for p in poly:
+            coords = list(map(lambda x: [ float(x[0]), float(x[1]), float(x[2])], p['coords']))
+            t = copy.copy(p)
+            del t['coords']
+            
+            features.append(GeoJSON.polygon_feature(coords, t, id=t['rc']))
+
+        return data, GeoJSON.feature_collection(features = features)
+
+
+
+    def check_pointlist_as_geojson(self, points):
+        points, track_segments, poly = self.check_pointlist(points)
+        
+        # first, create the poly features.
+        features = []
+        for p in poly:
+            coords = list(map(lambda x: [ float(x[0]), float(x[1]), float(x[2])], p['coords']))
+            t = copy.copy(p)
+            del t['coords']
+            features.append(GeoJSON.polygon_feature(coords, t, id=t['rc']))
+
+        # second add the line segments, styling then.
+        
+        count_public = 1
+        count_private = 1
+    
+        for segment in track_segments:
+            rc, ccc, cdc, is_public, segment, segment_coords = segment
+            style = "#FF2020" # private # FIXME to config
+            count = count_public
+
+            if is_public:
+                 style = "#20FF20" # public # FIXME to config
+                 count = count_private
+
+            coords = list(map(lambda x: [ float(x[1]), float(x[0]), float(x[2])], segment_coords))
+            prop = {
+                'rc': rc,
+                'ccc': ccc,
+                'is_public': is_public,
+                'style': style
+            }
+
+            features.append(GeoJSON.line_feature(coords, prop))
+
+
+        return GeoJSON.feature_collection(features=features)
+
 
 
 
