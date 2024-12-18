@@ -349,6 +349,56 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
                 source: mapManager.layer_prefix("terrain")
             });
 
+            //
+            // WIP - Contour lines works fine
+            // TODO: add buttons and manage this layer
+            // properly. Too clutering for default.
+
+            // map.addSource(mapManager.layer_prefix('contours-source'), {
+            //     type: 'vector',
+            //     url: `https://api.maptiler.com/tiles/contours/tiles.json?key=${MAPTILER_KEY}`
+            // });
+            // map.addLayer({
+            //     'id': mapManager.layer_prefix('terrain-data-layer'),
+            //     'type': 'line',
+            //     'source': mapManager.layer_prefix('contours-source'),
+            //     'source-layer': 'contour',
+            //     'layout': {
+            //         'line-join': 'round',
+            //         'line-cap': 'round'
+            //     },
+            //     'paint': {
+            //         'line-color': '#E0E040',
+            //         'line-width': 1
+            //     }
+            // });
+
+            // TODO: add buttons and manage this layer
+            // BIG geoGSON file (80MB), work with caution also municipio and provincia.
+            // removed for now.
+
+            // map.addSource(mapManager.layer_prefix('state-limits-source'), {
+            //     type: "geojson",
+            //     //data: "/static/geojson/spain/georef-spain-municipio.geojson"
+            //     data: "/static/geojson/spain/georef-spain-provincia.geojson"
+            // });
+            // map.addLayer({
+            //     'id': mapManager.layer_prefix('state-limits-layer'),
+            //     'source': mapManager.layer_prefix('state-limits-source'),
+            //     'type': 'line',
+            //     'layout': { 
+            //         'line-join': "round", 
+            //         'line-cap': "round"
+            //     },
+            //     'paint': {
+            //         //'line-color': '#909090',    // high contrast
+            //         'line-dasharray': [5,10],
+            //         'line-color': '#880ED4',  // low contrast
+            //         'line-width': 1
+            //     }
+            // });
+
+
             if (hillshading) {
                 // this doesn't produce any effect for now.
                 // keep it disabled.

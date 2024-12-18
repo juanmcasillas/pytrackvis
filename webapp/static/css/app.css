@@ -219,6 +219,7 @@ a.get-track-link:hover  {
     top: 120px;
     left: 10px;
 }
+
 .map-catastro  {
     z-index: 1;
     position: absolute;
@@ -232,7 +233,7 @@ a.get-track-link:hover  {
     font-size: small;
     top: 160px;
     left: 10px;
-    background-color: red;
+    background-color: rgb(51, 51, 51);
 }
 .map-info {
     z-index: 1;

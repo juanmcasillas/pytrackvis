@@ -28,8 +28,6 @@ A simple Python GPX and FIT track file format visualization app on 2D / 3D Map u
 * [mapblox-gl-layers](https://github.com/developmentseed/mapbox-gl-layers)
 
 
-
-
 These are for now not used.
 
 * [leafmap](https://leafmap.org/installation/) Draw awesome maps
@@ -86,3 +84,8 @@ On mac, python3.9 works flawless with cv2, flask and so on.
 ## query natural model 
 
 * [ln2sql](https://github.com/FerreroJeremy/ln2sql?tab=readme-ov-file)
+
+## geojson sources
+
+https://public.opendatasoft.com/explore/dataset/georef-spain-municipio/table/?disjunctive.acom_code&disjunctive.acom_name&disjunctive.prov_code&disjunctive.prov_name&disjunctive.mun_code&disjunctive.mun_name
+
