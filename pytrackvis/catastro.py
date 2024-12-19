@@ -838,53 +838,6 @@ class CatastroManager:
                 print ("OUT", segment[-1].catastro.rc, segment[-1].catastro.ccc, segment[-1].catastro.cdc, segkind)
         
 
-        ## points have the info stored inside the strcture
-            
-        # print(points[0].catastro.rc)
-        # print(points[0].catastro.ccc) 
-        # print(points[0].catastro.cdc) 
-        # print(points[0].catastro.is_public)
-
-        # create a json feature collection.
-        ###
-        ### create a valid KML file here.
-        ###
-
-        # count_public = 1
-        # count_private = 1
-        # # kml_public = ""
-        # # kml_private = ""
-
-        # for sitem in track_segments:
-        #     rc, ccc, cdc, is_public, segment = sitem
-
-        #     style = "gpxtrackprivate"
-        #     count = count_public
-
-        #     if is_public:
-        #          style = "gpxtrackpublic"
-        #          count = count_private
-
-        #     gpx2kml = kmlfile.GPX2KMLPlacemark(segment,
-        #                                     gname="#%d[%s]" % (count, rc or "DOMINIO PUBLICO"),
-        #                                     gdesc="%s: %s" % (ccc, cdc), style=style)
-            #segment has the points.
-            # rc or "DOMINIO PUBLICO")
-                  
-            # count_public += 1
-            # count_private += 1
-
-            # if is_public:
-            #      kml_public += segment_processed(track)
-            # else:
-            #      kml_private += segment_processed(track)
-
-
-        # the list of polygons (useful)
-        # for poly in polygons_ordered:
-        #     print(poly)
-
-        ##self.cache.PrintStats()
         return points, track_segments, polygons_ordered
 
 
@@ -906,7 +859,7 @@ class CatastroManager:
 
 
 
-    def check_pointlist_as_geojson(self, points):
+    def check_pointlist_as_geojson(self, points, public_color="#20FF20", private_color="#FF2020"):
         points, track_segments, poly = self.check_pointlist(points)
         
         # first, create the poly features.
@@ -924,11 +877,11 @@ class CatastroManager:
     
         for segment in track_segments:
             rc, ccc, cdc, is_public, segment, segment_coords = segment
-            style = "#FF2020" # private # FIXME to config
+            style = private_color # private 
             count = count_public
 
             if is_public:
-                 style = "#20FF20" # public # FIXME to config
+                 style = public_color # public 
                  count = count_private
 
             coords = list(map(lambda x: [ float(x[1]), float(x[0]), float(x[2])], segment_coords))
@@ -962,312 +915,297 @@ class CatastroManager:
 
 
 
-class KMLFile:
-    def __init__(self, route_name, position, outputname):
-        self.route_name = route_name
-        self.position   = position
-        self.outputname = outputname
+# class KMLFile:
+#     def __init__(self, route_name, position, outputname):
+#         self.route_name = route_name
+#         self.position   = position
+#         self.outputname = outputname
 
 
 
-    def Create(self, polygons, gpx=""):
-
-        header = self._genHeader(self.route_name, self.position.longitude, self.position.latitude)
+#     def Create(self, polygons, gpx=""):
+
+#         header = self._genHeader(self.route_name, self.position.longitude, self.position.latitude)
 
-        data = "<Folder><name>Informaci�n Catastral</name>"
+#         data = "<Folder><name>Informaci�n Catastral</name>"
 
-        #for rc in polygons.keys():
-        # format
-        # polygons_ordered.append( msg, coords, ccc, cdc, info, point, rc )
-        #                           0       1   2       3   4       5   6
-        for item in polygons:
+#         #for rc in polygons.keys():
+#         # format
+#         # polygons_ordered.append( msg, coords, ccc, cdc, info, point, rc )
+#         #                           0       1   2       3   4       5   6
+#         for item in polygons:
 
-            (msg, coords, ccc, cdc, info, point, rc) = item
-
-            #
-            # build a well formed message and description
-            #
-
-            curl = "https://www1.sedecatastro.gob.es/OVCFrames.aspx?TIPO=CONSULTA"
-
-            pname = "<![CDATA[<b>RC[%s]</b></br>%s(%s)</br>CC: %s</br>]]>" %\
-             (rc, info.nombre_provincia, info.nombre_municipio,ccc)
-
-            pdesc = "<![CDATA[%s</br>Paraje: %s</br></br><a href='%s'>Web Catastro</a>]]>" %(cdc, info.nombre_paraje or "-", curl)
-
-            pdata = self._genKMLPolygon(rc, coords, pname, pdesc, ccc)
-            data += pdata
-
-        data += "</Folder>"
-
-        # add gpx if found
-        data += gpx
-
-        data = header + data + self._genFooter()
-
-
-        fout = open(self.outputname,"w")
-        fout.write(data)
-        fout.close()
-
-    def GPXWP2Kml(self, waypoints, style="gpxwaypoint"):
-
-            wpkml = """
-              <Placemark>
-                <name>{name}</name>
-                <description>{description}</description>
-                <styleUrl>#{style}</styleUrl>
-                <Point>
-                  <extrude>0</extrude>
-                  <altitudeMode>clampToGround</altitudeMode>
-                  <coordinates>{longitude},{latitude}</coordinates>
-                </Point>
-              </Placemark>
-              """
-
-            if len(waypoints) == 0:
-                return ""
-
-            r_kml = "<Folder><name>Puertas - Candados - Vallas</name>"
-            for wp in waypoints:
-                r_kml += wpkml.format(style=style,
-                                      name=wp.name.encode('ASCII','xmlcharrefreplace'),
-                                      description=wp.description.encode('ASCII','xmlcharrefreplace'),
-                                      longitude=wp.longitude, latitude=wp.latitude)
-
-            r_kml += "</Folder>"
-            return r_kml
-
-    def GPX2KMLPlacemark(self, points, style="gpxtrack", gname="GPX track name", gdesc="GPX Track description"):
-        """
-        create a Placemark KML compliant value.
-        """
-
-        placemark = """
-                    <Placemark>
-                    <visibility>1</visibility>
-                    <open>0</open>
-                    <styleUrl>#{style}</styleUrl>
-                    <name>{gname}</name>
-                    <description>{gdesc}</description>
-                    <LineString>
-                        <extrude>true</extrude>
-                        <tessellate>true</tessellate>
-                        <altitudeMode>clampToGround</altitudeMode>
-                        <coordinates>
-                            {coordinates}
-                        </coordinates>
-                    </LineString>
-                </Placemark>
-        """
-
-        coordinates = []
-        for p in points:
-            coordinates.append( ",".join([ str(p.longitude), str(p.latitude), str(p.elevation)]))
-
-        coordinates = " ".join(coordinates)
-
-        return placemark.format(style=style,
-                                gname=gname.encode('ASCII','xmlcharrefreplace'),
-                                gdesc=gdesc.encode('ASCII','xmlcharrefreplace'),
-                                coordinates=coordinates)
-
-
-    def _genKMLPolygon(self, rc, coords, pname, desc, ccc):
-
-        poly="""
-             <Placemark>
-                <name>{pname}</name>
-                <description>{desc}</description>
-                <styleUrl>#{ccc}</styleUrl>
-                <Polygon>
-                    <tessellate>1</tessellate>
-                    <outerBoundaryIs>
-                        <LinearRing>
-                        <coordinates>
-                        {coords}
-                        </coordinates>
-                    </LinearRing>
-                </outerBoundaryIs>
-            </Polygon>
-            </Placemark>
-            """
-
-        lines = []
-        for l in coords:
-            d = ','.join(l)
-            lines.append(d)
-
-        return poly.format(pname=pname.encode('ASCII','xmlcharrefreplace'),
-                           desc=desc.encode('ASCII','xmlcharrefreplace'),
-                           rc=rc, ccc=ccc, coords=' '.join(lines))
-
-
-
-    def _genStyles(self):
-        styles = {}
-        # colors: #AAbbggrr
-
-        styles['C-']      = "7033cccc" #LABOR O LABRADO SECANO
-        styles['E-']      = "7066ffff" #PASTOS
-        styles['O-']      = "7066AAAA" #OLIVOS DE SECANO
-        styles['FE']      = "70336600" #ENCINAR
-        styles['HC']      = "70900010" #HIDROGRAFA CONSTRUIDA
-        styles['HG']      = "70A00010" #HIDROGRAFA NATURAL
-        styles['I-']      = "70303080" #IMPRODUCTIVO
-        styles['MB']      = "7033cc66" #MONTE BAJO
-        styles['PD']      = "7000cc66" #PRADOS O PRADERAS
-        styles['CR']      = "7000EE90" #LABOR O REGADIO
-        styles['FR']      = "7000FFA0" #FRUTALES REGADIO
-        styles['V-']      = "70006699" #VID SECANO
-        styles['VT']      = "70406020" #VIA DE COMUNICACION DE DOMINIO PUBLICO
-        styles['VO']      = "7000AA99" #VI�A OLIVAR SECANO
-        styles['MM']      = "7030AA90" #PINAR MADERABLE
-        styles['MP']      = "7030AAAA" #PINAR PINEA O DE FRUTO
-        styles['NC']      = "7066f090" #PARAJE
-        styles['MR']      = "7066f040" #PARAJE
-        styles['CE']      = "7044f020" #PARAJE
-
-        styles['123']     = "70907060" # RECOLETOS
-        styles['127']     = "70907060" # RECOLETOS
-        styles['270']     = "70557580" # DELESPINO
-        styles['10']      = "70407080" # CORREDERA
-        styles['12']      = "70506070" # HOSPITAL
-        styles['36']      = "70506070" # HOSPITAL
-        styles['50']      = "70407080" # MARTIRES DE EL TIEMBLO
-        styles['35']      = "70407080" # GENERALISIMO FRANCO
-        styles['RI']      = "70805070" #
-        styles['PR']      = "70807080" #
-        styles['HR']      = "7040BBCC" #UMBRIA - SEVILLA
-        styles['EU']      = "7040A0D0" #REHOYO - SEVILLA
-        styles['FS']      = "7040A0D0" #REHOYO - SEVILLA
-
-        styles['9']      = "70902070" #FUENTE NUEVA
-        styles['2']      = "70902070" #CONCEPCION
-        styles['13']      = "70902070" #IGLESIA
-        styles['20']      = "70667070" #TENERIA
-        styles['47']      = "70667070" #EXTRARRADIO
-        styles['F-']      = "70667070" #EXTRARRADIO
-        styles['MT']      = "70667070" #EXTRARRADIO
-        styles['PR']      = "70667070" #EXTRARRADIO
-        styles['80']      = "70667070" #EXTRARRADIO
-        styles['EE']      = "70669090" #PASTOS CON ENCINAS
-        styles['MF']      = "7022AA55" #ESPECIES MEZCLADAS
-        styles['FF']      = "70404040" #VIA FERREA
-        styles['EO']      = "70009988" #PASTOS CON OLIVOS
-
-        styles['84']      = "70405070" #DISEMINADO
-        styles['85']      = "70306090" #VI�UELAS
-
-        styles['GE']      = "7050AA66" #generico # not used ?
-        styles['DES']     = "708000AA" #desconocido
-        styles['PRI']     = "70700020" #privado
-
-        styles['AM']     = "60500010" #PARAJE
-        styles['560']     = "60500010" #CASTILLO
-        styles['78']     = "60500010" #RONCESVALLES
-        styles['90024']     = "60500010" #SECTOR-5
-
-
-        style ="""
-        <Style id="{id}">
-            <LineStyle>
-                <color>ff000000</color>
-                <width>1</width>
-            </LineStyle>
-            <PolyStyle>
-                <color>{color}</color>
-                <fill>1</fill>
-            </PolyStyle>
-        </Style>
-        """
-
-        s = ""
-        for k in styles.keys():
-            s += style.format(id=k, color=styles[k])
-
-        # add special styles.
-
-        s += """<Style id="gpxtrack">
-            <LineStyle>
-                <color>8000A000</color>
-                <width>3</width>
-            </LineStyle>
-            </Style>
-
-            <Style id="gpxtrackpublic">
-            <LineStyle>
-                <color>FFFF0000</color>
-                <width>5</width>
-            </LineStyle>
-            </Style>
-
-            <Style id="gpxtrackprivate">
-            <LineStyle>
-                <color>ff0000F8</color>
-                <width>5</width>
-            </LineStyle>
-            </Style>
-
-            <Style id="gpxwaypoint">
-              <IconStyle>
-                <scale>0.9</scale>
-                <Icon>
-                  <href>http://maps.google.com/mapfiles/kml/pal3/icon34.png</href>
-                </Icon>
-              </IconStyle>
-            </Style>
-
-        """
-
-        return s
-
-
-    def _genHeader(self, rname, longitude, latitude):
-
-
-        head = """<?xml version="1.0" encoding="ISO-8859-1"  ?>
-        <kml xmlns="http://www.opengis.net/kml/2.2">
-        <Document>
-            <name>{route_name}</name>
-            {styles}
-            <Visible>1</Visible>
-            <LookAt>
-                <longitude>{longitude}</longitude>
-                <latitude>{latitude}</latitude>
-                <range>2442.36591410061</range>
-                <tilt>45</tilt>
-                <heading>0</heading>
-            </LookAt>
-        """
-
-        return head.format(route_name=rname, styles=self._genStyles(), longitude=longitude, latitude=latitude)
-
-    def _genFooter(self):
-        footer ="""
-        </Document>
-        </kml>
-        """
-        return footer
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-class EmptyClass:
-    def __init__(self):
-        pass
+#             (msg, coords, ccc, cdc, info, point, rc) = item
+
+#             #
+#             # build a well formed message and description
+#             #
+
+#             curl = "https://www1.sedecatastro.gob.es/OVCFrames.aspx?TIPO=CONSULTA"
+
+#             pname = "<![CDATA[<b>RC[%s]</b></br>%s(%s)</br>CC: %s</br>]]>" %\
+#              (rc, info.nombre_provincia, info.nombre_municipio,ccc)
+
+#             pdesc = "<![CDATA[%s</br>Paraje: %s</br></br><a href='%s'>Web Catastro</a>]]>" %(cdc, info.nombre_paraje or "-", curl)
+
+#             pdata = self._genKMLPolygon(rc, coords, pname, pdesc, ccc)
+#             data += pdata
+
+#         data += "</Folder>"
+
+#         # add gpx if found
+#         data += gpx
+
+#         data = header + data + self._genFooter()
+
+
+#         fout = open(self.outputname,"w")
+#         fout.write(data)
+#         fout.close()
+
+#     def GPXWP2Kml(self, waypoints, style="gpxwaypoint"):
+
+#             wpkml = """
+#               <Placemark>
+#                 <name>{name}</name>
+#                 <description>{description}</description>
+#                 <styleUrl>#{style}</styleUrl>
+#                 <Point>
+#                   <extrude>0</extrude>
+#                   <altitudeMode>clampToGround</altitudeMode>
+#                   <coordinates>{longitude},{latitude}</coordinates>
+#                 </Point>
+#               </Placemark>
+#               """
+
+#             if len(waypoints) == 0:
+#                 return ""
+
+#             r_kml = "<Folder><name>Puertas - Candados - Vallas</name>"
+#             for wp in waypoints:
+#                 r_kml += wpkml.format(style=style,
+#                                       name=wp.name.encode('ASCII','xmlcharrefreplace'),
+#                                       description=wp.description.encode('ASCII','xmlcharrefreplace'),
+#                                       longitude=wp.longitude, latitude=wp.latitude)
+
+#             r_kml += "</Folder>"
+#             return r_kml
+
+#     def GPX2KMLPlacemark(self, points, style="gpxtrack", gname="GPX track name", gdesc="GPX Track description"):
+#         """
+#         create a Placemark KML compliant value.
+#         """
+
+#         placemark = """
+#                     <Placemark>
+#                     <visibility>1</visibility>
+#                     <open>0</open>
+#                     <styleUrl>#{style}</styleUrl>
+#                     <name>{gname}</name>
+#                     <description>{gdesc}</description>
+#                     <LineString>
+#                         <extrude>true</extrude>
+#                         <tessellate>true</tessellate>
+#                         <altitudeMode>clampToGround</altitudeMode>
+#                         <coordinates>
+#                             {coordinates}
+#                         </coordinates>
+#                     </LineString>
+#                 </Placemark>
+#         """
+
+#         coordinates = []
+#         for p in points:
+#             coordinates.append( ",".join([ str(p.longitude), str(p.latitude), str(p.elevation)]))
+
+#         coordinates = " ".join(coordinates)
+
+#         return placemark.format(style=style,
+#                                 gname=gname.encode('ASCII','xmlcharrefreplace'),
+#                                 gdesc=gdesc.encode('ASCII','xmlcharrefreplace'),
+#                                 coordinates=coordinates)
+
+
+#     def _genKMLPolygon(self, rc, coords, pname, desc, ccc):
+
+#         poly="""
+#              <Placemark>
+#                 <name>{pname}</name>
+#                 <description>{desc}</description>
+#                 <styleUrl>#{ccc}</styleUrl>
+#                 <Polygon>
+#                     <tessellate>1</tessellate>
+#                     <outerBoundaryIs>
+#                         <LinearRing>
+#                         <coordinates>
+#                         {coords}
+#                         </coordinates>
+#                     </LinearRing>
+#                 </outerBoundaryIs>
+#             </Polygon>
+#             </Placemark>
+#             """
+
+#         lines = []
+#         for l in coords:
+#             d = ','.join(l)
+#             lines.append(d)
+
+#         return poly.format(pname=pname.encode('ASCII','xmlcharrefreplace'),
+#                            desc=desc.encode('ASCII','xmlcharrefreplace'),
+#                            rc=rc, ccc=ccc, coords=' '.join(lines))
+
+
+
+#     def _genStyles(self):
+#         styles = {}
+#         # colors: #AAbbggrr
+
+#         styles['C-']      = "7033cccc" #LABOR O LABRADO SECANO
+#         styles['E-']      = "7066ffff" #PASTOS
+#         styles['O-']      = "7066AAAA" #OLIVOS DE SECANO
+#         styles['FE']      = "70336600" #ENCINAR
+#         styles['HC']      = "70900010" #HIDROGRAFA CONSTRUIDA
+#         styles['HG']      = "70A00010" #HIDROGRAFA NATURAL
+#         styles['I-']      = "70303080" #IMPRODUCTIVO
+#         styles['MB']      = "7033cc66" #MONTE BAJO
+#         styles['PD']      = "7000cc66" #PRADOS O PRADERAS
+#         styles['CR']      = "7000EE90" #LABOR O REGADIO
+#         styles['FR']      = "7000FFA0" #FRUTALES REGADIO
+#         styles['V-']      = "70006699" #VID SECANO
+#         styles['VT']      = "70406020" #VIA DE COMUNICACION DE DOMINIO PUBLICO
+#         styles['VO']      = "7000AA99" #VI�A OLIVAR SECANO
+#         styles['MM']      = "7030AA90" #PINAR MADERABLE
+#         styles['MP']      = "7030AAAA" #PINAR PINEA O DE FRUTO
+#         styles['NC']      = "7066f090" #PARAJE
+#         styles['MR']      = "7066f040" #PARAJE
+#         styles['CE']      = "7044f020" #PARAJE
+
+#         styles['123']     = "70907060" # RECOLETOS
+#         styles['127']     = "70907060" # RECOLETOS
+#         styles['270']     = "70557580" # DELESPINO
+#         styles['10']      = "70407080" # CORREDERA
+#         styles['12']      = "70506070" # HOSPITAL
+#         styles['36']      = "70506070" # HOSPITAL
+#         styles['50']      = "70407080" # MARTIRES DE EL TIEMBLO
+#         styles['35']      = "70407080" # GENERALISIMO FRANCO
+#         styles['RI']      = "70805070" #
+#         styles['PR']      = "70807080" #
+#         styles['HR']      = "7040BBCC" #UMBRIA - SEVILLA
+#         styles['EU']      = "7040A0D0" #REHOYO - SEVILLA
+#         styles['FS']      = "7040A0D0" #REHOYO - SEVILLA
+
+#         styles['9']      = "70902070" #FUENTE NUEVA
+#         styles['2']      = "70902070" #CONCEPCION
+#         styles['13']      = "70902070" #IGLESIA
+#         styles['20']      = "70667070" #TENERIA
+#         styles['47']      = "70667070" #EXTRARRADIO
+#         styles['F-']      = "70667070" #EXTRARRADIO
+#         styles['MT']      = "70667070" #EXTRARRADIO
+#         styles['PR']      = "70667070" #EXTRARRADIO
+#         styles['80']      = "70667070" #EXTRARRADIO
+#         styles['EE']      = "70669090" #PASTOS CON ENCINAS
+#         styles['MF']      = "7022AA55" #ESPECIES MEZCLADAS
+#         styles['FF']      = "70404040" #VIA FERREA
+#         styles['EO']      = "70009988" #PASTOS CON OLIVOS
+
+#         styles['84']      = "70405070" #DISEMINADO
+#         styles['85']      = "70306090" #VI�UELAS
+
+#         styles['GE']      = "7050AA66" #generico # not used ?
+#         styles['DES']     = "708000AA" #desconocido
+#         styles['PRI']     = "70700020" #privado
+
+#         styles['AM']     = "60500010" #PARAJE
+#         styles['560']     = "60500010" #CASTILLO
+#         styles['78']     = "60500010" #RONCESVALLES
+#         styles['90024']     = "60500010" #SECTOR-5
+
+
+#         style ="""
+#         <Style id="{id}">
+#             <LineStyle>
+#                 <color>ff000000</color>
+#                 <width>1</width>
+#             </LineStyle>
+#             <PolyStyle>
+#                 <color>{color}</color>
+#                 <fill>1</fill>
+#             </PolyStyle>
+#         </Style>
+#         """
+
+#         s = ""
+#         for k in styles.keys():
+#             s += style.format(id=k, color=styles[k])
+
+#         # add special styles.
+
+#         s += """<Style id="gpxtrack">
+#             <LineStyle>
+#                 <color>8000A000</color>
+#                 <width>3</width>
+#             </LineStyle>
+#             </Style>
+
+#             <Style id="gpxtrackpublic">
+#             <LineStyle>
+#                 <color>FFFF0000</color>
+#                 <width>5</width>
+#             </LineStyle>
+#             </Style>
+
+#             <Style id="gpxtrackprivate">
+#             <LineStyle>
+#                 <color>ff0000F8</color>
+#                 <width>5</width>
+#             </LineStyle>
+#             </Style>
+
+#             <Style id="gpxwaypoint">
+#               <IconStyle>
+#                 <scale>0.9</scale>
+#                 <Icon>
+#                   <href>http://maps.google.com/mapfiles/kml/pal3/icon34.png</href>
+#                 </Icon>
+#               </IconStyle>
+#             </Style>
+
+#         """
+
+#         return s
+
+
+#     def _genHeader(self, rname, longitude, latitude):
+
+
+#         head = """<?xml version="1.0" encoding="ISO-8859-1"  ?>
+#         <kml xmlns="http://www.opengis.net/kml/2.2">
+#         <Document>
+#             <name>{route_name}</name>
+#             {styles}
+#             <Visible>1</Visible>
+#             <LookAt>
+#                 <longitude>{longitude}</longitude>
+#                 <latitude>{latitude}</latitude>
+#                 <range>2442.36591410061</range>
+#                 <tilt>45</tilt>
+#                 <heading>0</heading>
+#             </LookAt>
+#         """
+
+#         return head.format(route_name=rname, styles=self._genStyles(), longitude=longitude, latitude=latitude)
+
+#     def _genFooter(self):
+#         footer ="""
+#         </Document>
+#         </kml>
+#         """
+#         return footer
+
+# class EmptyClass:
+#     def __init__(self):
+#         pass
 
 if __name__ == "__main__":
 

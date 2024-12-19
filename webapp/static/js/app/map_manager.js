@@ -1,5 +1,22 @@
+// //////////////////////////////////////////////////////////////////////////
+//
+// configures and control the map (see map.js)
+//
+//
+//
+// //////////////////////////////////////////////////////////////////////////
+
 var mapManager = {
+
+
     prefix: 'pytrackvis_',         // used to mark our custom layers in the map
+    MAPTILER_KEY: null,
+
+    track_color:         '#b1e016', // this should be the same that config.catastro['public_color']
+    contour_lines_color: '#909040',
+    states_lines_color:  '#9090AA',
+    cities_lines_color:  '#A0A0FF',
+    
     is3D: false,
     terrain: false,
     track: null,
@@ -7,6 +24,13 @@ var mapManager = {
     marker: new maplibregl.Marker(),
     catastro_flag: null,
     catastro_ids: [],
+    contour_lines_loaded: false,
+    state_limits_loaded: false,
+    city_limits_loaded: false,
+    // load some optional layers by defaut.
+    load_terrain: true,
+    load_hillshading: false,
+    load_buildings: false,
 
     icons: [
         'nc', 
@@ -30,28 +54,41 @@ var mapManager = {
         '106',
     ],
 
-
-    init_defaults: function(track) {
+    /**
+     * init the object and set the default variables.
+     * @param {*} track 
+     */
+    init_defaults: function(track, MAPTILER_KEY) {
         this.track = track
-        this.terrain_source = { source: 'pytrackvis_terrain' }
+        this.MAPTILER_KEY = MAPTILER_KEY
         this.marker.setLngLat([track.begin.long, track.begin.lat, track.begin.elev]).addTo(map);
         this.marker.setOpacity(0)
-      
+        
+        // sources
+        
+        this.terrain_source_id             = this.layer_prefix("terrain-source")
+        this.contours_source_id            = this.layer_prefix('contours-source')
+        this.state_limits_source_id        = this.layer_prefix('state-limits-source')
+        this.cities_limits_source_id       = this.layer_prefix('cities-limits-source')
+        this.terrain_hillshading_source_id = this.layer_prefix("terrain_hs-source")
+        this.places_source_id              = this.layer_prefix('places-source')
+        this.buildings_source_id           = this.layer_prefix('openmaptiles-source')
+        this.catastro_source_id            = this.layer_prefix('catastro-source')
+        this.track_source_id               = this.layer_prefix(`track_${this.track.id}-source`)
+        // layers
+        this.contours_layer_id             = this.layer_prefix('terrain-data-layer')
+        this.state_limits_layer_id         = this.layer_prefix('state-limits-layer')
+        this.cities_limits_layer_id        = this.layer_prefix('cities-limits-layer')
+        this.terrain_hillshading_layer_id  = this.layer_prefix('hillshading-layer')
+        this.places_layer_id               = this.layer_prefix('places-layer')
+        this.buildings_layer_id            = this.layer_prefix('openmaptiles-layer')
+        this.catastro_poly_layer_id        = this.layer_prefix('catastro-poly-layer')
+        // not used  
+        // this.catastro_line_layer_id     = this.layer_prefix('catastro-line-layer')
+        this.track_layer_id                = this.layer_prefix(`track_${this.track.id}-layer`)
 
-        this.places_source_id = this.layer_prefix('places-source')
-        this.places_layer_id = this.layer_prefix('places-layer')
-        this.track_source_id = this.layer_prefix(`track_${this.track.id}-source`)
-        this.track_layer_id = this.layer_prefix(`track_${this.track.id}-layer`)
-        this.catastro_source_id = this.layer_prefix('catastro-source')
-        // not used // this.catastro_layer_id = this.layer_prefix('catastro-layer')
-        this.catastro_line_layer_id = this.layer_prefix('catastro-line-layer')
-        this.catastro_poly_layer_id = this.layer_prefix('catastro-poly-layer')
-        // implicit load of required icons to speed up
-        // for (var i=0; i<265; i++) {
-        //     this.icons.push(`${i}`)
-        // }
 
-     
+        this.terrain_source = { source: this.terrain_source_id }
     },
 
     change: function() {
@@ -111,14 +148,14 @@ var mapManager = {
         var trk_layer = this.layer_prefix(`track_${this.track.id}_layer`)
         var places_layer = this.layer_prefix('places-layer')
 
-        window.map.setPaintProperty(this.track_layer_id,    'line-color', '#FFFF50');
+        // window.map.setPaintProperty(this.track_layer_id,  'line-color', '#FFFF50');
         window.map.setPaintProperty(this.places_layer_id, 'text-color', '#FFFFFF');
         window.map.setPaintProperty(this.places_layer_id, 'text-halo-color', '#FFFFFF');
         //window.map.setLayoutProperty(this.places_layer_id, 'icon-image', 'nc');
     },
     set_high_contrast: function() {
 
-        window.map.setPaintProperty(this.track_layer_id,    'line-color', '#880ED4');
+        // window.map.setPaintProperty(this.track_layer_id,    'line-color', '#880ED4');
         window.map.setPaintProperty(this.places_layer_id, 'text-color', '#000000');
         window.map.setPaintProperty(this.places_layer_id, 'text-halo-color', '#000000');
         //window.map.setLayoutProperty(this.places_layer_id, 'icon-image', 'hc');
@@ -131,13 +168,142 @@ var mapManager = {
             window.map.setLayoutProperty(this.places_layer_id, 'visibility', 'none');
         }
     },
+    show_hide_contour: function() {
+        if (!this.contour_lines_loaded) {
+            this.contour_lines_loaded = true;
+            window.map.addSource(this.contours_source_id, {
+                type: 'vector',
+                url: `https://api.maptiler.com/tiles/contours/tiles.json?key=${this.MAPTILER_KEY}`
+            });
+
+            window.map.addLayer({
+                'visibility': 'visible',
+                'id': this.contours_layer_id,
+                'type': 'line',
+                'source': this.contours_source_id,
+                'source-layer': 'contour',
+                'layout': {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                'paint': {
+                    'line-color': this.contour_lines_color,
+                    'line-width': 1
+                }
+            });
+            return
+        }
+
+        var vis = window.map.getLayoutProperty(this.contours_layer_id, 'visibility');
+        if (vis == 'none') {
+            window.map.setLayoutProperty(this.contours_layer_id, 'visibility', 'visible');
+        }else {
+            window.map.setLayoutProperty(this.contours_layer_id, 'visibility', 'none');
+        }
+    },
+    show_hide_states: function() {
+        if (!this.state_limits_loaded) {
+            this.state_limits_loaded = true;
+            window.map.addSource(mapManager.state_limits_source_id, {
+                type: "geojson",
+                data: "/static/geojson/spain/georef-spain-provincia.geojson"
+            });
+                
+
+            map.addLayer({
+                'id': mapManager.state_limits_layer_id,
+                'source': mapManager.state_limits_source_id,
+                'visibility': 'none',
+                // 'type': 'line',
+                // 'layout': { 
+                //     'line-join': "round", 
+                //     'line-cap': "round"
+                // },
+                // 'paint': {
+                //     //'line-color': '#909090',    // high contrast
+                //     'line-dasharray': [5,10],
+                //     'line-color': this.states_lines_color,  // low contrast
+                //     'line-width': 1
+                // }
+                'type': 'fill',
+                'layout': { },
+                'paint': {
+                    'fill-color': [
+                        "interpolate", ['linear'],  ["to-number", ["get", "prov_code"]], 1, '#101010', 54, '#E0E0E0'
+                    ],
+                    'fill-opacity': 0.3,
+                    'fill-antialias': true,
+                    'fill-outline-color': "#FFFFFF"
+                },
+            });
+            return
+        }
+
+        var vis = window.map.getLayoutProperty(this.state_limits_layer_id, 'visibility');
+        if (vis == 'none') {
+            window.map.setLayoutProperty(this.state_limits_layer_id, 'visibility', 'visible');
+        }else {
+            window.map.setLayoutProperty(this.state_limits_layer_id, 'visibility', 'none');
+        }
+    },
+    show_hide_cities: function() {
+        if (!this.cities_limits_loaded) {
+            this.cities_limits_loaded = true;
+            window.map.addSource(mapManager.cities_limits_source_id, {
+                type: "geojson",
+                data: "/static/geojson/spain/georef-spain-municipio.geojson"
+            });
+            
+            //prov_code 1-54
+            //mun_code 1001-54005
+            // 1-54
+            // 
+
+            map.addLayer({
+                'id': mapManager.cities_limits_layer_id,
+                'source': mapManager.cities_limits_source_id,
+                'visibility': 'none',
+                'type': 'line',
+                'layout': { 
+                    'line-join': "round", 
+                    'line-cap': "round"
+                },
+                'paint': {
+                    //'line-color': '#909090',    // high contrast
+                    'line-dasharray': [5,10],
+                    'line-color': this.cities_lines_color,  // low contrast
+                    'line-width': 1
+                }
+                // 'type': 'fill',
+                // 'layout': { },
+                // 'paint': {
+                //     'fill-color': [
+                //         "interpolate", ["linear"], ["to-number", ["get", "mun_code"]], 1001, '#101010', 54005, '#E0E0E0'
+                //     ],
+                //     'fill-opacity': 1,
+                //     'fill-antialias': true,
+                //     'fill-outline-color': "#FFFFFF"
+                // },
+            });
+            return
+        }
+
+        var vis = window.map.getLayoutProperty(this.cities_limits_layer_id, 'visibility');
+        if (vis == 'none') {
+            window.map.setLayoutProperty(this.cities_limits_layer_id, 'visibility', 'visible');
+        }else {
+            window.map.setLayoutProperty(this.cities_limits_layer_id, 'visibility', 'none');
+        }
+    },
+
+
     toogle_catastro_point: function(obj) {
         if (this.catastro_flag === null) {
-            obj.classList.replace("map-catastro-point", "map-catastro-point-active");
+            obj.classList.replace("map-button", "map-button-active");
             map.getCanvas().style.cursor = 'pointer';
             this.catastro_flag = obj
         } else {
-            this.catastro_flag.classList.replace("map-catastro-point-active", "map-catastro-point");
+            this.catastro_flag.classList.replace("map-button-active", "map-button");
             map.getCanvas().style.cursor = '';
             this.catastro_flag = null;
         }
@@ -241,19 +407,33 @@ var mapManager = {
                 // console.log(data)
                 let add_container = []
                 let update_container = []
+                let line_container = []
+                
                 data.features.forEach(element => {
-      
-                    if (! mapManager.catastro_ids.includes(element.id)) {
-                        mapManager.catastro_ids.push(element.id)
-                        add_container.push(element)
+                    if (element.geometry.type == "LineString") {
+                        line_container.push(element)
                     }
                     else {
-                        update_container.push(element)
+                        if (! mapManager.catastro_ids.includes(element.id)) {
+                            mapManager.catastro_ids.push(element.id)
+                            add_container.push(element)
+                        }
+                        else {
+                            update_container.push(element)
+                        }
                     }
                 });
+                
                 let source = window.map.getSource(mapManager.catastro_source_id)
                 source.updateData({ "add": add_container })
                 source.updateData({ "update": update_container })
+
+                source = window.map.getSource(mapManager.track_source_id)
+                source.updateData({ "removeAll":true })
+                source.updateData({ "add": line_container })
+           
+
+                // work now in the "track". Change the track source with our variables.
 
                 // disable the "default track"
                 // TODO FIX THIS

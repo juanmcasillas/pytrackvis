@@ -39,7 +39,10 @@
         "enabled": true,
         "cache_dir": "cache/catastro",
         "unsafe_ssl": true,
-        "debug": false
+        "debug": false,
+        "public_color": "#b1e016", 
+        "private_color": "#f03e1a"
+
     },
     "sim_preview": {
         "sim_previews_dir": "sim",

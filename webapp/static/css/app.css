@@ -198,13 +198,15 @@ a.get-track-link:hover  {
     position: absolute;
 }
 
-.map-mode  {
+.map-mode-buttons-container {
     z-index: 1;
     position: absolute;
     font-size: small;
     top: 40px;
     left: 10px;
 }
+
+
 .map-recenter  {
     z-index: 1;
     position: absolute;
@@ -212,7 +214,8 @@ a.get-track-link:hover  {
     top: 80px;
     left: 10px;
 }
-.map-places  {
+
+.places-buttons-container  {
     z-index: 1;
     position: absolute;
     font-size: small;
@@ -220,29 +223,28 @@ a.get-track-link:hover  {
     left: 10px;
 }
 
-.map-catastro-point  {
+.catastro-buttons-container  {
     z-index: 1;
     position: absolute;
     font-size: small;
     top: 160px;
     left: 10px;
 }
-.map-catastro-point-active  {
+.map-button {
     z-index: 1;
-    position: absolute;
     font-size: small;
-    top: 160px;
-    left: 10px;
+}
+
+
+
+.map-button-active {
+    z-index: 1;
+    font-size: small;
     background-color: rgb(142, 136, 191)
 }
 
-.map-catastro-track  {
-    z-index: 1;
-    position: absolute;
-    font-size: small;
-    top: 200px;
-    left: 10px;
-}
+
+
 .map-info {
     z-index: 1;
     position: absolute;

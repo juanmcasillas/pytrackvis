@@ -170,3 +170,8 @@ function load_tracks(query, offset=0, limit=0) {
 
 // do this globally
 configure_nunjucks();
+$(function () {
+    $('[data-toggle="tooltip"]').tooltip({
+        delay: { "show": 500, "hide": 50 }
+    })
+})

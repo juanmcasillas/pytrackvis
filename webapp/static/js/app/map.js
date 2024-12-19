@@ -1,15 +1,14 @@
-function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
 
-
-    var load_terrain = true;
-    var hillshading = false;
-    var load_buildings = false; // fancy but not too useful
-
-    if (debug == true) {
-        load_terrain = false;
-        hillshading = false;
-         load_buildings = false;
-    }
+/**
+ * call this for the main program to create and init the custom map
+ * hillshading for now is not supported. Big function, called only once
+ * 
+ * @param {*} track 
+ * @param {*} MAPTILER_KEY 
+ * @param {*} style_id 
+ * @param {*} debug 
+ */
+function draw_map(track, MAPTILER_KEY, style_id) {
 
     const map = (window.map = new maplibregl.Map({
         container: 'map',
@@ -27,34 +26,25 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
     }));
     
 
-
     map.dragRotate.disable();
     map.keyboard.disable(); 
     map.touchZoomRotate.disableRotation();
-    mapManager.init_defaults(track)
+    mapManager.init_defaults(track, MAPTILER_KEY)
 
     map.on('style.load', async () => {
         mapManager.update_terrain();
         mapManager.load_icons();
     });
    
+    // //////////////////////////////////////////////////////////////////////////
+    //
     // main callback
+    //
+    // //////////////////////////////////////////////////////////////////////////
+
     map.on('load', async () => {
     
         mapManager.load_icons()
-        // var marker = 'marker-places-nc'
-        // if (! map.getImage(marker)) {
-        //     console.log(`reloading ${marker} /static/img/icons/${marker}.png`)
-        //     const image = await map.loadImage(`/static/img/icons/${marker}.png`);
-        //     map.addImage(marker, image.data);
-        // }
-        // marker = 'marker-places-hc'
-        // if (! map.getImage(marker)) {
-        //     console.log(`reloading ${marker} /static/img/icons/${marker}.png`)
-        //     const image = await map.loadImage(`/static/img/icons/${marker}.png`);
-        //     map.addImage(marker, image.data);
-        // }
-
 
         map.addControl(new maplibregl.FullscreenControl({container: document.querySelector('body')}),  'top-right');
         map.addControl(
@@ -69,118 +59,41 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
         map.addControl(new maplibreGLMeasures.default({ units: 'metric'}), 'top-right');
         
         
-        // CAUTION
-        map.addSource(mapManager.track_source_id, {
-            type: "geojson",
-            data: `/track/as_geojson?id=${track.id}`
-        });
-        map.addLayer({
-            'id': mapManager.track_layer_id,
-            'type': 'line',
-            'source': mapManager.track_source_id,
-            'layout': { 
-                'line-join': "round", 
-                'line-cap': "round"
-            },
-            'paint': {
-                'line-color': '#FFFF50',    // high contrast
-                //'line-color': '#880ED4',  // low contrast
-                'line-width': 5
-            }
-        });
-        
-        // test catastro. Empty one.
-     
-        map.addSource(mapManager.catastro_source_id, {
-            type: "geojson",
-            data: {
-                "id": generate_uuid(),
-                "type": "FeatureCollection",
-                "features": [ ]
-            }
-        });
-      
-        map.addLayer({
-            'id': mapManager.catastro_poly_layer_id,
-            'type': 'fill',
-            'source': mapManager.catastro_source_id,
-            'layout': { },
-            'paint': {
-                'fill-color': [ 'get', 'style'],
-                'fill-opacity': 0.7
-            },
-            'filter': ['==', '$type', 'Polygon']
-        });
-        
-        map.addLayer({
-            'id': mapManager.catastro_line_layer_id,
-            'type': 'line',
-            'source': mapManager.catastro_source_id,
-            'layout': { 
-                        'line-join': "round", 
-                        'line-cap': "round"
-                    },
-            'paint': {
-                'line-color': [ 'get', 'style'],
-                //'line-color': '#FFFF50',
-                'line-width': 5
-            },
-            'filter': ['==', '$type', 'LineString']
-        });
-
-   
+        // //////////////////////////////////////////////////////////////////////////
+        //
+        // layer definition. Check map_manager for the labels. use prefix to
+        // allow change the style (map style). Order is relevant (from top to)
+        // button, latest is top in view.
+        //
+        // //////////////////////////////////////////////////////////////////////////
 
         //
         // terrain info.
         // 
         
-        if (load_terrain) {
+        if (mapManager.load_terrain) {
 
-            map.addSource(mapManager.layer_prefix("terrain"), {
+            map.addSource(mapManager.terrain_source_id, {
                 type: "raster-dem",
                 url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${MAPTILER_KEY}`
             });
 
             map.setTerrain({
-                source: mapManager.layer_prefix("terrain")
+                source: mapManager.terrain_source_id
             });
 
             //
-            // WIP - Contour lines works fine
-            // TODO: add buttons and manage this layer
-            // properly. Too clutering for default.
+            // WARNING
+            // contour lines are loaded from map_manager.show_hide_contour()
+            //
 
-            // map.addSource(mapManager.layer_prefix('contours-source'), {
-            //     type: 'vector',
-            //     url: `https://api.maptiler.com/tiles/contours/tiles.json?key=${MAPTILER_KEY}`
-            // });
-            // map.addLayer({
-            //     'id': mapManager.layer_prefix('terrain-data-layer'),
-            //     'type': 'line',
-            //     'source': mapManager.layer_prefix('contours-source'),
-            //     'source-layer': 'contour',
-            //     'layout': {
-            //         'line-join': 'round',
-            //         'line-cap': 'round'
-            //     },
-            //     'paint': {
-            //         'line-color': '#E0E040',
-            //         'line-width': 1
-            //     }
-            // });
-
-            // TODO: add buttons and manage this layer
-            // BIG geoGSON file (80MB), work with caution also municipio and provincia.
-            // removed for now.
-
-            // map.addSource(mapManager.layer_prefix('state-limits-source'), {
+            // map.addSource(mapManager.city_limits_source_id, {
             //     type: "geojson",
-            //     //data: "/static/geojson/spain/georef-spain-municipio.geojson"
-            //     data: "/static/geojson/spain/georef-spain-provincia.geojson"
-            // });
+            //     data: "/static/geojson/spain/georef-spain-municipio.geojson"
+                        // });
             // map.addLayer({
-            //     'id': mapManager.layer_prefix('state-limits-layer'),
-            //     'source': mapManager.layer_prefix('state-limits-source'),
+            //     'id': mapManager.city_limits_layer_id,
+            //     'source': mapManager.city_limits_source_id,
             //     'type': 'line',
             //     'layout': { 
             //         'line-join': "round", 
@@ -193,20 +106,19 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
             //         'line-width': 1
             //     }
             // });
-
             
 
 
-            if (hillshading) {
+            if (mapManager.load_hillshading) {
                 // this doesn't produce any effect for now.
                 // keep it disabled.
-                map.addSource(mapManager.layer_prefix("terrain_hs"), {
+                map.addSource(mapManager.terrain_hillshading_source_id, {
                     type: "raster-dem",
                     url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${MAPTILER_KEY}`
                 });
                 map.addLayer({
-                    'id': mapManager.layer_prefix('hillshading'),
-                    'source': mapManager.layer_prefix('terrain_hs'),
+                    'id': mapManager.terrain_hillshading_layer_id,
+                    'source': mapManager.terrain_hillshading_source_id,
                     'type': 'hillshade'
                     }
                 );
@@ -214,7 +126,10 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
             }
             
         }
-        
+        //
+        // state & city limits are loaded in map_manager in show/hide buttons
+        //
+
         //
         // load the GEOJSON for places layer.
         // 
@@ -253,7 +168,7 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
             }
         });
 
-        if (load_buildings) {
+        if (mapManager.load_buildings) {
             // for Adding the buildings at top
             let labelLayerId;
             const layers = map.getStyle().layers;
@@ -263,13 +178,13 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
                     break;
                 }
             }
-            map.addSource(mapManager.layer_prefix('openmaptiles'), {
+            map.addSource(mapManager.buildings_source_id, {
                     url: `https://api.maptiler.com/tiles/v3/tiles.json?key=${MAPTILER_KEY}`,
                     type: 'vector',
             });
             map.addLayer({
-                'id': mapManager.layer_prefix('3d-buildings'),
-                'source': mapManager.layer_prefix('openmaptiles'),
+                'id': mapManager.buildings_layer_id,
+                'source': mapManager.buildings_source_id,
                 'source-layer': 'building',
                 'type': 'fill-extrusion',
                 'minzoom': 14,
@@ -296,6 +211,71 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
                 }
             }, labelLayerId);
         }
+
+        map.addSource(mapManager.catastro_source_id, {
+            type: "geojson",
+            data: {
+                "id": generate_uuid(),
+                "type": "FeatureCollection",
+                "features": [ ]
+            }
+        });
+
+        map.addLayer({
+            'id': mapManager.catastro_poly_layer_id,
+            'type': 'fill',
+            'source': mapManager.catastro_source_id,
+            'layout': { },
+            'paint': {
+                'fill-color': [ 'get', 'style'],
+                'fill-opacity': 0.7
+            },
+            'filter': ['==', '$type', 'Polygon']
+        });
+        
+        // we use the this.track_source_id to add the line features, instead
+        // of duplicate the work.
+        // map.addLayer({
+        //     'id': mapManager.catastro_line_layer_id,
+        //     'type': 'line',
+        //     'source': mapManager.catastro_source_id,
+        //     'layout': { 
+        //                 'line-join': "round", 
+        //                 'line-cap': "round"
+        //             },
+        //     'paint': {
+        //         'line-color': [ 'get', 'style'],
+        //         //'line-color': '#FFFF50',
+        //         'line-width': 5
+        //     },
+        //     'filter': ['==', '$type', 'LineString']
+        // });
+
+        map.addSource(mapManager.track_source_id, {
+            type: "geojson",
+            data: `/track/as_geojson?id=${track.id}`
+        });
+        map.addLayer({
+            'id': mapManager.track_layer_id,
+            'type': 'line',
+            'source': mapManager.track_source_id,
+            'layout': { 
+                'line-join': "round", 
+                'line-cap': "round"
+            },
+            'paint': {
+                'line-color': [ "case",
+                    ["has", 'style'],
+                    ['get', 'style'],
+                    mapManager.track_color,
+                ],
+                // 'line-color': '#FFFF50',    // high contrast
+                //'line-color': '#880ED4',  // low contrast
+                'line-width': 5,
+     
+            }
+        });
+   
 
         // start as 2D
         //this is done in the map creation because I know what track I'm loading
@@ -355,34 +335,8 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
             plotElevation(results,map,mapManager)
         });
 
-        // don't work. useful maybe for places then, lets see.
-        // let features = map.getSource(mapManager.places_source_id)
-        // features.getData().then( function(results) {
-        //     for (const marker of results.features) {
-        //         // Create a DOM element for each marker.
-        //         const el = document.createElement('div');
-        //         //const width = marker.properties.iconSize[0];
-        //         //const height = marker.properties.iconSize[1];
-        //         el.className = 'marker';
-        //         el.style.backgroundImage = `url(http://localhost:5000/static/img/icons/wpt/0.png)`;
-        //         el.style.width = `132px`;
-        //         el.style.height = `132px`;
-        //         el.style.backgroundSize = '100%';
-        
-        //         el.addEventListener('click', () => {
-        //             window.alert(marker.properties.name);
-        //         });
-        
-        //         // Add markers to the map.
-        //         new maplibregl.Marker(el)
-        //             .setLngLat(marker.geometry.coordinates)
-        //             .addTo(map);
-        //     }
 
-
-        // });
-    })
-
+    }) // end of map onload event (big one!)
 
 
     map.on('click', mapManager.places_layer_id, (e) => {
@@ -402,6 +356,7 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
             .addTo(map);
     });
 
+
     map.on('click',  (e) => {
         
         // only check catastro if mode is activated
@@ -412,27 +367,8 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
         // issue the call directly.
         mapManager.check_catastro_point(lat=e.lngLat.lat, lng=e.lngLat.lng)
         return 
-
-        // console.log("XXX")
-        // console.log(e)
-        // console.log(e.lngLat)
-        // console.log(e.point)
-
-        // use a popup - not needed.
-        // popup = new maplibregl.Popup({closeOnMove: true, closeOnClick: true, closeButton: true})
-        //     .setLngLat(e.lngLat)
-        //     .setHTML(`
-        //         <h5>check catastro</h5>
-        //         <div>
-        //             <span>${e.lngLat.lat}, ${e.lngLat.lng}</span>
-        //             <a href="#"  onclick="mapManager.check_catastro(lat=${e.lngLat.lat}, lng=${e.lngLat.lng})">Check it</a>
-        //         </div>
-        //     `)
-        //     .addTo(map);
-  
-        return
-        
     });
+
 
     map.on('click', mapManager.catastro_poly_layer_id, (e) => {
         e.features[0].properties.info = JSON.parse(e.features[0].properties.info)
@@ -469,9 +405,7 @@ function draw_map(track, MAPTILER_KEY, style_id, debug=false) {
     });
 
  
-
-
-    // don't delete this, please
+    // don't delete this, please. Information.
 
     // show lat/long if needed
     // map.on('mousemove', (e) => {

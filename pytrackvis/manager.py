@@ -196,7 +196,9 @@ class Manager:
         if not track:
             return False
         
-        geojson = self.catastro_manager.check_pointlist_as_geojson(track.points)
+        geojson = self.catastro_manager.check_pointlist_as_geojson(track.points, 
+                                                                   self.config.catastro['public_color'],
+                                                                   self.config.catastro['private_color'])
         return geojson
 
         
