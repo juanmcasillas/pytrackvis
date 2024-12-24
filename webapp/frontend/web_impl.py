@@ -128,15 +128,4 @@ def tracks_list():
 
 
 
-@web_impl.route('/tracks/view', methods=['GET', 'POST'])
-def tracks_view():
-    id = request.args.get("id",None)
-    if not id:
-        return redirect(url_for('web_impl.error', msg="Invalid id"))
-    track = current_app.manager.db_get_track(id)
-
-    return render_template('view.html',track=track, TOKENS=current_app.manager.config.tokens)
-
-
-
 # json handlers

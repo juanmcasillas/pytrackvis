@@ -553,6 +553,16 @@ class Manager:
     #
     # database methods
     #
+    def db_get_places_layers(self):
+        sql = "select category from places group by category"
+        cursor = self.db.cursor()
+        cursor.execute(sql)
+        data = cursor.fetchall()
+        # return a list of values
+        data = map(lambda x: x[0], data)
+        cursor.close()
+        return list(data)
+
 
     def db_delete_track(self, id):
 

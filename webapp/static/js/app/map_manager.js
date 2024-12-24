@@ -31,6 +31,8 @@ var mapManager = {
     load_terrain: true,
     load_hillshading: false,
     load_buildings: false,
+    places_layers: [],
+    places_layers_id: {},
 
     icons: [
         'nc', 
@@ -52,15 +54,18 @@ var mapManager = {
         '14',
         'nc',
         '106',
+        '80',
     ],
 
     /**
      * init the object and set the default variables.
      * @param {*} track 
      */
-    init_defaults: function(track, MAPTILER_KEY) {
+    init_defaults: function(track, MAPTILER_KEY, places_layers) {
+
         this.track = track
         this.MAPTILER_KEY = MAPTILER_KEY
+        this.places_layers = places_layers
         this.marker.setLngLat([track.begin.long, track.begin.lat, track.begin.elev]).addTo(map);
         this.marker.setOpacity(0)
         
@@ -80,7 +85,12 @@ var mapManager = {
         this.state_limits_layer_id         = this.layer_prefix('state-limits-layer')
         this.cities_limits_layer_id        = this.layer_prefix('cities-limits-layer')
         this.terrain_hillshading_layer_id  = this.layer_prefix('hillshading-layer')
+        // this is overhaul by place_layers
         this.places_layer_id               = this.layer_prefix('places-layer')
+        for (const pl of this.places_layers) {
+              this.places_layers_id[pl] = this.layer_prefix(`places-layer-${pl}`)
+        }
+        
         this.buildings_layer_id            = this.layer_prefix('openmaptiles-layer')
         this.catastro_poly_layer_id        = this.layer_prefix('catastro-poly-layer')
         // not used  
@@ -89,6 +99,8 @@ var mapManager = {
 
 
         this.terrain_source = { source: this.terrain_source_id }
+        //debug 
+        // console.log(this)
     },
 
     change: function() {
@@ -160,14 +172,16 @@ var mapManager = {
         window.map.setPaintProperty(this.places_layer_id, 'text-halo-color', '#000000');
         //window.map.setLayoutProperty(this.places_layer_id, 'icon-image', 'hc');
     },
-    show_hide_places: function() {
-        var vis = window.map.getLayoutProperty(this.places_layer_id, 'visibility');
-        if (vis == 'none') {
-            window.map.setLayoutProperty(this.places_layer_id, 'visibility', 'visible');
-        }else {
-            window.map.setLayoutProperty(this.places_layer_id, 'visibility', 'none');
-        }
-    },
+    // show_hide_places: function() {
+
+    //     var vis = window.map.getLayoutProperty(this.places_layer_id, 'visibility');
+    //     if (vis == 'none') {
+    //         window.map.setLayoutProperty(this.places_layer_id, 'visibility', 'visible');
+    //     }else {
+    //         window.map.setLayoutProperty(this.places_layer_id, 'visibility', 'none');
+    //     }
+    // },
+
     show_hide_contour: function() {
         if (!this.contour_lines_loaded) {
             this.contour_lines_loaded = true;
@@ -453,5 +467,63 @@ var mapManager = {
             }
         });
 
-    }
+    },
+
+
+    filter_places: function(obj) { 
+
+
+        if (obj.checked) {
+            window.map.setLayoutProperty(this.places_layers_id[obj.value], 'visibility', 'visible');
+        }else {
+            window.map.setLayoutProperty(this.places_layers_id[obj.value], 'visibility', 'none');
+        }
+        // let track_data = map.getSource(mapManager.places_source_id)
+        // places_source_id.getData().then( function(results) {
+        //     //
+        // });
+    },
+
+    configure_places: function() { 
+
+        for (const pl of this.places_layers) {
+            
+            map.addLayer({
+                'id': this.places_layers_id[pl],
+                'source': this.places_source_id,
+                'type': 'symbol',
+                'filter': ['==', ['get', 'category'], pl],
+                'layout': {
+                    'visibility': 'none',
+                    'icon-allow-overlap': true,
+                    'text-allow-overlap': true,
+                    'icon-overlap': 'always',
+                    'text-overlap': 'always',
+                    'icon-image': ['get', 'icon'],
+                    'text-field': ['get', 'name'],
+                    'text-font': [
+                        'Open Sans Semibold',
+                        'Arial Unicode MS Bold'
+                    ],
+                    'text-offset': [0, 1.25],
+                    'text-anchor': 'top',
+                    'text-size': 12,
+                    'text-letter-spacing': 0.05,
+                },
+                'paint': {
+                    'text-color': '#FFFFFF',
+                    'text-halo-color': '#606060',
+                    'text-halo-width': 0.12
+                }
+            });
+        }
+
+        //let track_data = map.getSource(mapManager.places_source_id)
+        //places_source_id.getData().then( function(results) {
+        //    //
+        //});
+    },
+
+    
+
 }

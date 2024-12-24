@@ -215,7 +215,7 @@ a.get-track-link:hover  {
     left: 10px;
 }
 
-.places-buttons-container  {
+.catastro-buttons-container  {
     z-index: 1;
     position: absolute;
     font-size: small;
@@ -223,13 +223,25 @@ a.get-track-link:hover  {
     left: 10px;
 }
 
-.catastro-buttons-container  {
+
+.places-buttons-container  {
     z-index: 1;
     position: absolute;
     font-size: small;
     top: 160px;
     left: 10px;
 }
+
+.places-buttons-container .places-list {
+
+    background-color: white;
+}
+
+.places-buttons-container .places-list input {
+    display: inline-block;
+    vertical-align: middle;
+}
+
 .map-button {
     z-index: 1;
     font-size: small;

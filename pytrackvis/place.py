@@ -62,6 +62,7 @@ class Place:
             'skull and crossbones':      '14',
             'waypoint':                  'nc',
             'peak':                      '106',
+            'city':                      '80',
         }
 
     def kind_to_wpt(self, kind):
@@ -111,7 +112,8 @@ class Place:
             'link': self.link,
             'description': self.description,
             'kind': self.kind,
-            'icon': self.kind_to_wpt(self.kind)
+            'icon': self.kind_to_wpt(self.kind),
+            'category': self.category
         }
         return GeoJSON.point_feature(coords, properties )
 

@@ -8,7 +8,7 @@
  * @param {*} style_id 
  * @param {*} debug 
  */
-function draw_map(track, MAPTILER_KEY, style_id) {
+function draw_map(track, MAPTILER_KEY, style_id, places_layers) {
 
     const map = (window.map = new maplibregl.Map({
         container: 'map',
@@ -29,7 +29,7 @@ function draw_map(track, MAPTILER_KEY, style_id) {
     map.dragRotate.disable();
     map.keyboard.disable(); 
     map.touchZoomRotate.disableRotation();
-    mapManager.init_defaults(track, MAPTILER_KEY)
+    mapManager.init_defaults(track, MAPTILER_KEY, places_layers)
 
     map.on('style.load', async () => {
         mapManager.update_terrain();
@@ -139,34 +139,36 @@ function draw_map(track, MAPTILER_KEY, style_id) {
             data: "/places/as_geojson"
         });
         
-        map.addLayer({
-            'id': mapManager.places_layer_id,
-            'source': mapManager.places_source_id,
-            'type': 'symbol',
-            'layout': {
-                'visibility': 'none',
-                'icon-allow-overlap': true,
-                'text-allow-overlap': true,
-                'icon-overlap': 'always',
-                'text-overlap': 'always',
-                'icon-image': ['get', 'icon'],
-                'text-field': ['get', 'name'],
-                'text-font': [
-                    'Open Sans Semibold',
-                    'Arial Unicode MS Bold'
-                ],
-                'text-offset': [0, 1.25],
-                'text-anchor': 'top',
-                'text-size': 12,
-                'text-letter-spacing': 0.05,
+        mapManager.configure_places()
+        // loaded in mapManager to filter the elements in layers based on properties.
+        // map.addLayer({
+        //     'id': mapManager.places_layer_id,
+        //     'source': mapManager.places_source_id,
+        //     'type': 'symbol',
+        //     'layout': {
+        //         'visibility': 'none',
+        //         'icon-allow-overlap': true,
+        //         'text-allow-overlap': true,
+        //         'icon-overlap': 'always',
+        //         'text-overlap': 'always',
+        //         'icon-image': ['get', 'icon'],
+        //         'text-field': ['get', 'name'],
+        //         'text-font': [
+        //             'Open Sans Semibold',
+        //             'Arial Unicode MS Bold'
+        //         ],
+        //         'text-offset': [0, 1.25],
+        //         'text-anchor': 'top',
+        //         'text-size': 12,
+        //         'text-letter-spacing': 0.05,
                 
-            },
-            'paint': {
-                'text-color': '#FFFFFF',
-                'text-halo-color': '#ffffff',
-                'text-halo-width': 0.1
-            }
-        });
+        //     },
+        //     'paint': {
+        //         'text-color': '#FFFFFF',
+        //         'text-halo-color': '#ffffff',
+        //         'text-halo-width': 0.1
+        //     }
+        // });
 
         if (mapManager.load_buildings) {
             // for Adding the buildings at top

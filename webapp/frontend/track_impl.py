@@ -24,7 +24,24 @@ import sys
 import time
 from webapp.caching import cache
 
+from .web_impl import web_impl
+
 track_impl = Blueprint('track_impl', __name__)
+
+
+@web_impl.route('/track/view', methods=['GET', 'POST'])
+def track_view():
+    id = request.args.get("id",None)
+    if not id:
+        return redirect(url_for('web_impl.error', msg="Invalid id"))
+    track = current_app.manager.db_get_track(id)
+
+    return render_template('view.html',
+                           track=track, 
+                           TOKENS=current_app.manager.config.tokens,
+                           places_layers = current_app.manager.db_get_places_layers())
+
+
 
 
 

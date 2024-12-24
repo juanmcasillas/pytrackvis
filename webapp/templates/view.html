@@ -170,15 +170,25 @@
                 </div>
 
                 <button type="button" class="btn btn-light map-recenter" onclick="mapManager.recenter()" data-placement="right" data-toggle="tooltip" title="Recenter"><i class="fa-solid fa-down-left-and-up-right-to-center"></i></button>
-                <div class="places-buttons-container">
-                    <button type="button" class="btn btn-light map-button" onclick="mapManager.show_hide_places()" data-placement="right" data-toggle="tooltip" title="Show/Hide Places"><i class="fa-solid fa-place-of-worship"></i></button>
-                    <button type="button" class="btn btn-light map-button" onclick="mapManager.show_hide_states()" data-placement="right" data-toggle="tooltip" title="Show/Hide State boundaries"><i class="fa-solid fa-city"></i></button>
-                    <button type="button" class="btn btn-light map-button" onclick="mapManager.show_hide_cities()" data-placement="right" data-toggle="tooltip" title="Show/Hide City boundaries"><i class="fa-solid fa-building"></i></button>
-                </div>
+
                 <div class="catastro-buttons-container">
                     <button type="button" class="btn btn-light map-button" onclick="mapManager.toogle_catastro_point(this)" data-placement="right" data-toggle="tooltip" title="Check Catastro (Point)"><i class="fa-solid fa-check"></i></button>
                     <button type="button" class="btn btn-light map-button" onclick="mapManager.check_catastro_track()" data-placement="right" data-toggle="tooltip" title="Check Catastro (Track)"><i class="fa-solid fa-check-double"></i></button>
                 </div>
+
+                <div class="places-buttons-container">
+                    <button type="button" class="btn btn-light map-button" onclick="mapManager.show_hide_states()" data-placement="right" data-toggle="tooltip" title="Show/Hide State boundaries"><i class="fa-solid fa-city"></i></button>
+                    <button type="button" class="btn btn-light map-button" onclick="mapManager.show_hide_cities()" data-placement="right" data-toggle="tooltip" title="Show/Hide City boundaries"><i class="fa-solid fa-building"></i></button>
+                    <div class="places-list mt-2 pe-2">
+                    {% for place in places_layers %}
+                        <input class="m-2" type="checkbox" name="category" value="{{place}}" onclick="mapManager.filter_places(this)"> {{place}}</input></br>
+                    {% endfor %}
+                    </div>
+                </div>
+
+               
+                  
+               
                 <pre id="map-info" class="map-info"></pre>
             </div>
         </div>
@@ -313,7 +323,7 @@
         drawTrackStats(track) 
         // called from map in order to work plotElevation(window.map)
     })
-    draw_map(track, '{{TOKENS.MAPTILER_KEY}}', "map-styles")
+    draw_map(track, '{{TOKENS.MAPTILER_KEY}}', "map-styles", {{places_layers|safe}})
     
     
 </script>
