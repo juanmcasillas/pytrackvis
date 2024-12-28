@@ -565,6 +565,7 @@ class CatastroManager:
 
         rccode = rc[10]
         #print rccode, rc
+        #28037A03209013
         if rccode == '9': return True
 
         return False
@@ -653,7 +654,7 @@ class CatastroManager:
                                                 'ccc': ccc, 'cdc': cdc, 
                                                 'info': info.as_dict(), 
                                                 'rc': rc,
-                                                'is_public': is_p,
+                                                'is_public': is_p or self.isPublic(rc),
                                                 'style': self.map_class(ccc) })
                                         # missing point, point
 
@@ -663,7 +664,7 @@ class CatastroManager:
             'longitude': point.longitude,
             'elevation': point.elevation,
             'catastro': {
-                'is_public': self.isPublic(rc),
+                'is_public': is_p or self.isPublic(rc),
                 'rc': rc,
                 'ccc': ccc,
                 'cdc': cdc
@@ -766,7 +767,7 @@ class CatastroManager:
                                                   'info': info.as_dict(), 
                                                   #'point': point,
                                                   'rc': rc,
-                                                  'is_public': is_p,
+                                                  'is_public': is_p or self.isPublic(rc),
                                                   'style': self.map_class(ccc) })
 
                         #last_polygon = [msg, coords, ccc, cdc, info, point, rc]
@@ -775,7 +776,7 @@ class CatastroManager:
                                      info.as_dict(), 
                                      #'point': point,
                                      'rc': rc,
-                                     'is_public': is_p,
+                                     'is_public': is_p or self.isPublic(rc),
                                      'style': self.map_class(ccc) }
 
             # ANALIZE BY CATEGORY and STATE.
@@ -788,7 +789,7 @@ class CatastroManager:
             points[pindex].catastro.rc = rc
             points[pindex].catastro.ccc = ccc
             points[pindex].catastro.cdc = cdc
-            points[pindex].catastro.is_public = self.isPublic(rc)
+            points[pindex].catastro.is_public = is_p or self.isPublic(rc)
 
             # process segments
             # if same state
