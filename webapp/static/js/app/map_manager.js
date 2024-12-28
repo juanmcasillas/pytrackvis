@@ -524,6 +524,50 @@ var mapManager = {
         //});
     },
 
+    fly_track: function() {
+
+        // doesn't work.
+
+        let m_from = new maplibregl.Marker() 
+        let m_to = new maplibregl.Marker() 
+        let zoom = window.map.getZoom()
+        let cam_alt = window.map.getCameraTargetElevation()
+
+        source = window.map.getSource(mapManager.track_source_id)
+        data = source.getData()
+        let centers = []
+        source.getData().then( function(results) {
+            //console.log(results)
+            
+                for (var i=0; i<results.geometry.coordinates.length-1; i++ ) {
+                    a = results.geometry.coordinates[i]
+                    b = results.geometry.coordinates[i+1]
+                
+                    if (a[0] != b[0] && a[1] != b[1]) {
+                        m_from.setLngLat([a[0], a[1], a[2]])
+                        m_to.setLngLat([b[0], b[1], b[2]])
+                        center = window.map.calculateCameraOptionsFromTo(m_from.getLngLat(), cam_alt, 
+                                                                        m_to.getLngLat(), cam_alt)
+                        centers.push(center)
+                        //console.log(center)
+                        //window.map.flyTo({ center: center.center, zoom: zoom})
+                        //window.map.flyTo(center)
+                    }
+                }
+                
+                console.log(centers.length)
+                for (const c of centers) {
+                    window.map.flyTo({ center: c.center, zoom: zoom})
+                    setTimeout( function() {
+                        
+                        console.log("waiiting")
+                    }, 10000)
+
+                }
     
+        })
+
+        
+    }
 
 }

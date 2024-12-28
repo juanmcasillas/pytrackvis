@@ -206,14 +206,14 @@ a.get-track-link:hover  {
     left: 10px;
 }
 
-
-.map-recenter  {
+.map-tools-container  {
     z-index: 1;
     position: absolute;
     font-size: small;
     top: 80px;
     left: 10px;
 }
+
 
 .catastro-buttons-container  {
     z-index: 1;

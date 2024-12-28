@@ -169,7 +169,10 @@
                     <button type="button" class="btn btn-light map-button" onclick="mapManager.show_hide_contour()" data-placement="right" data-toggle="tooltip" title="Show/Hide Contour lines"><i class="fa-solid fa-mound"></i></button>
                 </div>
 
-                <button type="button" class="btn btn-light map-recenter" onclick="mapManager.recenter()" data-placement="right" data-toggle="tooltip" title="Recenter"><i class="fa-solid fa-down-left-and-up-right-to-center"></i></button>
+                <div class="map-tools-container">
+                    <button type="button" class="btn btn-light map-button" onclick="mapManager.recenter()" data-placement="right" data-toggle="tooltip" title="Recenter"><i class="fa-solid fa-down-left-and-up-right-to-center"></i></button>
+                    <button type="button" class="btn btn-light map-button" onclick="mapManager.fly_track()" data-placement="right" data-toggle="tooltip" title="Fly Track"><i class="fa-solid fa-video"></i></button>
+                </div>
 
                 <div class="catastro-buttons-container">
                     <button type="button" class="btn btn-light map-button" onclick="mapManager.toogle_catastro_point(this)" data-placement="right" data-toggle="tooltip" title="Check Catastro (Point)"><i class="fa-solid fa-check"></i></button>
@@ -179,6 +182,7 @@
                 <div class="places-buttons-container">
                     <button type="button" class="btn btn-light map-button" onclick="mapManager.show_hide_states()" data-placement="right" data-toggle="tooltip" title="Show/Hide State boundaries"><i class="fa-solid fa-city"></i></button>
                     <button type="button" class="btn btn-light map-button" onclick="mapManager.show_hide_cities()" data-placement="right" data-toggle="tooltip" title="Show/Hide City boundaries"><i class="fa-solid fa-building"></i></button>
+                    
                     <div class="places-list mt-2 pe-2">
                     {% for place in places_layers %}
                         <input class="m-2" type="checkbox" name="category" value="{{place}}" onclick="mapManager.filter_places(this)"> {{place}}</input></br>
