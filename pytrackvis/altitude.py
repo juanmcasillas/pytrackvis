@@ -212,7 +212,7 @@ class PNGFactory():
             dm.text((self.size[0]-len(scale_h_v)*6,self.size[1]-25), scale_h_v, self.fontcolor, font=font)
         else:
             # don't show anything
-            self.fontname = "www/css/fonts/MyriadPro-Regular.otf"
+            self.fontname = "webapp/static/webfonts/MyriadPro-Regular.otf"
             self.fontsize=13
             self.fontcolor = (20,20,20,255)
             font = ImageFont.truetype(self.fontname, self.fontsize-3)

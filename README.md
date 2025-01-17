@@ -37,7 +37,7 @@ These are for now not used.
 * Install the modules with 
 ```
 python -m pip install gpxpy fitdecode shapely jinja2==3.0 Flask==3.1.0 app_config itsdangerous==2.0.1 \
-            bootstrap-flask flask_socketio Flask-Caching fastkml
+            bootstrap-flask flask_socketio Flask-Caching fastkml lark lxml
 ```
 
 ## Info
