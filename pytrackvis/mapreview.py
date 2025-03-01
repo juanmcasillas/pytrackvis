@@ -49,14 +49,13 @@ class MapPreviewManager:
         track_color = self.config["track_color"] if track_color is None  and 'track_color' in self.config else track_color
         track_width = self.config["track_width"] if track_width is None  and 'track_width' in self.config else track_width
         
-        
         mapper = OSMMapper(img_size, 
                            cachedir=self.cachedir, 
                            unsafe_ssl=self.config["unsafe_ssl"] if "unsafe_ssl" in self.config else False)
-        
         mapper.Debug(self.debug)
+
         map = mapper.GetMapBB(track.bounds(), mapempty=empty_map, bounding_box=False, zoom_base=zoom_level)
-        
+
         if len(track.points) > 0:
             mapper.ProjectPoints(track.points, 
                                  map, 

@@ -64,6 +64,7 @@ class TrackManager:
         return self.tracks[list_keys[0]]
 
     def guess_file_type(self, fname=None):
+   
         fname = fname if fname else self.file_name
         file_name, file_extension = os.path.splitext(fname)
         file_extension = file_extension.lower()

@@ -22,6 +22,10 @@ import copy
 import hashlib
 import os.path
 
+from pytrackvis.hrm.helper import build_hrm_file       
+
+
+
 from .helpers import bearing, distancePoints, module, C, remove_accents
 from .stats import Stats, get_fval
 from .optimizer import GPXOptimizer
@@ -359,6 +363,13 @@ class Track:
         self.points = l
         return c
 
+
+    def convert_to_hrm(self, fname):
+        return build_hrm_file(self, fname)
+
+ 
+
+
     def set_internal_data(self, fname, optimize_points=False, filter_points=False, do_stats=True):
         #prepare a gpxpy object to build all the required things, bounds, means, etc
         #calculate the stats,
@@ -366,8 +377,6 @@ class Track:
         #calculate the "hash"
         # store the full path to the object
         self.fname = os.path.realpath(fname)
-        
-
         self.set_metadata()
 
         self._gpx = gpxpy.gpx.GPX()

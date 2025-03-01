@@ -147,7 +147,6 @@ class OSMMapper(GenericMapper):
         #	if resolution*tiles_sz.width*TILE_X_SZ >= width and resolution*tiles_sz.height*TILE_Y_SZ>=height:
         #		break
 
-        #print NW,NE,SW,SE
         if zoom_base:
             zoom = zoom_base
         else:
@@ -182,7 +181,7 @@ class OSMMapper(GenericMapper):
 
             # distance in pixels from NWpx to SEpx
             bb_width,bb_height = (SEpx.x-NWpx.x, SEpx.y-NWpx.y )
-
+           
             if DEBUG_ME and self.debug:
                 print("-" * 50)
                 print("NWpx:    ", NWpx)
@@ -204,11 +203,11 @@ class OSMMapper(GenericMapper):
         # now, we have to calculate if we are going to move the grid to match the size of the image.
         # BB has to be inside the canvas. If not, add some room.
         #
-
+       
         img_center = Size( self.img_sz.width / 2, self.img_sz.height / 2)
         bb_center  = Point2D( NWpx.x+int(math.fabs((SEpx.x- NWpx.x) / 2)), NWpx.y+int(math.fabs((SEpx.y- NWpx.y) / 2)) )# The center from the NW point
         crop_origin = Point2D( bb_center.x - img_center.width, bb_center.y - img_center.height)
-
+      
         if DEBUG_ME and self.debug:
             print("=" * 80)
             print("FINAL CONFIG")
@@ -262,12 +261,17 @@ class OSMMapper(GenericMapper):
             print("Offset SE: %s", OffSetSE)
 
         # get the box, do the magic.
-
+        
         if not mapempty:
+            print("1")
             canvas = self.GetMapTiles((tiles_NW.x+OffSetNW.x, tiles_NW.y+OffSetNW.y),zoom,tiles_sz)
+            print("2")
         else:
+            print("3")
             canvas = Image.new("RGBA",(self.TILE_X_SZ*(tiles_sz.width), self.TILE_Y_SZ*(tiles_sz.height)),mapcolor)
+            print("4")
 
+        print("2")
         #
         # generate the proyection of a LAT,LON to our coordinate space in the image.
         # (0,0) -> LEFT,TOP of the image. This point is:
@@ -279,7 +283,6 @@ class OSMMapper(GenericMapper):
         # debug info
         if BOUNDING_BOX:
             self._DrawBBox(NW,NE,SE,SW, canvas, tile_origin, zoom)
-
         retmap = MapItem(canvas, zoom, tile_origin, crop_origin, tiles_sz)
         return self._FinishMap(retmap)
 
@@ -418,16 +421,14 @@ class OSMMapper(GenericMapper):
         """
 
         # get the tiles sequentially
-
         mapcanvas = Image.new("RGB",(self.TILE_X_SZ*(tiles_sz.width), self.TILE_Y_SZ*(tiles_sz.height)), "white")
-
         for y in range(0, tiles_sz.height):
             for x in range(0, tiles_sz.width):
-
                 tileimage = self.TileCache(Point2D(tile[0]+x,tile[1]+y),zoom)
-
+                # something crashes here.
                 mapcanvas.paste(tileimage, (self.TILE_X_SZ*x, self.TILE_Y_SZ*y))
                 tileimage.close()
+                
 
 
         return mapcanvas

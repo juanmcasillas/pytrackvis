@@ -336,7 +336,6 @@ class Manager:
 
         # marginal gain if disable configure the thumbs.
         create_thumbs = True
-
         target_fname = self.track_previews.map_object(track.hash, create_dirs=True, relative=True)
         target_fname_abs = self.track_previews.map_object(track.hash)
 
@@ -348,7 +347,6 @@ class Manager:
         track.preview = "%s.png" % target_fname
         track.preview_elevation = "%s_elevation.png" % target_fname
         # absolute path (for store)
-
         map.save("%s.png" % target_fname_abs, 'PNG')
         if create_thumbs:
             map_thumb.save("%s_tb.png" % target_fname_abs, 'PNG')
