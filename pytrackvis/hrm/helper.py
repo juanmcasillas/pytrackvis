@@ -15,7 +15,6 @@ def get_location_at_utc(gpx, start, delta):
     
 
     if len(r) == 0:
-      print("no file")
       #
       # last point reached (lap time is the last one)
       # return the last point info with altitude data
